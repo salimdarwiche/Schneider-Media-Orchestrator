@@ -2317,9 +2317,25 @@
       document.documentElement.classList.remove('menu-visible');
       document.body.classList.remove('menu-visible');
     }
-    // Trigger resize for PDF if needed
+    
+    // Force re-render of media to adjust to new viewport size
+    // Wait for CSS transitions and layout changes to complete
     setTimeout(() => {
-      if (pdfDoc && activeView==='presentation') renderPdfPage(currentPage);
+      // For videos: force size recalculation by triggering a resize event
+      if (activeView === 'video' && videoPlayer && !videoPlayer.paused) {
+        // Trigger video element to recalculate its displayed size
+        const currentTime = videoPlayer.currentTime;
+        videoPlayer.style.width = '100%';
+        videoPlayer.style.height = '100%';
+      }
+      
+      // For PDFs: re-render at new size
+      if (pdfDoc && activeView === 'presentation') {
+        renderPdfPage(currentPage);
+      }
+      
+      // Dispatch window resize event to trigger any other responsive adjustments
+      window.dispatchEvent(new Event('resize'));
     }, 350);
   }
 
