@@ -255,8 +255,8 @@
   }
   
   /* PDF canvas wrapper and sizing - maintain aspect ratio through JS rendering */
-  .pdf-canvas-wrapper { flex:1; display:flex; align-items:center; justify-content:center; background:var(--se-black); width:100%; overflow:hidden; position:relative; }
-  #pdfCanvas { background:var(--se-white); display:block; }
+  .pdf-canvas-wrapper { flex:1; display:flex; align-items:center; justify-content:center; background:var(--se-black); width:100%; overflow:hidden; position:relative; cursor:pointer; }
+  #pdfCanvas { background:var(--se-white); display:block; cursor:pointer; }
 
   /* Modals */
   .modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.6); display:none; align-items:center; justify-content:center; z-index:1000; }
@@ -364,6 +364,85 @@
   .toast { position:fixed; top:16px; left:50%; transform:translateX(-50%) translateY(-16px); background:var(--se-life-green); color:var(--se-white); padding:10px 14px; border-radius:10px; box-shadow:0 10px 25px rgba(0,0,0,.15); opacity:0; pointer-events:none; transition:opacity .25s, transform .25s; z-index:3000; font-weight:700; }
   .toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
 
+  /* NEW FEATURE: Full-screen Agenda Display */
+  .agenda-display-overlay {
+    position:fixed; inset:0; background:rgba(0,0,0,0.92);
+    display:none; align-items:center; justify-content:center; z-index:9999;
+    backdrop-filter:blur(4px); animation:fadeIn 0.3s;
+  }
+  .agenda-display-overlay.show { display:flex; }
+  @keyframes fadeIn { from { opacity:0; } to { opacity:1; } }
+  
+  .agenda-display-content {
+    background:var(--se-white); border-radius:20px;
+    max-width:900px; width:92%; max-height:90vh;
+    padding:40px; overflow:auto; box-shadow:0 20px 60px rgba(0,0,0,0.5);
+    position:relative;
+  }
+  .agenda-display-close {
+    position:absolute; top:20px; right:20px;
+    background:transparent; border:none; font-size:32px;
+    line-height:1; cursor:pointer; color:var(--se-dark-gray);
+    font-weight:800; transition:color .15s;
+  }
+  .agenda-display-close:hover { color:var(--se-black); }
+  
+  .agenda-display-header {
+    text-align:center; margin-bottom:40px;
+    padding-bottom:20px; border-bottom:3px solid var(--se-life-green);
+  }
+  .agenda-display-header h2 {
+    font-size:36px; font-weight:900; color:var(--se-dark-gray);
+    margin-bottom:8px;
+  }
+  .agenda-display-header .timezone {
+    font-size:16px; color:var(--text-muted); font-weight:600;
+  }
+  
+  .agenda-display-slot {
+    margin-bottom:35px; padding:25px; background:var(--surface-alt);
+    border-radius:12px; border-left:4px solid var(--se-life-green);
+  }
+  .agenda-display-slot:last-child { margin-bottom:0; }
+  
+  .agenda-display-slot-title {
+    font-size:28px; font-weight:800; color:var(--text);
+    margin-bottom:8px; display:flex; align-items:center; gap:12px;
+  }
+  .agenda-display-slot-subtitle {
+    font-size:20px; font-style:italic; color:var(--text-muted);
+    margin-bottom:12px;
+  }
+  .agenda-display-slot-time {
+    font-size:18px; font-weight:600; color:var(--se-dark-gray);
+    margin-bottom:16px;
+  }
+  .agenda-display-items {
+    display:flex; flex-direction:column; gap:10px;
+  }
+  .agenda-display-item {
+    display:flex; align-items:center; gap:12px;
+    padding:12px 16px; background:var(--se-white);
+    border-radius:8px; border:2px solid var(--border);
+  }
+  .agenda-display-item-badge {
+    padding:4px 10px; border-radius:6px;
+    background:var(--se-life-green); color:var(--se-white);
+    font-weight:800; font-size:12px;
+  }
+  .agenda-display-item-name {
+    font-size:18px; font-weight:600; color:var(--text); flex:1;
+  }
+  .agenda-display-empty {
+    text-align:center; padding:60px 20px; color:var(--text-muted);
+  }
+  .agenda-display-empty h3 {
+    font-size:24px; margin-bottom:12px;
+  }
+  .agenda-display-empty p {
+    font-size:16px;
+  }
+
   @media (max-width:768px) { .modal-body{ grid-template-columns:1fr } }
 </style>
 </head>
@@ -447,6 +526,12 @@
       <line x1="10" y1="11" x2="10" y2="17" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
       <line x1="14" y1="11" x2="14" y2="17" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
     </symbol>
+    <symbol id="presentation" viewBox="0 0 24 24">
+      <rect x="2" y="3" width="20" height="14" rx="2" fill="none" stroke="currentColor" stroke-width="2"/>
+      <line x1="12" y1="17" x2="12" y2="21" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+      <line x1="8" y1="21" x2="16" y2="21" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+      <path d="M8 10l3 3 5-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+    </symbol>
   </svg>
 
   <!-- Skip link -->
@@ -470,10 +555,16 @@
         <div class="menu-section" id="agendaSection" style="display:none">
           <div class="menu-label">
             <span>Agenda</span>
-            <!-- NEW: Build Agenda button -->
-            <button class="icon-btn" id="buildAgendaBtn" title="Build Agenda" aria-label="Build Agenda">
-              <svg viewBox="0 0 24 24" aria-hidden="true"><use href="#calendar"></use></svg>
-            </button>
+            <span class="label-actions">
+              <!-- NEW: Full-screen Agenda Display button -->
+              <button class="icon-btn" id="showFullAgendaBtn" title="Show Full Agenda" aria-label="Show Full Agenda Display">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><use href="#presentation"></use></svg>
+              </button>
+              <!-- NEW: Build Agenda button -->
+              <button class="icon-btn" id="buildAgendaBtn" title="Build Agenda" aria-label="Build Agenda">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><use href="#calendar"></use></svg>
+              </button>
+            </span>
           </div>
           <div class="gmt-clock">
             <span id="tzLabel">Current time (CET)</span>
@@ -771,6 +862,14 @@
   <!-- Toast container -->
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
 
+  <!-- NEW FEATURE: Full-screen Agenda Display Overlay -->
+  <div class="agenda-display-overlay" id="agendaDisplayOverlay">
+    <div class="agenda-display-content">
+      <button class="agenda-display-close" id="agendaDisplayClose" aria-label="Close">×</button>
+      <div id="agendaDisplayBody"></div>
+    </div>
+  </div>
+
 <script>
 (function(){
   'use strict';
@@ -935,6 +1034,65 @@
     toastEl.classList.add('show');
     if (toastTimer) clearTimeout(toastTimer);
     toastTimer = setTimeout(()=> toastEl.classList.remove('show'), 2000);
+  }
+
+  // NEW FEATURE: Full-screen Agenda Display
+  const agendaDisplayOverlay = document.getElementById('agendaDisplayOverlay');
+  const agendaDisplayClose = document.getElementById('agendaDisplayClose');
+  const agendaDisplayBody = document.getElementById('agendaDisplayBody');
+  const showFullAgendaBtn = document.getElementById('showFullAgendaBtn');
+
+  function showFullAgenda(){
+    if (!agendaDisplayBody) return;
+    
+    // Render the full-screen agenda
+    let html = '<div class="agenda-display-header">';
+    html += '<h2>Meeting Agenda</h2>';
+    html += `<div class="timezone">${zoneShortLabel(timeZone)} Time Zone</div>`;
+    html += '</div>';
+    
+    if (!agendaSlots || agendaSlots.length === 0){
+      html += '<div class="agenda-display-empty">';
+      html += '<h3>No Agenda Items</h3>';
+      html += '<p>Add agenda slots in Settings to see them here.</p>';
+      html += '</div>';
+    } else {
+      agendaSlots.forEach(slot => {
+        html += '<div class="agenda-display-slot">';
+        html += `<div class="agenda-display-slot-title">${slot.title || '(Untitled)'}</div>`;
+        if (slot.subtitle){
+          html += `<div class="agenda-display-slot-subtitle">${slot.subtitle}</div>`;
+        }
+        html += `<div class="agenda-display-slot-time">${slot.start || '--:--'} – ${slot.end || '--:--'}</div>`;
+        
+        if (slot.items && slot.items.length > 0){
+          html += '<div class="agenda-display-items">';
+          slot.items.forEach(item => {
+            let itemName = '(Unknown)';
+            if (item.type === 'video'){
+              const meta = videoFiles.find(v => v._id === item.id);
+              if (meta) itemName = displayName(meta);
+            } else if (item.type === 'pdf'){
+              const meta = presentationFiles.find(p => p._id === item.id);
+              if (meta) itemName = displayName(meta);
+            }
+            html += '<div class="agenda-display-item">';
+            html += `<span class="agenda-display-item-badge">${item.type === 'video' ? 'VIDEO' : 'PDF'}</span>`;
+            html += `<span class="agenda-display-item-name">${itemName}</span>`;
+            html += '</div>';
+          });
+          html += '</div>';
+        }
+        html += '</div>';
+      });
+    }
+    
+    agendaDisplayBody.innerHTML = html;
+    agendaDisplayOverlay.classList.add('show');
+  }
+
+  function hideFullAgenda(){
+    if (agendaDisplayOverlay) agendaDisplayOverlay.classList.remove('show');
   }
 
   // Helpers
@@ -2258,6 +2416,88 @@
   // PDF controls
   prevPageBtn.addEventListener('click', ()=>{ if (pdfDoc && currentPage>1){ currentPage--; renderPdfPage(currentPage); const meta=presentationFiles[presentationIndex]; if(meta) meta._currentPage=currentPage; saveState(); }});
   nextPageBtn.addEventListener('click', ()=>{ if (pdfDoc && currentPage<pdfDoc.numPages){ currentPage++; renderPdfPage(currentPage); const meta=presentationFiles[presentationIndex]; if(meta) meta._currentPage=currentPage; saveState(); }});
+
+  // NEW FEATURE: PDF Click Navigation - click anywhere on canvas to advance
+  if (pdfCanvas){
+    pdfCanvas.addEventListener('click', ()=>{
+      if (pdfDoc && currentPage < pdfDoc.numPages){
+        currentPage++;
+        renderPdfPage(currentPage);
+        const meta = presentationFiles[presentationIndex];
+        if (meta) meta._currentPage = currentPage;
+        saveState();
+      }
+    });
+  }
+
+  // NEW FEATURE: PDF Keyboard Shortcuts
+  document.addEventListener('keydown', (e)=>{
+    // Only handle keys when PDF is active
+    if (activeView !== 'presentation' || !pdfDoc) return;
+    
+    let handled = false;
+    
+    if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'PageDown'){
+      // Next page
+      if (currentPage < pdfDoc.numPages){
+        currentPage++;
+        renderPdfPage(currentPage);
+        const meta = presentationFiles[presentationIndex];
+        if (meta) meta._currentPage = currentPage;
+        saveState();
+      }
+      handled = true;
+    } else if (e.key === 'ArrowLeft' || e.key === 'Backspace' || e.key === 'PageUp'){
+      // Previous page
+      if (currentPage > 1){
+        currentPage--;
+        renderPdfPage(currentPage);
+        const meta = presentationFiles[presentationIndex];
+        if (meta) meta._currentPage = currentPage;
+        saveState();
+      }
+      handled = true;
+    } else if (e.key === 'Home'){
+      // First page
+      currentPage = 1;
+      renderPdfPage(currentPage);
+      const meta = presentationFiles[presentationIndex];
+      if (meta) meta._currentPage = currentPage;
+      saveState();
+      handled = true;
+    } else if (e.key === 'End'){
+      // Last page
+      currentPage = pdfDoc.numPages;
+      renderPdfPage(currentPage);
+      const meta = presentationFiles[presentationIndex];
+      if (meta) meta._currentPage = currentPage;
+      saveState();
+      handled = true;
+    }
+    
+    if (handled){
+      e.preventDefault();
+    }
+  });
+
+  // NEW FEATURE: Full-screen Agenda Display event listeners
+  if (showFullAgendaBtn){
+    showFullAgendaBtn.addEventListener('click', showFullAgenda);
+  }
+  if (agendaDisplayClose){
+    agendaDisplayClose.addEventListener('click', hideFullAgenda);
+  }
+  if (agendaDisplayOverlay){
+    agendaDisplayOverlay.addEventListener('click', (e)=>{
+      if (e.target === agendaDisplayOverlay) hideFullAgenda();
+    });
+  }
+  // ESC key to close full-screen agenda
+  document.addEventListener('keydown', (e)=>{
+    if (e.key === 'Escape' && agendaDisplayOverlay && agendaDisplayOverlay.classList.contains('show')){
+      hideFullAgenda();
+    }
+  });
 
   // NEW: Unified back navigation button
   navBackBtn.addEventListener('click', ()=>{
