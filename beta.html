@@ -1881,11 +1881,6 @@
       mainContent.classList.add('menu-hidden');
       menuToggleBtn.classList.add('hidden-position');
     }
-    // Update toggle button position based on menu position
-    menuToggleBtn.className = 'menu-toggle-btn ' + menuPos;
-    if (!menuVisible) {
-      menuToggleBtn.classList.add('hidden-position');
-    }
     // Trigger resize for PDF if needed
     setTimeout(() => {
       if (pdfDoc && activeView==='presentation') renderPdfPage(currentPage);
@@ -1894,8 +1889,8 @@
 
   if (menuToggleBtn) {
     menuToggleBtn.addEventListener('click', toggleMenu);
-    // Initialize button position
-    menuToggleBtn.className = 'menu-toggle-btn ' + menuPos;
+    // Initialize button position - use classList to preserve other classes
+    menuToggleBtn.classList.add(menuPos);
   }
 
   // Init
