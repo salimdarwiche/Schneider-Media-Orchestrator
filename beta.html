@@ -47,15 +47,12 @@
 
   /* Menu */
   /* FEATURE 6: Menu toggle */
-  .menu-panel { position:fixed; background:var(--surface); box-shadow:0 10px 15px rgba(0,0,0,.06); z-index:100; display:flex; flex-direction:column; overflow:hidden; --menu-font-scale:1; transition:transform 0.3s ease; }
+  .menu-panel { position:fixed; background:var(--surface); box-shadow:0 10px 15px rgba(0,0,0,.06); z-index:100; display:flex; flex-direction:column; overflow:hidden; --menu-font-scale:1; transition:opacity 0.3s ease; }
   .menu-panel.left  { top:0; left:0; width:340px; height:100vh; border-right:1px solid var(--border); }
   .menu-panel.right { top:0; right:0; width:340px; height:100vh; border-left:1px solid var(--border); }
   .menu-panel.top   { top:0; left:0; width:100vw; height:100px; flex-direction:row; border-bottom:1px solid var(--border); }
   .menu-panel.bottom{ bottom:0; left:0; width:100vw; height:100px; flex-direction:row; border-top:1px solid var(--border); }
-  .menu-panel.hidden.left { transform: translateX(-100%); }
-  .menu-panel.hidden.right { transform: translateX(100%); }
-  .menu-panel.hidden.top { transform: translateY(-100%); }
-  .menu-panel.hidden.bottom { transform: translateY(100%); }
+  .menu-panel.hidden { display:none !important; }
 
   /* FEATURE 6: Menu toggle button */
   .menu-toggle-btn {
@@ -187,10 +184,8 @@
   .main-content.right { top:0; right:340px; width:calc(100vw - 340px); height:100vh; }
   .main-content.top { top:100px; left:0; width:100vw; height:calc(100vh - 100px); }
   .main-content.bottom { top:0; left:0; width:100vw; height:calc(100vh - 100px); }
-  .main-content.menu-hidden.left { left:0; width:100vw; }
-  .main-content.menu-hidden.right { right:0; width:100vw; }
-  .main-content.menu-hidden.top { top:0; height:100vh; }
-  .main-content.menu-hidden.bottom { bottom:0; height:100vh; }
+  /* NEW: Full viewport when menu is hidden */
+  .main-content.menu-hidden { position:fixed; top:0; left:0; width:100vw; height:100vh; }
 
   .video-container { position:relative; width:100%; height:100%; display:flex; align-items:center; justify-content:center; }
   .video-container video { max-width:100%; max-height:100%; object-fit:contain; }
@@ -215,23 +210,23 @@
   .presentation-controls { display:flex; gap:12px; padding:12px; justify-content:center; align-items:center; background:rgba(255,255,255,0.02); }
   .presentation-controls button { padding:8px 12px; background:var(--se-life-green); border:none; color:var(--se-white); border-radius:8px; cursor:pointer; font-weight:700; }
   /* NEW: PDF canvas sizing - maintain aspect ratio through JS rendering */
-  #pdfCanvas { flex:1; width:100%; background:var(--se-white); }
-  .main-content.menu-hidden #pdfCanvas { max-width:100vw; max-height:100vh; }
+  #pdfCanvas { flex:1; width:100%; max-width:100%; max-height:100%; background:var(--se-white); object-fit:contain; }
 
   /* Modals */
   .modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.6); display:none; align-items:center; justify-content:center; z-index:1000; }
   .modal-overlay.show { display:flex; }
   .modal-dialog { width:min(1020px,92vw); max-height:90vh; background:var(--se-white); border-radius:16px; overflow:hidden; display:flex; flex-direction:column; box-shadow:0 30px 60px rgba(0,0,0,0.3); }
-  .modal-header { position:relative; padding:16px 20px; background:var(--se-white); border-bottom:1px solid var(--border); display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; }
+  .modal-header { position:relative; padding:16px 20px; background:var(--se-white); border-bottom:1px solid var(--border); display:flex; align-items:center; gap:16px; }
   .modal-header::before{ content:""; position:absolute; left:0; right:0; top:0; height:4px; background:var(--se-life-green); }
-  .modal-title { display:flex; align-items:center; gap:10px; font-weight:800; color:var(--se-life-green); }
+  .modal-title { display:flex; align-items:center; gap:10px; font-weight:800; color:var(--se-life-green); flex-shrink:0; }
   .modal-title svg { width:20px; height:20px; color:var(--se-life-green); }
-  .modal-close { background:transparent; border:none; font-size:22px; line-height:1; cursor:pointer; color:var(--se-dark-gray); font-weight:800; }
+  .modal-close { background:transparent; border:none; font-size:28px; line-height:1; cursor:pointer; color:var(--se-dark-gray); font-weight:800; margin-left:auto; }
   .modal-close:focus { outline:2px solid var(--focus); outline-offset:2px; }
+  .modal-close:hover { color:var(--se-black); }
   .modal-body { padding:20px; overflow:auto; display:grid; grid-template-columns:1fr 1fr; gap:20px; }
   /* NEW: Better Settings organization */
   .modal-body.tabbed { display:block; padding:20px; }
-  .settings-tabs { display:flex; gap:10px; width:100%; margin-top:12px; }
+  .settings-tabs { display:flex; gap:10px; flex:1; justify-content:center; }
   .settings-tab { padding:10px 20px; border:none; background:var(--surface-alt); color:var(--text-muted); font-weight:700; cursor:pointer; border-radius:8px 8px 0 0; transition:all .2s; font-size:15px; }
   .settings-tab.active { background:var(--se-life-green); color:var(--se-white); }
   .settings-tab:hover:not(.active) { background:rgba(61,205,88,0.1); }
@@ -624,22 +619,9 @@
             </div>
           </div>
 
-          <!-- Playback + Position -->
+          <!-- Menu Position -->
           <div class="modal-section">
             <div class="section-title" style="display:flex;align-items:center;gap:10px">
-              <svg viewBox="0 0 24 24" aria-hidden="true"><use href="#play"></use></svg>
-              <span>Playback</span>
-            </div>
-            <div style="display:flex;gap:12px;align-items:center">
-              <div class="toggle-wrap" id="loopToggle" role="button" aria-pressed="true" title="Toggle loop" tabindex="0" style="display:flex;gap:10px;align-items:center;cursor:pointer">
-                <div id="loopSwitch" style="width:38px;height:22px;border-radius:22px;background:var(--se-life-green);position:relative;transition:background .2s">
-                  <div style="position:absolute;top:3px;left:3px;width:16px;height:16px;border-radius:50%;background:var(--se-white);transition:left .2s" id="loopSwitchKnob"></div>
-                </div>
-                <span id="loopLabel" style="color:var(--text-muted);font-weight:700">Loop: On</span>
-              </div>
-            </div>
-
-            <div class="section-title" style="margin-top:14px;display:flex;align-items:center;gap:10px">
               <svg viewBox="0 0 24 24" aria-hidden="true"><use href="#layout-left"></use></svg>
               <span>Menu Position</span>
             </div>
@@ -719,6 +701,23 @@
             <input id="presentationInputAdd" type="file" accept=".pdf" multiple style="display:none" aria-hidden="true">
             <div class="mini-list" id="modalPresentationList"></div>
             <div class="helper-text">Click name to rename, drag to reorder</div>
+          </div>
+
+          <!-- Playback -->
+          <div class="modal-section">
+            <div class="section-title" style="display:flex;align-items:center;gap:10px">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><use href="#play"></use></svg>
+              <span>Playback</span>
+            </div>
+            <div style="display:flex;gap:12px;align-items:center">
+              <div class="toggle-wrap" id="loopToggle" role="button" aria-pressed="true" title="Toggle loop" tabindex="0" style="display:flex;gap:10px;align-items:center;cursor:pointer">
+                <div id="loopSwitch" style="width:38px;height:22px;border-radius:22px;background:var(--se-life-green);position:relative;transition:background .2s">
+                  <div style="position:absolute;top:3px;left:3px;width:16px;height:16px;border-radius:50%;background:var(--se-white);transition:left .2s" id="loopSwitchKnob"></div>
+                </div>
+                <span id="loopLabel" style="color:var(--text-muted);font-weight:700">Loop: On</span>
+              </div>
+            </div>
+            <div class="helper-text" style="margin-top:8px">Controls video playback loop behavior</div>
           </div>
           </div>
           <!-- End Media Library Tab -->
@@ -1496,10 +1495,29 @@
   function renderPdfPage(pageNum){
     if (!pdfDoc) return;
     pdfDoc.getPage(pageNum).then(page=>{
+      // Get available container dimensions
       const containerW = mainContent.clientWidth || window.innerWidth;
+      const containerH = (mainContent.clientHeight || window.innerHeight) - 60; // Subtract controls height
+      
       const unscaled = page.getViewport({ scale: 1 });
-      const maxScale = Math.min(2, (window.devicePixelRatio || 1) * 1.5);
-      const scale = Math.min(maxScale, Math.max(0.5, (containerW - 40) / unscaled.width));
+      const pdfAspect = unscaled.width / unscaled.height;
+      const containerAspect = containerW / containerH;
+      
+      // Calculate scale to fit within container while maintaining aspect ratio
+      let scale;
+      if (pdfAspect > containerAspect) {
+        // PDF is wider - fit to width
+        scale = containerW / unscaled.width;
+      } else {
+        // PDF is taller - fit to height
+        scale = containerH / unscaled.height;
+      }
+      
+      // Apply device pixel ratio for crisp rendering, but limit max scale
+      const deviceScale = window.devicePixelRatio || 1;
+      const maxScale = Math.min(3, deviceScale * 1.5);
+      scale = Math.min(maxScale, Math.max(0.5, scale * 0.95)); // 0.95 for slight padding
+      
       const vp = page.getViewport({ scale });
 
       pdfCanvas.width = Math.round(vp.width);
