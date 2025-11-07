@@ -3,11 +3,1946 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Schneider Electric Media Orchestrator — V6 Beta</title>
+<title>Schneider Electric Media Orchestrator — V6</title>
+
+<!-- pdf.js core -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+
+<style>
+  :root{
+    /* Schneider Electric Brand Palette */
+    --se-life-green: #3DCD58;   /* Primary */
+    --se-logo-green: #009530;   /* Logo only (not used in UI styles) */
+    --se-dark-gray:  #626469;   /* Support */
+    --se-light-gray: #9FA0A4;   /* Support */
+    --se-white:      #FFFFFF;
+    --se-black:      #000000;
+
+    /* Derived neutrals */
+    --border: rgba(159,160,164,0.65);
+    --surface: #FFFFFF;
+    --surface-alt: #F7F7F7;
+    --text: #1f2937;
+    --text-muted: #626469;
+    --focus: #3DCD58;
+
+    --agenda-accent: var(--se-life-green);
+    --agenda-progress-bg: #e5e7eb;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html,body { height:100%; width:100vw; background:var(--se-life-green); font-family:Inter,system-ui,Arial,sans-serif; color:var(--text); overflow:hidden; }
+  ::-webkit-scrollbar { width:8px; height:8px; }
+  ::-webkit-scrollbar-thumb { background: var(--se-light-gray); border-radius:10px }
+  ::-webkit-scrollbar-thumb:hover { background: var(--se-dark-gray) }
+
+  .skip-link{ position:absolute; left:-9999px; top:auto; width:1px; height:1px; overflow:hidden; }
+  .skip-link:focus{
+    left:12px; top:12px; width:auto; height:auto; padding:8px 12px;
+    background:var(--se-white); color:var(--se-dark-gray);
+    border:2px solid var(--se-life-green); border-radius:8px; z-index:2000;
+    outline:none;
+  }
+
+  /* Menu */
+  /* FEATURE 6: Menu toggle */
+  .menu-panel { position:fixed; background:var(--surface); box-shadow:0 10px 15px rgba(0,0,0,.06); z-index:100; display:flex; flex-direction:column; overflow:hidden; --menu-font-scale:1; transition:transform 0.3s ease; }
+  .menu-panel.left  { top:0; left:0; width:340px; height:100vh; border-right:1px solid var(--border); }
+  .menu-panel.right { top:0; right:0; width:340px; height:100vh; border-left:1px solid var(--border); }
+  .menu-panel.top   { top:0; left:0; width:100vw; height:100px; flex-direction:row; border-bottom:1px solid var(--border); }
+  .menu-panel.bottom{ bottom:0; left:0; width:100vw; height:100px; flex-direction:row; border-top:1px solid var(--border); }
+  .menu-panel.hidden.left { transform: translateX(-100%); }
+  .menu-panel.hidden.right { transform: translateX(100%); }
+  .menu-panel.hidden.top { transform: translateY(-100%); }
+  .menu-panel.hidden.bottom { transform: translateY(100%); }
+
+  /* FEATURE 6: Menu toggle button */
+  .menu-toggle-btn {
+    position:fixed; z-index:150;
+    background:var(--se-life-green); color:var(--se-white);
+    border:2px solid var(--se-white); border-radius:9999px;
+    width:48px; height:48px; display:none; align-items:center; justify-content:center;
+    cursor:pointer; box-shadow:0 4px 12px rgba(0,0,0,0.25);
+    transition:all .15s;
+  }
+  .menu-toggle-btn:hover { transform:scale(1.05); box-shadow:0 6px 16px rgba(0,0,0,0.3); }
+  .menu-toggle-btn svg { width:24px; height:24px; }
+  .menu-toggle-btn.show { display:flex; }
+  .menu-toggle-btn.left { top:20px; left:20px; }
+  .menu-toggle-btn.right { top:20px; right:20px; }
+  .menu-toggle-btn.top { top:20px; left:20px; }
+  .menu-toggle-btn.bottom { bottom:20px; left:20px; }
+
+  .logo-header { height:72px; background:var(--se-life-green); display:flex; align-items:center; justify-content:center; padding:0 20px; flex-shrink:0; }
+  .menu-panel.top .logo-header, .menu-panel.bottom .logo-header { display:none; }
+  .logo-header img { height:auto; max-width:280px; width:100%; object-fit:contain; }
+
+  .resize-handle { position:absolute; z-index:120; background:var(--se-light-gray); opacity:.18; transition:opacity .15s, background .15s; }
+  .resize-handle:hover, .resize-handle.active { opacity:.72; background:var(--se-life-green); }
+  .menu-panel.left .resize-handle  { right:0; top:0; bottom:0; width:8px; cursor:ew-resize; }
+  .menu-panel.right .resize-handle { left:0; top:0; bottom:0; width:8px; cursor:ew-resize; }
+  .menu-panel.top .resize-handle   { left:0; right:0; bottom:0; height:8px; cursor:ns-resize; }
+  .menu-panel.bottom .resize-handle{ left:0; right:0; top:0; height:8px; cursor:ns-resize; }
+
+  .menu-content { flex:1; overflow:auto; padding:20px; display:flex; flex-direction:column; gap:18px; }
+
+  /* Sections and headers larger and spaced */
+  .menu-section { display:flex; flex-direction:column; gap:10px; }
+  .menu-section + .menu-section { margin-top:16px; padding-top:16px; border-top:2px solid var(--surface-alt); }
+
+  .menu-label {
+    font-size: clamp(14px, calc(16px * var(--menu-font-scale, 1)), 20px);
+    font-weight:800; color:var(--text-muted); letter-spacing:0.5px; text-transform:uppercase;
+    display:flex; gap:12px; align-items:center; justify-content:space-between;
+  }
+
+  .label-actions { display:flex; gap:10px; align-items:center; }
+
+  .file-list { display:flex; flex-direction:column; gap:10px; }
+  .menu-panel.top .file-list, .menu-panel.bottom .file-list { display:flex; flex-direction:row; gap:12px; align-items:center; overflow-x:auto; -webkit-overflow-scrolling:touch; padding:8px 10px; width:100%; height:100%; }
+
+  .compact-row { display:none; gap:10px; align-items:center; justify-content:center; width:100%; }
+  .menu-panel.top .compact-row, .menu-panel.bottom .compact-row { display:flex; padding:6px 10px; }
+  .compact-row label { font-size: clamp(13px, calc(14px * var(--menu-font-scale,1)), 16px); }
+  select.compact-select { padding:8px 10px; border-radius:8px; border:1.5px solid var(--border); min-width:220px; font-weight:600; color:var(--text-muted); background:var(--se-white); font-size: clamp(13px, calc(14px * var(--menu-font-scale,1)), 16px); }
+
+  .file-item { background:var(--surface); border:2px solid var(--border); border-radius:10px; padding:12px 14px;
+    font-size: clamp(14px, calc(15px * var(--menu-font-scale,1)), 18px); font-weight:600; color:var(--text); cursor:pointer;
+    display:flex; align-items:center; gap:8px; overflow:hidden; transition:all .12s;
+  }
+  .menu-panel.top .file-item, .menu-panel.bottom .file-item { min-width:220px; flex:0 0 auto; padding:18px; text-align:center; white-space:normal; font-size: clamp(15px, calc(16px * var(--menu-font-scale,1)), 20px); }
+  .file-item:hover { background:var(--surface-alt); border-color:var(--se-life-green); transform:translateY(-1px); }
+  .file-item.selected { background:linear-gradient(135deg,var(--se-life-green) 0%,#2ea649 100%); color:var(--se-white); border-color:var(--se-life-green); box-shadow:0 4px 6px rgba(61,205,88,0.18); }
+  .file-item.dragging { opacity:.4; cursor:grabbing!important; }
+
+  .file-item-name { flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .menu-panel.top .file-item .file-item-name, .menu-panel.bottom .file-item .file-item-name { white-space:normal; overflow:visible; }
+
+  /* FEATURE 1: Video duration display */
+  .file-item-duration { font-size:12px; color:var(--text-muted); font-weight:700; margin-left:auto; padding-left:8px; }
+  .file-item.selected .file-item-duration { color:rgba(255,255,255,0.9); }
+
+  /* FEATURE 2: Search bars */
+  .search-container { display:flex; gap:8px; margin-bottom:10px; }
+  .search-input {
+    flex:1; padding:8px 12px; border:1.5px solid var(--border);
+    border-radius:8px; font-size:14px; font-weight:600;
+    color:var(--text); background:var(--se-white);
+  }
+  .search-input:focus { outline:2px solid var(--focus); outline-offset:2px; border-color:var(--focus); }
+  .file-item.hidden { display:none; }
+
+  .helper-text { font-size:calc(11px * var(--menu-font-scale,1)); color:var(--text-muted); margin-top:8px; font-weight:500; }
+  .menu-footer { border-top:1px solid var(--border); padding:12px 16px; background:var(--surface-alt); display:flex; gap:10px; align-items:center; justify-content:center; flex-wrap:wrap; }
+
+  /* Icon-only buttons: responsive */
+  .icon-btn {
+    width: clamp(32px, calc(36px * var(--menu-font-scale,1)), 44px);
+    height: clamp(32px, calc(36px * var(--menu-font-scale,1)), 44px);
+    border-radius:9999px;
+    border:1.5px solid var(--border);
+    background:var(--se-white); cursor:pointer;
+    display:inline-flex; align-items:center; justify-content:center;
+    transition:border-color .15s, background .15s, box-shadow .15s, color .15s;
+    color:var(--text-muted);
+    flex: 0 0 auto;
+  }
+  .icon-btn:hover { border-color:var(--se-life-green); background:var(--surface-alt); }
+  .icon-btn:focus { outline:2px solid var(--focus); outline-offset:2px; }
+  .icon-btn.active { color: var(--se-life-green); border-color: var(--se-life-green); background: var(--surface); }
+  .icon-btn svg { width: clamp(16px, calc(18px * var(--menu-font-scale,1)), 22px); height: clamp(16px, calc(18px * var(--menu-font-scale,1)), 22px); display:block; }
+  .icon-btn svg use { fill: currentColor; }
+  .icon-btn[disabled] { opacity:.5; cursor:not-allowed; }
+
+  /* main content */
+  /* FEATURE 6: Adjust main content when menu hidden */
+  .main-content { position:fixed; background:var(--se-black); display:flex; align-items:center; justify-content:center; overflow:hidden; transition:all 0.3s ease; }
+  .main-content.left { top:0; left:340px; width:calc(100vw - 340px); height:100vh; }
+  .main-content.right { top:0; right:340px; width:calc(100vw - 340px); height:100vh; }
+  .main-content.top { top:100px; left:0; width:100vw; height:calc(100vh - 100px); }
+  .main-content.bottom { top:0; left:0; width:100vw; height:calc(100vh - 100px); }
+  .main-content.menu-hidden.left { left:0; width:100vw; }
+  .main-content.menu-hidden.right { right:0; width:100vw; }
+  .main-content.menu-hidden.top { top:0; height:100vh; }
+  .main-content.menu-hidden.bottom { bottom:0; height:100vh; }
+
+  .video-container { position:relative; width:100%; height:100%; display:flex; align-items:center; justify-content:center; }
+  .video-container video { max-width:100%; max-height:100%; object-fit:contain; }
+
+  /* Video topbar */
+  .video-topbar {
+    position:absolute; top:12px; left:12px; right:auto;
+    display:flex; gap:8px; align-items:center;
+    background:rgba(0,0,0,0.35);
+    padding:6px; border-radius:9999px;
+  }
+  .video-topbar .icon-btn { width:40px; height:40px; }
+  .video-topbar .icon-btn svg { width:20px; height:20px; }
+
+  .presentation-container { display:none; width:100%; height:100%; flex-direction:column; background:#111827; color:var(--se-white); }
+  .presentation-controls { display:flex; gap:12px; padding:12px; justify-content:center; align-items:center; background:rgba(255,255,255,0.02); }
+  .presentation-controls button { padding:8px 12px; background:var(--se-life-green); border:none; color:var(--se-white); border-radius:8px; cursor:pointer; font-weight:700; }
+  #pdfCanvas { flex:1; width:100%; background:var(--se-white); }
+
+  /* Modals */
+  .modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.6); display:none; align-items:center; justify-content:center; z-index:1000; }
+  .modal-overlay.show { display:flex; }
+  .modal-dialog { width:min(1020px,92vw); max-height:90vh; background:var(--se-white); border-radius:16px; overflow:hidden; display:flex; flex-direction:column; box-shadow:0 30px 60px rgba(0,0,0,0.3); }
+  .modal-header { position:relative; padding:16px 20px; background:var(--se-white); border-bottom:1px solid var(--border); display:flex; align-items:center; justify-content:space-between; }
+  .modal-header::before{ content:""; position:absolute; left:0; right:0; top:0; height:4px; background:var(--se-life-green); }
+  .modal-title { display:flex; align-items:center; gap:10px; font-weight:800; color:var(--se-life-green); }
+  .modal-title svg { width:20px; height:20px; color:var(--se-life-green); }
+  .modal-close { background:transparent; border:none; font-size:22px; line-height:1; cursor:pointer; color:var(--se-dark-gray); font-weight:800; }
+  .modal-close:focus { outline:2px solid var(--focus); outline-offset:2px; }
+  .modal-body { padding:20px; overflow:auto; display:grid; grid-template-columns:1fr 1fr; gap:20px; }
+  .modal-section { border:1.5px solid var(--border); border-radius:12px; padding:14px; background:var(--se-white); box-shadow:0 8px 18px rgba(0,0,0,0.04); }
+  .section-title { display:flex; align-items:center; gap:10px; font-weight:800; color:var(--se-dark-gray); margin-bottom:10px; }
+  .section-title svg { width:18px; height:18px; color:var(--se-life-green); }
+
+  .file-picker { padding:10px 14px; background:var(--se-life-green); color:var(--se-white); border:none; border-radius:10px; cursor:pointer; font-weight:800; display:inline-flex; align-items:center; gap:8px; }
+  .file-picker:focus { outline:2px solid var(--focus); outline-offset:2px; }
+  .file-picker svg { width:16px; height:16px; color:currentColor; }
+
+  .inline-control { display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
+  .sort-select { padding:8px 12px; border:1.5px solid var(--border); border-radius:10px; background:var(--se-white); font-size:13px; font-weight:700; cursor:pointer; color:var(--se-dark-gray); }
+  .sort-select:focus { outline:2px solid var(--focus); outline-offset:2px; }
+
+  .mini-list { display:flex; flex-direction:column; gap:8px; max-height:240px; overflow:auto; margin-top:12px; }
+  .mini-item { display:flex; align-items:center; justify-content:space-between; padding:10px 12px; border:1.5px solid var(--border); border-radius:10px; background:var(--se-white); cursor:grab; }
+  .mini-item.dragging { opacity:.5; cursor:grabbing; }
+  .mini-item .item-name { flex:1; padding:2px 6px; outline:none; border-radius:6px; color:var(--text); }
+  .mini-item .item-name:focus { outline:2px solid var(--focus); }
+  .mini-remove { padding:6px 8px; cursor:pointer; color:var(--se-dark-gray); border-radius:8px; font-weight:800; }
+  .mini-remove:hover { background:var(--surface-alt); color:var(--se-dark-gray); }
+
+  /* Meeting Mode: Agenda in Settings */
+  .agenda-builder { display:flex; flex-direction:column; gap:10px; }
+  /* FEATURE 4 & 5: Duration input and Subtitle support */
+  .agenda-row { display:grid; grid-template-columns:40px 1fr 140px 140px 100px 40px; gap:8px; align-items:center; }
+  .agenda-row input[type="text"], .agenda-row input[type="time"], .agenda-row input[type="number"] {
+    padding:8px 10px; border:1.5px solid var(--border); border-radius:8px; font-weight:600; color:var(--text);
+  }
+  .agenda-row .subtitle-input {
+    grid-column: 2 / 3;
+    font-size:13px;
+    font-style:italic;
+    margin-top:4px;
+  }
+  .agenda-row .del-slot { text-align:center; cursor:pointer; color:var(--text-muted); border:1.5px solid var(--border); border-radius:8px; padding:6px 0; }
+  .agenda-row .del-slot:hover { background:var(--surface-alt); }
+  .add-slot-row { display:flex; gap:8px; flex-wrap:wrap; align-items:center; }
+  .add-quick { padding:8px 12px; border:1.5px solid var(--border); background:var(--se-white); border-radius:8px; cursor:pointer; font-weight:800; color:var(--text-muted); }
+  .add-quick:hover { background:var(--surface-alt); }
+  .grip { user-select:none; cursor:grab; text-align:center; color:var(--text-muted); font-weight:800; }
+
+  /* Meeting Mode: Agenda in Menu */
+  .agenda-panel { display:flex; flex-direction:column; gap:10px; }
+  .gmt-clock { display:flex; align-items:center; justify-content:space-between; background:var(--surface-alt); border:1.5px solid var(--border); border-radius:10px; padding:10px 12px; font-weight:800; color:var(--text-muted); }
+  .agenda-slot {
+    border:2px solid var(--border);
+    border-radius:10px;
+    padding:10px;
+    background:var(--surface);
+  }
+  .agenda-slot.active { border-color: var(--agenda-accent); box-shadow:0 4px 8px rgba(61,205,88,0.12); }
+  .slot-header { display:flex; align-items:center; justify-content:space-between; gap:8px; flex-wrap:wrap; }
+  .slot-title { font-weight:800; color:var(--text); }
+  /* FEATURE 5: Subtitle display */
+  .slot-subtitle { font-size:12px; font-style:italic; color:var(--text-muted); margin-top:2px; width:100%; }
+  .slot-time { font-weight:700; color:var(--text-muted); }
+  .slot-badge { padding:2px 8px; border-radius:9999px; background:var(--agenda-accent); color:var(--se-white); font-size:12px; font-weight:800; }
+  .slot-progress { margin-top:8px; width:100%; height:8px; background:var(--agenda-progress-bg); border-radius:9999px; overflow:hidden; }
+  .slot-progress > div { height:100%; background:var(--agenda-accent); width:0%; transition:width .3s; }
+  .slot-items { margin-top:8px; display:flex; flex-direction:column; gap:8px; min-height:34px; border:1.5px dashed var(--border); border-radius:8px; padding:8px; }
+  .slot-items.drag-over { background:var(--surface-alt); border-color:var(--agenda-accent); }
+
+  .slot-item { display:flex; align-items:center; gap:8px; background:var(--surface); border:1.5px solid var(--border); border-radius:8px; padding:8px; cursor:grab; }
+  .slot-item .si-name { font-weight:700; color:var(--text); flex:1; cursor:pointer; }
+  .slot-item .si-type { font-size:12px; color:var(--text-muted); font-weight:800; }
+  .slot-item .si-x { width:22px; height:22px; border-radius:6px; border:1.5px solid var(--border); color:var(--text-muted); background:var(--se-white); cursor:pointer; display:flex; align-items:center; justify-content:center; font-weight:900; line-height:1; }
+  .slot-item .si-x:hover { background:var(--surface-alt); }
+  .slot-item.dragging { opacity:.6; }
+
+  .toast { position:fixed; top:16px; left:50%; transform:translateX(-50%) translateY(-16px); background:var(--se-life-green); color:var(--se-white); padding:10px 14px; border-radius:10px; box-shadow:0 10px 25px rgba(0,0,0,.15); opacity:0; pointer-events:none; transition:opacity .25s, transform .25s; z-index:3000; font-weight:700; }
+  .toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
+
+  @media (max-width:768px) { .modal-body{ grid-template-columns:1fr } }
+</style>
 </head>
 <body>
-<h1>Beta HTML - Implementation in Progress</h1>
-<p>The complete file will include all 6 requested features.</p>
+  <!-- Inline fallback Quartz-like icon sprite -->
+  <svg xmlns="http://www.w3.org/2000/svg" style="position:absolute;width:0;height:0;overflow:hidden" aria-hidden="true">
+    <symbol id="repeat" viewBox="0 0 24 24">
+      <path d="M17 2l3 3-3 3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M3 5h14a4 4 0 0 1 4 4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+      <path d="M7 22l-3-3 3-3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M21 19H7a4 4 0 0 1-4-4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+    </symbol>
+    <symbol id="repeat-1" viewBox="0 0 24 24">
+      <use href="#repeat"></use>
+      <text x="12" y="14" font-size="8" text-anchor="middle" fill="currentColor">1</text>
+    </symbol>
+    <symbol id="maximize" viewBox="0 0 24 24">
+      <path d="M9 3H5a2 2 0 0 0-2 2v4M21 9V5a2 2 0 0 0-2-2h-4M3 15v4a2 2 0 0 0 2 2h4M21 15v4a2 2 0 0 1-2 2h-4" fill="none" stroke="currentColor" stroke-width="2"/>
+    </symbol>
+    <symbol id="minimize" viewBox="0 0 24 24">
+      <path d="M9 9H5v4M15 9h4v4M9 15H5v4M19 15h-4v4" fill="none" stroke="currentColor" stroke-width="2"/>
+    </symbol>
+    <symbol id="settings" viewBox="0 0 24 24">
+      <path d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z" fill="none" stroke="currentColor" stroke-width="2"/>
+      <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 8 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 3.4 15a1.65 1.65 0 0 0-1.51-1H1a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 3.4 8a1.65 1.65 0 0 0-.33-1.82l-.06-.06A2 2 0 1 1 5.84 3.3l.06.06A1.65 1.65 0 0 0 8 3.6a1.65 1.65 0 0 0 1-1.51V1a2 2 0 1 1 4 0v.09A1.65 1.65 0 0 0 16 3.4a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 8c.36.54.56 1.18.56 1.84 0 .66-.2 1.3-.56 1.84Z" fill="none" stroke="currentColor" stroke-width="2"/>
+    </symbol>
+    <symbol id="chevron-left" viewBox="0 0 24 24">
+      <path d="M15 18l-6-6 6-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+    </symbol>
+    <symbol id="plus" viewBox="0 0 24 24">
+      <path d="M12 5v14M5 12h14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+    </symbol>
+    <symbol id="list" viewBox="0 0 24 24">
+      <path d="M3 6h13M3 12h9M3 18h5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+    </symbol>
+    <symbol id="film" viewBox="0 0 24 24">
+      <rect x="3" y="5" width="18" height="14" rx="2" fill="none" stroke="currentColor" stroke-width="2"/>
+      <path d="M7 10h10M7 14h6" fill="none" stroke="currentColor" stroke-width="2"/>
+    </symbol>
+    <symbol id="file" viewBox="0 0 24 24">
+      <rect x="3" y="4" width="18" height="16" rx="2" fill="none" stroke="currentColor" stroke-width="2"/>
+      <path d="M7 8h10M7 12h10M7 16h6" fill="none" stroke="currentColor" stroke-width="2"/>
+    </symbol>
+    <symbol id="play" viewBox="0 0 24 24">
+      <path d="M8 5v14l11-7z" fill="currentColor"/>
+    </symbol>
+    <symbol id="layout-left" viewBox="0 0 24 24">
+      <rect x="3" y="4" width="6" height="16" fill="currentColor"/>
+      <rect x="9" y="4" width="12" height="16" fill="currentColor" opacity=".35"/>
+    </symbol>
+    <symbol id="layout-top" viewBox="0 0 24 24">
+      <rect x="3" y="4" width="18" height="6" fill="currentColor"/>
+      <rect x="3" y="10" width="18" height="10" fill="currentColor" opacity=".35"/>
+    </symbol>
+    <symbol id="layout-right" viewBox="0 0 24 24">
+      <rect x="15" y="4" width="6" height="16" fill="currentColor"/>
+      <rect x="3" y="4" width="12" height="16" fill="currentColor" opacity=".35"/>
+    </symbol>
+    <symbol id="layout-bottom" viewBox="0 0 24 24">
+      <rect x="3" y="16" width="18" height="4" fill="currentColor"/>
+      <rect x="3" y="4" width="18" height="12" fill="currentColor" opacity=".35"/>
+    </symbol>
+    <symbol id="menu" viewBox="0 0 24 24">
+      <line x1="3" y1="12" x2="21" y2="12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+      <line x1="3" y1="6" x2="21" y2="6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+      <line x1="3" y1="18" x2="21" y2="18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+    </symbol>
+    <symbol id="search" viewBox="0 0 24 24">
+      <circle cx="11" cy="11" r="8" fill="none" stroke="currentColor" stroke-width="2"/>
+      <path d="M21 21l-4.35-4.35" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+    </symbol>
+  </svg>
+
+  <!-- Skip link -->
+  <a href="#mainContent" class="skip-link">Skip to main content</a>
+
+  <!-- FEATURE 6: Menu toggle button -->
+  <button class="menu-toggle-btn left" id="menuToggleBtn" title="Toggle Menu" aria-label="Toggle menu visibility">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><use href="#menu"></use></svg>
+  </button>
+
+  <div id="app">
+    <div class="menu-panel left" id="menuPanel">
+      <div class="logo-header" id="logoHeader">
+        <img src="https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/690c69865326fb0651506b4f/72916fdb4_logo.png" alt="Schneider Electric">
+      </div>
+
+      <div class="resize-handle" id="resizeHandle"></div>
+
+      <div class="menu-content">
+        <!-- Meeting mode: clock and Agenda -->
+        <div class="menu-section" id="agendaSection" style="display:none">
+          <div class="menu-label">
+            <span>Agenda</span>
+          </div>
+          <div class="gmt-clock">
+            <span id="tzLabel">Current time (CET)</span>
+            <span id="gmtClockValue">--:--:--</span>
+          </div>
+          <div class="agenda-panel" id="agendaPanel"></div>
+          <div class="helper-text">Drag videos or presentations into a slot. Click an item to open it. Use the small × to remove.</div>
+        </div>
+
+        <div class="menu-section" id="videosSection">
+          <div class="menu-label">
+            <span id="videoLabel">Videos</span>
+            <span class="label-actions">
+              <button class="icon-btn" id="loopModeBtn" title="Loop mode: Single video" aria-label="Toggle loop mode">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><use href="#repeat-1"></use></svg>
+              </button>
+              <button class="icon-btn fullscreen-btn" id="fullscreenBtn" title="Enter Fullscreen" aria-label="Toggle fullscreen">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><use href="#maximize"></use></svg>
+              </button>
+            </span>
+          </div>
+
+          <!-- FEATURE 2: Search bar for videos -->
+          <div class="search-container">
+            <input type="text" id="videoSearchInput" class="search-input" placeholder="Search videos..." aria-label="Search videos">
+          </div>
+
+          <div class="compact-row" id="videoCompactRow">
+            <label style="font-weight:700;color:var(--text-muted)">Current video</label>
+            <select id="videoSelectCompact" class="compact-select"></select>
+          </div>
+
+          <div class="file-list" id="videoList"></div>
+          <div class="helper-text" id="videoHelperText">No videos loaded. Add videos in Settings.</div>
+        </div>
+
+        <div class="menu-section" id="presentationsSection">
+          <div class="menu-label">
+            <span id="presentationLabel">Presentations</span>
+          </div>
+
+          <!-- FEATURE 2: Search bar for presentations -->
+          <div class="search-container">
+            <input type="text" id="presentationSearchInput" class="search-input" placeholder="Search presentations..." aria-label="Search presentations">
+          </div>
+
+          <div class="compact-row" id="presentationCompactRow">
+            <label style="font-weight:700;color:var(--text-muted)">Current presentation</label>
+            <select id="presentationSelectCompact" class="compact-select"></select>
+          </div>
+
+          <div class="file-list" id="presentationList"></div>
+          <div class="helper-text" id="presentationHelperText">No presentations loaded. Add PDFs in Settings.</div>
+        </div>
+      </div>
+
+      <div class="menu-footer">
+        <button class="icon-btn" id="settingsBtn" title="Settings" aria-label="Settings">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><use href="#settings"></use></svg>
+        </button>
+        <button class="icon-btn fullscreen-btn" id="fullscreenBtnFooter" title="Enter Fullscreen" aria-label="Toggle fullscreen">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><use href="#maximize"></use></svg>
+        </button>
+      </div>
+    </div>
+
+    <div class="main-content left" id="mainContent">
+      <div class="video-container" id="videoContainer" style="display:none">
+        <div class="video-topbar" id="videoTopBar" style="display:none">
+          <button class="icon-btn" id="backToPresentationBtn" title="Back to Presentation" aria-label="Back to Presentation">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><use href="#chevron-left"></use></svg>
+          </button>
+        </div>
+        <video id="videoPlayer" controls></video>
+      </div>
+
+      <div class="presentation-container" id="presentationContainer">
+        <div class="presentation-controls">
+          <button id="prevPageBtn">← Prev</button>
+          <span id="pageInfo">Page</span>
+          <button id="nextPageBtn">Next →</button>
+          <button id="backToVideoBtn" style="margin-left:20px;background:var(--se-white);color:var(--text);padding:8px 12px;border-radius:8px;font-weight:700;border:2px solid var(--border)">Back to Video</button>
+          <button id="fullscreenBtnPres" class="icon-btn fullscreen-btn" title="Enter Fullscreen" aria-label="Toggle fullscreen">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><use href="#maximize"></use></svg>
+          </button>
+        </div>
+        <canvas id="pdfCanvas"></canvas>
+      </div>
+
+      <div class="empty-state" id="emptyState" style="display:flex">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:64px;height:64px;margin-bottom:12px;opacity:.5" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+        <div style="text-align:center;color:white;padding:8px">
+          <h3 style="margin-bottom:6px">No media selected</h3>
+          <p style="color:#d1d5db">Please add videos or PDFs in Settings</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Settings modal -->
+    <div class="modal-overlay" id="modalOverlay" aria-hidden="true">
+      <div class="modal-dialog" role="dialog" aria-labelledby="settingsTitle" aria-modal="true">
+        <div class="modal-header">
+          <div class="modal-title" id="settingsTitle" style="display:flex;align-items:center;gap:10px">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><use href="#settings"></use></svg>
+            <span>Settings</span>
+          </div>
+          <button class="modal-close" id="modalClose" title="Close" aria-label="Close settings">×</button>
+        </div>
+        <div class="modal-body">
+          <!-- Mode + Time zone -->
+          <div class="modal-section">
+            <div class="section-title" style="display:flex;align-items:center;gap:10px">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><use href="#layout-left"></use></svg>
+              <span>Mode</span>
+            </div>
+            <div class="inline-control" role="group" aria-label="Application mode">
+              <label style="display:flex;align-items:center;gap:8px;font-weight:700;color:var(--text)">
+                <input type="radio" name="appMode" value="presentation" id="modePresentation"> Presentation mode
+              </label>
+              <label style="display:flex;align-items:center;gap:8px;font-weight:700;color:var(--text)">
+                <input type="radio" name="appMode" value="meeting" id="modeMeeting"> Meeting mode
+              </label>
+            </div>
+            <div class="helper-text">Presentation: behaves like today. Meeting: fixed left menu with agenda slots and live time tracking.</div>
+
+            <div class="section-title" style="margin-top:14px;display:flex;align-items:center;gap:10px">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><use href="#list"></use></svg>
+              <span>Meeting Agenda</span>
+            </div>
+
+            <!-- New: Time Zone selector -->
+            <div class="inline-control" style="gap:8px;margin-bottom:8px">
+              <label for="timeZoneSelect" style="font-weight:800;color:var(--text-muted)">Time zone</label>
+              <select id="timeZoneSelect" class="sort-select" title="Agenda time zone">
+                <option value="Europe/Paris">CET/CEST (Europe/Paris)</option>
+                <option value="UTC">UTC</option>
+                <option value="Europe/London">Europe/London</option>
+                <option value="America/New_York">America/New_York</option>
+                <option value="America/Los_Angeles">America/Los_Angeles</option>
+                <option value="Asia/Dubai">Asia/Dubai</option>
+                <option value="Asia/Tokyo">Asia/Tokyo</option>
+                <option value="Australia/Sydney">Australia/Sydney</option>
+              </select>
+            </div>
+
+            <div class="agenda-builder" id="agendaBuilder">
+              <!-- header row -->
+              <div class="agenda-row" style="font-weight:800;color:var(--text-muted);grid-template-columns:40px 1fr 140px 140px 100px 40px">
+                <div></div><div>Title</div><div>Start (HH:MM)</div><div>End (HH:MM)</div><div>Duration (min)</div><div></div>
+              </div>
+              <div id="agendaRows"></div>
+              <div class="add-slot-row">
+                <button class="add-quick" id="addSlot15Btn" type="button">+ 15 min</button>
+                <button class="add-quick" id="addSlot30Btn" type="button">+ 30 min</button>
+                <button class="add-quick" id="addSlot60Btn" type="button">+ 1 hour</button>
+              </div>
+              <div class="helper-text">
+                Drag rows (⋮⋮) to reorder. The moved slot takes the time of the position it moves into (e.g., moving to slot #2 takes slot #2's time). Only the first slot's Start is editable. Changing any End re-chains the following starts.
+              </div>
+            </div>
+          </div>
+
+          <!-- Videos -->
+          <div class="modal-section">
+            <div class="section-title" style="display:flex;align-items:center;gap:10px">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><use href="#film"></use></svg>
+              <span>Videos</span>
+            </div>
+            <div class="inline-control">
+              <button class="file-picker" id="videoAddBtn" title="Add Videos" style="display:inline-flex;align-items:center;gap:8px">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><use href="#plus"></use></svg>
+                Add Videos
+              </button>
+              <label for="videoSortSelectModal" class="helper-text" style="margin:0;display:inline-flex;align-items:center;gap:6px">
+                <svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true"><use href="#list"></use></svg>
+                Sort
+              </label>
+              <select id="videoSortSelectModal" class="sort-select" title="Sort videos">
+                <option value="custom">Custom (Manual)</option>
+                <option value="nameAsc">Name A–Z</option>
+                <option value="nameDesc">Name Z–A</option>
+                <option value="naturalAsc">Numeric 0–9</option>
+                <option value="naturalDesc">Numeric 9–0</option>
+                <option value="addedDesc">Recently Added</option>
+                <option value="addedAsc">Oldest Added</option>
+              </select>
+            </div>
+            <input id="videoInputAdd" type="file" accept="video/*" multiple style="display:none" aria-hidden="true">
+            <div class="mini-list" id="modalVideoList"></div>
+            <div class="helper-text">Click name to rename, drag to reorder</div>
+          </div>
+
+          <!-- Presentations -->
+          <div class="modal-section">
+            <div class="section-title" style="display:flex;align-items:center;gap:10px">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><use href="#file"></use></svg>
+              <span>Presentations</span>
+            </div>
+            <div class="inline-control">
+              <button class="file-picker" id="presentationAddBtn" title="Add Presentations (.pdf)" style="display:inline-flex;align-items:center;gap:8px">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><use href="#plus"></use></svg>
+                Add Presentations (.pdf)
+              </button>
+              <label for="presSortSelectModal" class="helper-text" style="margin:0;display:inline-flex;align-items:center;gap:6px">
+                <svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true"><use href="#list"></use></svg>
+                Sort
+              </label>
+              <select id="presSortSelectModal" class="sort-select" title="Sort presentations">
+                <option value="custom">Custom (Manual)</option>
+                <option value="nameAsc">Name A–Z</option>
+                <option value="nameDesc">Name Z–A</option>
+                <option value="naturalAsc">Numeric 0–9</option>
+                <option value="naturalDesc">Numeric 9–0</option>
+                <option value="addedDesc">Recently Added</option>
+                <option value="addedAsc">Oldest Added</option>
+              </select>
+            </div>
+            <input id="presentationInputAdd" type="file" accept=".pdf" multiple style="display:none" aria-hidden="true">
+            <div class="mini-list" id="modalPresentationList"></div>
+            <div class="helper-text">Click name to rename, drag to reorder</div>
+          </div>
+
+          <!-- Playback + Position -->
+          <div class="modal-section">
+            <div class="section-title" style="display:flex;align-items:center;gap:10px">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><use href="#play"></use></svg>
+              <span>Playback</span>
+            </div>
+            <div style="display:flex;gap:12px;align-items:center">
+              <div class="toggle-wrap" id="loopToggle" role="button" aria-pressed="true" title="Toggle loop" tabindex="0" style="display:flex;gap:10px;align-items:center;cursor:pointer">
+                <div id="loopSwitch" style="width:38px;height:22px;border-radius:22px;background:var(--se-life-green);position:relative;transition:background .2s">
+                  <div style="position:absolute;top:3px;left:3px;width:16px;height:16px;border-radius:50%;background:var(--se-white);transition:left .2s" id="loopSwitchKnob"></div>
+                </div>
+                <span id="loopLabel" style="color:var(--text-muted);font-weight:700">Loop: On</span>
+              </div>
+            </div>
+
+            <div class="section-title" style="margin-top:14px;display:flex;align-items:center;gap:10px">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><use href="#layout-left"></use></svg>
+              <span>Menu Position</span>
+            </div>
+            <div class="position-buttons" id="positionButtons" style="display:flex;gap:8px;flex-wrap:wrap">
+              <button class="icon-btn position-btn active" data-position="left" aria-pressed="true" title="Left"><svg viewBox="0 0 24 24"><use href="#layout-left"></use></svg></button>
+              <button class="icon-btn position-btn" data-position="top" aria-pressed="false" title="Top"><svg viewBox="0 0 24 24"><use href="#layout-top"></use></svg></button>
+              <button class="icon-btn position-btn" data-position="right" aria-pressed="false" title="Right"><svg viewBox="0 0 24 24"><use href="#layout-right"></use></svg></button>
+              <button class="icon-btn position-btn" data-position="bottom" aria-pressed="false" title="Bottom"><svg viewBox="0 0 24 24"><use href="#layout-bottom"></use></svg></button>
+            </div>
+            <div class="helper-text" id="positionHelper">Use these buttons to change menu position.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Toast container -->
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+<script>
+(function(){
+  'use strict';
+
+  const ICON_SPRITE_URL = ''; // optional external sprite
+
+  function tryAttachQuartzSprite(){
+    if (!ICON_SPRITE_URL) return;
+    document.querySelectorAll('svg use[href^="#"]').forEach(use=>{
+      const id = use.getAttribute('href'); if (!id) return;
+      use.setAttribute('href', ICON_SPRITE_URL + id);
+    });
+  }
+
+  if (window.pdfjsLib) {
+    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+  }
+
+  const DEFAULT_MENU_WIDTH = 340;
+  const DEFAULT_MENU_HEIGHT = 100;
+  const STORAGE_KEY = 'smo_v6_state';
+  const ONBOARDED_KEY = 'smo_v6_onboarded';
+
+  const MIN_SLOT_MINUTES = 15;
+
+  // State
+  let menuPos = 'left';
+  let appMode = 'presentation'; // 'presentation' | 'meeting'
+  // New: Time zone (default CET/Europe-Paris)
+  let timeZone = 'Europe/Paris';
+  // FEATURE 6: Menu visibility state
+  let menuVisible = true;
+
+  let videoFiles = [];        // { file, _id, _customName, _addedAt, _duration }
+  let presentationFiles = []; // { file, _id, _customName, _currentPage, _arrayBuffer, _addedAt }
+  let currentVideoIndex = -1;
+  let currentVideoUrl = null;
+
+  // Meeting agenda
+  // slots: [{id,title,subtitle,start:"HH:MM",end:"HH:MM", items:[{id,type:'video'|'pdf'}]}]
+  let agendaSlots = [];
+
+  // Loop settings
+  let loopMode = true;
+  let loopModeType = 'single'; // 'single' | 'playlist'
+
+  let presentationIndex = -1;
+  let activeView = null; // 'video' | 'presentation' | null
+  let pdfDoc = null;
+  let currentPage = 1;
+  let pdfLoadToken = 0;
+
+  // Sort modes
+  let sortModeVideos = 'custom';
+  let sortModePresentations = 'custom';
+
+  // DOM refs
+  const menuPanel = document.getElementById('menuPanel');
+  const mainContent = document.getElementById('mainContent');
+
+  const videoList = document.getElementById('videoList');
+  const presentationList = document.getElementById('presentationList');
+  const videoContainer = document.getElementById('videoContainer');
+  const presentationContainer = document.getElementById('presentationContainer');
+  const emptyState = document.getElementById('emptyState');
+  const videoPlayer = document.getElementById('videoPlayer');
+
+  const loopModeBtn = document.getElementById('loopModeBtn');
+  const fullscreenBtns = Array.from(document.querySelectorAll('.fullscreen-btn'));
+
+  const settingsBtn = document.getElementById('settingsBtn');
+  const modalOverlay = document.getElementById('modalOverlay');
+  const modalClose = document.getElementById('modalClose');
+
+  // Mode controls in settings
+  const modePresentation = document.getElementById('modePresentation');
+  const modeMeeting = document.getElementById('modeMeeting');
+  const positionButtonsWrap = document.getElementById('positionButtons');
+  const positionHelper = document.getElementById('positionHelper');
+
+  // Time zone controls
+  const timeZoneSelect = document.getElementById('timeZoneSelect');
+  const tzLabel = document.getElementById('tzLabel');
+
+  // Agenda (settings)
+  const agendaRows = document.getElementById('agendaRows');
+  const addSlot15Btn = document.getElementById('addSlot15Btn');
+  const addSlot30Btn = document.getElementById('addSlot30Btn');
+  const addSlot60Btn = document.getElementById('addSlot60Btn');
+
+  // Agenda (menu)
+  const agendaSection = document.getElementById('agendaSection');
+  const agendaPanel = document.getElementById('agendaPanel');
+  const gmtClockValue = document.getElementById('gmtClockValue');
+
+  // Modal / inputs
+  const videoAddBtn = document.getElementById('videoAddBtn');
+  const videoInputAdd = document.getElementById('videoInputAdd');
+  const modalVideoList = document.getElementById('modalVideoList');
+
+  const presentationAddBtn = document.getElementById('presentationAddBtn');
+  const presentationInputAdd = document.getElementById('presentationInputAdd');
+  const modalPresentationList = document.getElementById('modalPresentationList');
+
+  // Sort selects (modal only)
+  const videoSortSelectModal = document.getElementById('videoSortSelectModal');
+  const presSortSelectModal = document.getElementById('presSortSelectModal');
+
+  // Loop (settings)
+  const loopToggle = document.getElementById('loopToggle');
+  const loopSwitch = document.getElementById('loopSwitch');
+  const loopSwitchKnob = document.getElementById('loopSwitchKnob');
+  const loopLabel = document.getElementById('loopLabel');
+
+  // Compact selects
+  const videoSelectCompact = document.getElementById('videoSelectCompact');
+  const presentationSelectCompact = document.getElementById('presentationSelectCompact');
+  const videoCompactRow = document.getElementById('videoCompactRow');
+  const presentationCompactRow = document.getElementById('presentationCompactRow');
+
+  // PDF
+  const pdfCanvas = document.getElementById('pdfCanvas');
+  const pdfCtx = pdfCanvas.getContext('2d');
+  const prevPageBtn = document.getElementById('prevPageBtn');
+  const nextPageBtn = document.getElementById('nextPageBtn');
+  const pageInfo = document.getElementById('pageInfo');
+  const backToVideoBtn = document.getElementById('backToVideoBtn');
+
+  // Video topbar
+  const backToPresentationBtn = document.getElementById('backToPresentationBtn');
+  const videoTopBar = document.getElementById('videoTopBar');
+
+  // FEATURE 6: Menu toggle
+  const menuToggleBtn = document.getElementById('menuToggleBtn');
+
+  // FEATURE 2: Search inputs
+  const videoSearchInput = document.getElementById('videoSearchInput');
+  const presentationSearchInput = document.getElementById('presentationSearchInput');
+
+  // Resize
+  const resizeHandle = document.getElementById('resizeHandle');
+  let resizing = false, start = 0, orig = 0;
+
+  // Toast
+  const toastEl = document.getElementById('toast');
+  let toastTimer = null;
+  function showToast(msg){
+    if (!toastEl) return;
+    toastEl.textContent = msg;
+    toastEl.classList.add('show');
+    if (toastTimer) clearTimeout(toastTimer);
+    toastTimer = setTimeout(()=> toastEl.classList.remove('show'), 2000);
+  }
+
+  // Helpers
+  let _idCounter = 1;
+  const makeId = () => 'f_' + Date.now().toString(36) + '_' + (_idCounter++);
+  const ensureId = m => { if (!m._id) m._id = makeId(); };
+  const clamp = (v,min,max) => Math.max(min, Math.min(max, v));
+  const baseName = f => f.replace(/\.[^/.]+$/,'');
+  const displayName = meta => (meta._customName || baseName(meta.file.name));
+  
+  // FEATURE 1: Format duration for display
+  const formatDuration = (seconds) => {
+    if (!seconds || isNaN(seconds)) return '';
+    const mins = Math.floor(seconds / 60);
+    const secs = Math.floor(seconds % 60);
+    if (mins > 0) {
+      return `${mins}:${String(secs).padStart(2, '0')}`;
+    }
+    return `0:${String(secs).padStart(2, '0')}`;
+  };
+
+  // FEATURE 1: Extract video duration
+  const getVideoDuration = (file) => {
+    return new Promise((resolve) => {
+      const video = document.createElement('video');
+      video.preload = 'metadata';
+      video.onloadedmetadata = () => {
+        window.URL.revokeObjectURL(video.src);
+        resolve(video.duration);
+      };
+      video.onerror = () => {
+        window.URL.revokeObjectURL(video.src);
+        resolve(null);
+      };
+      video.src = URL.createObjectURL(file);
+    });
+  };
+
+  const naturalCompare = (a,b)=>{
+    const ax=[], bx=[];
+    a.replace(/(\d+)|(\D+)/g,(_,n,s)=>ax.push([n||Infinity,s||'']));
+    b.replace(/(\d+)|(\D+)/g,(_,n,s)=>bx.push([n||Infinity,s||'']));
+    while(ax.length && bx.length){
+      const an=ax.shift(), bn=bx.shift();
+      const nn=(an[0]-bn[0]) || an[1].localeCompare(bn[1], undefined, { sensitivity:'base' });
+      if (nn) return nn;
+    }
+    return ax.length - bx.length;
+  };
+
+  const parseHHMM = (t)=> {
+    const m = /^([01]\d|2[0-3]):([0-5]\d)$/.exec((t||'').trim());
+    if (!m) return null;
+    return parseInt(m[1],10)*60 + parseInt(m[2],10);
+  };
+  const fmtHHMM = (mins)=>{
+    const h = Math.floor(mins/60)%24, m = mins%60;
+    return String(h).padStart(2,'0') + ':' + String(m).padStart(2,'0');
+  };
+  function roundDownTo5(mins){
+    return mins - (mins % 5);
+  }
+
+  // Time zone helpers
+  function tzNowHM(tz){
+    const d=new Date();
+    const fmt=new Intl.DateTimeFormat('en-GB',{hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false,timeZone:tz});
+    const parts=fmt.formatToParts(d);
+    const get=t=>parts.find(p=>p.type===t)?.value||'00';
+    return {h:+get('hour'), m:+get('minute'), s:+get('second')};
+  }
+  function getNowTZMinutes(){
+    const p = tzNowHM(timeZone);
+    return p.h*60 + p.m;
+  }
+  function zoneShortLabel(tz){
+    if (tz==='UTC') return 'UTC';
+    if (tz==='Europe/Paris') return 'CET'; // covers CET/CEST label
+    const map = {
+      'Europe/London':'UK',
+      'America/New_York':'ET',
+      'America/Los_Angeles':'PT',
+      'Asia/Dubai':'GST',
+      'Asia/Tokyo':'JST',
+      'Australia/Sydney':'AET'
+    };
+    return map[tz] || tz;
+  }
+
+  // Persistence
+  function saveState(){
+    try{
+      const state = {
+        menuPos,
+        appMode,
+        loopMode,
+        loopModeType,
+        sortModeVideos,
+        sortModePresentations,
+        timeZone, // new
+        videos: videoFiles.map(m => ({
+          name: m.file.name,
+          _customName: m._customName || null,
+          _id: m._id,
+          _addedAt: m._addedAt || Date.now()
+        })),
+        presentations: presentationFiles.map(p => ({
+          name: p.file.name,
+          _customName: p._customName || null,
+          _currentPage: p._currentPage || 1,
+          _id: p._id,
+          _addedAt: p._addedAt || Date.now()
+        })),
+        agendaSlots
+      };
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    }catch(e){}
+  }
+  function loadState(){
+    try{
+      const raw = localStorage.getItem(STORAGE_KEY);
+      return raw ? JSON.parse(raw) : null;
+    }catch(e){ return null; }
+  }
+  function buildSavedMap(){
+    const s = loadState(); if (!s) return {};
+    const map={};
+    (s.videos||[]).forEach(v=> map[v.name]=v);
+    (s.presentations||[]).forEach(p=> map[p.name]=Object.assign(map[p.name]||{}, p));
+    return map;
+  }
+
+  // Layout / font scaling
+  function applyMenuFontScale(){
+    try{
+      const rect = menuPanel.getBoundingClientRect();
+      let scale = 1;
+      if (menuPos==='left' || menuPos==='right') scale = clamp(rect.width/340, 0.75, 1.4);
+      else scale = clamp(rect.height/100, 0.8, 1.35);
+      menuPanel.style.setProperty('--menu-font-scale', scale.toFixed(3));
+    }catch(e){}
+  }
+  function resetMenuSizeForPosition(pos){
+    menuPanel.style.width=''; menuPanel.style.height='';
+    if (pos==='left' || pos==='right'){ menuPanel.style.width=DEFAULT_MENU_WIDTH+'px'; menuPanel.style.height='100vh'; }
+    else { menuPanel.style.height=DEFAULT_MENU_HEIGHT+'px'; menuPanel.style.width='100vw'; }
+    mainContent.style.left=''; mainContent.style.right=''; mainContent.style.top=''; mainContent.style.bottom='';
+    mainContent.style.width=''; mainContent.style.height='';
+  }
+  function setMenuPosition(pos){
+    resetMenuSizeForPosition(pos);
+    menuPos=pos;
+    ['left','right','top','bottom'].forEach(p=>{ menuPanel.classList.remove(p); mainContent.classList.remove(p); });
+    menuPanel.classList.add(pos); mainContent.classList.add(pos);
+
+    const mpRect = menuPanel.getBoundingClientRect();
+    if (pos==='left'){
+      mainContent.style.left = Math.round(mpRect.width)+'px';
+      mainContent.style.top='0';
+      mainContent.style.width = `calc(100vw - ${Math.round(mpRect.width)}px)`;
+      mainContent.style.height='100vh';
+      videoCompactRow.style.display='none'; presentationCompactRow.style.display='none';
+    } else if (pos==='right'){
+      mainContent.style.right = Math.round(mpRect.width)+'px';
+      mainContent.style.top='0';
+      mainContent.style.width = `calc(100vw - ${Math.round(mpRect.width)}px)`;
+      mainContent.style.height='100vh';
+      videoCompactRow.style.display='none'; presentationCompactRow.style.display='none';
+    } else if (pos==='top'){
+      mainContent.style.top = Math.round(mpRect.height)+'px';
+      mainContent.style.left='0';
+      mainContent.style.width='100vw';
+      mainContent.style.height = `calc(100vh - ${Math.round(mpRect.height)}px)`;
+      videoCompactRow.style.display='flex'; presentationCompactRow.style.display='flex';
+    } else {
+      mainContent.style.bottom = Math.round(mpRect.height)+'px';
+      mainContent.style.left='0';
+      mainContent.style.width='100vw';
+      mainContent.style.height = `calc(100vh - ${Math.round(mpRect.height)}px)`;
+      videoCompactRow.style.display='flex'; presentationCompactRow.style.display='flex';
+    }
+    document.querySelectorAll('.position-btn').forEach(btn=>{
+      btn.classList.toggle('active', btn.dataset.position===pos);
+      btn.setAttribute('aria-pressed', btn.dataset.position===pos ? 'true' : 'false');
+    });
+    applyMenuFontScale();
+    if (pdfDoc && activeView==='presentation') renderPdfPage(currentPage);
+    populateCompactSelects();
+    saveState();
+  }
+
+  // Sorting logic
+  function cmpNameAsc(a,b){ return displayName(a).localeCompare(displayName(b), undefined, { sensitivity:'base' }); }
+  function cmpNameDesc(a,b){ return -cmpNameAsc(a,b); }
+  function cmpNaturalAsc(a,b){ return naturalCompare(displayName(a), displayName(b)); }
+  function cmpNaturalDesc(a,b){ return -cmpNaturalAsc(a,b); }
+  function cmpAddedAsc(a,b){ return (a._addedAt||0) - (b._addedAt||0); }
+  function cmpAddedDesc(a,b){ return (b._addedAt||0) - (a._addedAt||0); }
+
+  function getComparatorFor(mode){
+    switch(mode){
+      case 'nameAsc': return cmpNameAsc;
+      case 'nameDesc': return cmpNameDesc;
+      case 'naturalAsc': return cmpNaturalAsc;
+      case 'naturalDesc': return cmpNaturalDesc;
+      case 'addedAsc': return cmpAddedAsc;
+      case 'addedDesc': return cmpAddedDesc;
+      default: return null;
+    }
+  }
+
+  function applySortVideos(){
+    const cmp = getComparatorFor(sortModeVideos);
+    if (!cmp) return;
+    const playingId = videoFiles[currentVideoIndex]?._id || null;
+    videoFiles.sort(cmp);
+    currentVideoIndex = playingId ? videoFiles.findIndex(v=>v._id===playingId) : -1;
+  }
+  function applySortPresentations(){
+    const cmp = getComparatorFor(sortModePresentations);
+    if (!cmp) return;
+    const curId = presentationFiles[presentationIndex]?._id || null;
+    presentationFiles.sort(cmp);
+    presentationIndex = curId ? presentationFiles.findIndex(v=>v._id===curId) : -1;
+  }
+
+  // Icon helper
+  function setUseHref(el, idWithoutHash){
+    if (!el) return;
+    const use = el.querySelector('use');
+    if (!use) return;
+    const target = (ICON_SPRITE_URL ? ICON_SPRITE_URL : '') + '#' + idWithoutHash;
+    use.setAttribute('href', target);
+  }
+
+  // Loop mode UI
+  function setLoopModeType(mode){
+    loopModeType = mode === 'playlist' ? 'playlist' : 'single';
+    videoPlayer.loop = !!loopMode && loopModeType === 'single';
+    updateLoopModeBtn();
+    saveState();
+  }
+  function updateLoopModeBtn(){
+    if (!loopModeBtn) return;
+    setUseHref(loopModeBtn, loopModeType === 'single' ? 'repeat-1' : 'repeat');
+    loopModeBtn.title = loopModeType === 'single' ? 'Loop mode: Single video' : 'Loop mode: Playlist';
+    loopModeBtn.setAttribute('aria-label', loopModeBtn.title);
+    loopModeBtn.classList.toggle('active', !!loopMode);
+  }
+  function toggleLoopModeType(){
+    if (!loopMode){ loopMode = true; updateLoopUI(); }
+    const next = loopModeType === 'single' ? 'playlist' : 'single';
+    setLoopModeType(next);
+    showToast(next === 'single' ? 'Repeat one' : 'Repeat playlist');
+  }
+
+  // Lists rendering
+  function renderVideoList(){
+    videoList.innerHTML='';
+    videoFiles.forEach((m,i)=>{
+      ensureId(m);
+      const item=document.createElement('div'); item.className='file-item'; item.dataset.id=m._id; item.dataset.kind='video';
+      if (activeView==='video' && i===currentVideoIndex) item.classList.add('selected');
+      const name=document.createElement('div'); name.className='file-item-name'; name.textContent=displayName(m); item.appendChild(name);
+      // FEATURE 1: Add duration display
+      if (m._duration) {
+        const duration=document.createElement('div'); duration.className='file-item-duration';
+        duration.textContent=formatDuration(m._duration); item.appendChild(duration);
+      }
+      item.addEventListener('click',()=> playVideo(i));
+      // Drag out to agenda slot
+      item.draggable=true;
+      item.addEventListener('dragstart',e=>{
+        item.classList.add('dragging');
+        e.dataTransfer.effectAllowed='copy';
+        e.dataTransfer.setData('application/x-smo-media', JSON.stringify({ kind:'video', id:m._id }));
+      });
+      item.addEventListener('dragend',()=> item.classList.remove('dragging'));
+      videoList.appendChild(item);
+    });
+    document.getElementById('videoHelperText').style.display = videoFiles.length? 'none':'block';
+    populateCompactSelects();
+    updateVideoTopBar();
+  }
+  function renderPresentationList(){
+    presentationList.innerHTML='';
+    presentationFiles.forEach((m,i)=>{
+      ensureId(m);
+      const item=document.createElement('div'); item.className='file-item'; item.dataset.id=m._id; item.dataset.kind='pdf';
+      if (activeView==='presentation' && i===presentationIndex) item.classList.add('selected');
+      const name=document.createElement('div'); name.className='file-item-name'; name.textContent=displayName(m); item.appendChild(name);
+      item.addEventListener('click',()=> loadPresentation(i));
+      // Drag out to agenda slot
+      item.draggable=true;
+      item.addEventListener('dragstart',e=>{
+        item.classList.add('dragging');
+        e.dataTransfer.effectAllowed='copy';
+        e.dataTransfer.setData('application/x-smo-media', JSON.stringify({ kind:'pdf', id:m._id }));
+      });
+      item.addEventListener('dragend',()=> item.classList.remove('dragging'));
+      presentationList.appendChild(item);
+    });
+    document.getElementById('presentationHelperText').style.display = presentationFiles.length? 'none':'block';
+    populateCompactSelects();
+    updateVideoTopBar();
+  }
+
+  function getDragAfterElement(container,y){
+    const draggable=[...container.querySelectorAll('.file-item:not(.dragging), .mini-item:not(.dragging)')];
+    return draggable.reduce((closest,child)=>{ const box=child.getBoundingClientRect(); const offset = y - box.top - box.height/2; if(offset<0 && offset>closest.offset) return {offset,element:child}; return closest; },{offset:Number.NEGATIVE_INFINITY}).element;
+  }
+
+  // Modal lists
+  function renderModalVideoList(){
+    modalVideoList.innerHTML='';
+    videoFiles.forEach((m,i)=>{
+      const row=document.createElement('div'); row.className='mini-item'; row.draggable=true; row.dataset.id=m._id;
+      const name=document.createElement('span'); name.className='item-name'; name.contentEditable=true; name.textContent=m._customName || m.file.name;
+      name.addEventListener('blur',()=>{ const v=name.textContent.trim(); if(v) m._customName=v; else name.textContent=m._customName||m.file.name; renderVideoList(); saveState(); });
+      name.addEventListener('keydown',e=>{ if(e.key==='Enter'){ e.preventDefault(); name.blur(); }});
+      name.addEventListener('mousedown',e=> e.stopPropagation());
+      const rm=document.createElement('span'); rm.className='mini-remove'; rm.textContent='✕'; rm.setAttribute('aria-label','Remove video');
+      rm.addEventListener('click',()=> removeVideo(i));
+      row.appendChild(name); row.appendChild(rm);
+
+      row.addEventListener('dragstart',()=> row.classList.add('dragging'));
+      row.addEventListener('dragover',e=>{ e.preventDefault(); const dragging=modalVideoList.querySelector('.mini-item.dragging'); if(!dragging) return; const after=getModalDragAfterElement(modalVideoList,e.clientY); if(after==null) modalVideoList.appendChild(dragging); else modalVideoList.insertBefore(dragging,after); });
+      row.addEventListener('dragend',()=>{ row.classList.remove('dragging'); const nodes=[...modalVideoList.children]; const newOrder = nodes.map(n=> videoFiles.find(m=>m._id===n.dataset.id)).filter(Boolean); if(newOrder.length===videoFiles.length){ const playingId = videoFiles[currentVideoIndex] && videoFiles[currentVideoIndex]._id; videoFiles=newOrder; currentVideoIndex = playingId ? videoFiles.findIndex(m=>m._id===playingId) : -1; } renderVideoList(); renderModalVideoList(); saveState(); });
+      modalVideoList.appendChild(row);
+    });
+  }
+  function renderModalPresentationList(){
+    modalPresentationList.innerHTML='';
+    presentationFiles.forEach((m,i)=>{
+      const row=document.createElement('div'); row.className='mini-item'; row.draggable=true; row.dataset.id=m._id;
+      const name=document.createElement('span'); name.className='item-name'; name.contentEditable=true; name.textContent=m._customName || m.file.name;
+      name.addEventListener('blur',()=>{ const v=name.textContent.trim(); if(v) m._customName=v; else name.textContent=m._customName||m.file.name; renderPresentationList(); saveState(); });
+      name.addEventListener('keydown',e=>{ if(e.key==='Enter'){ e.preventDefault(); name.blur(); }});
+      name.addEventListener('mousedown',e=> e.stopPropagation());
+      const rm=document.createElement('span'); rm.className='mini-remove'; rm.textContent='✕'; rm.setAttribute('aria-label','Remove presentation');
+      rm.addEventListener('click',()=> removePresentation(i));
+      row.appendChild(name); row.appendChild(rm);
+
+      row.addEventListener('dragstart',()=> row.classList.add('dragging'));
+      row.addEventListener('dragover',e=>{ e.preventDefault(); const dragging=modalPresentationList.querySelector('.mini-item.dragging'); if(!dragging) return; const after=getModalDragAfterElement(modalPresentationList,e.clientY); if(after==null) modalPresentationList.appendChild(dragging); else modalPresentationList.insertBefore(dragging,after); });
+      row.addEventListener('dragend',()=>{ row.classList.remove('dragging'); const nodes=[...modalPresentationList.children]; const newOrder = nodes.map(n=> presentationFiles.find(m=>m._id===n.dataset.id)).filter(Boolean); if(newOrder.length===presentationFiles.length){ const curId = presentationFiles[presentationIndex] && presentationFiles[presentationIndex]._id; presentationFiles=newOrder; presentationIndex = curId ? presentationFiles.findIndex(m=>m._id===curId) : -1; } renderPresentationList(); renderModalPresentationList(); saveState(); });
+      modalPresentationList.appendChild(row);
+    });
+  }
+  function getModalDragAfterElement(container,y){
+    const draggable=[...container.querySelectorAll('.mini-item:not(.dragging)')];
+    return draggable.reduce((closest,child)=>{ const box=child.getBoundingClientRect(); const offset = y - box.top - box.height/2; if(offset<0 && offset>closest.offset) return {offset,element:child}; return closest; },{offset:Number.NEGATIVE_INFINITY}).element;
+  }
+
+  // Video playback
+  function playVideo(index){
+    if (presentationIndex>=0 && pdfDoc){
+      const prev=presentationFiles[presentationIndex]; if(prev) prev._currentPage=currentPage;
+    }
+    activeView='video';
+    currentVideoIndex = index;
+
+    const meta = videoFiles[index];
+    if (!meta){
+      videoContainer.style.display='none'; emptyState.style.display='flex';
+      renderVideoList(); renderPresentationList(); populateCompactSelects(); updateVideoTopBar(); return;
+    }
+
+    if (currentVideoUrl) { try{ URL.revokeObjectURL(currentVideoUrl); }catch(_){} }
+    currentVideoUrl = URL.createObjectURL(meta.file);
+    videoPlayer.src = currentVideoUrl;
+    videoPlayer.loop = !!loopMode && loopModeType === 'single';
+
+    videoContainer.style.display='flex'; presentationContainer.style.display='none'; emptyState.style.display='none';
+    videoPlayer.play().catch(()=>{});
+
+    renderVideoList(); renderPresentationList(); populateCompactSelects(); updateVideoTopBar(); saveState();
+  }
+  function stopVideo(){ try{ videoPlayer.pause(); }catch(_){} }
+  function playNextInPlaylist(){
+    if (!videoFiles.length) return;
+    if (currentVideoIndex === -1) { currentVideoIndex = 0; }
+    let next = currentVideoIndex + 1;
+    if (next >= videoFiles.length) next = 0;
+    playVideo(next);
+  }
+  function removeVideo(index){
+    const wasPlaying = (index===currentVideoIndex && activeView==='video');
+    videoFiles.splice(index,1);
+    if (videoFiles.length===0){
+      stopVideo();
+      if (currentVideoUrl) try{ URL.revokeObjectURL(currentVideoUrl); }catch(_){}
+      videoPlayer.removeAttribute('src'); videoContainer.style.display='none'; emptyState.style.display='flex'; currentVideoIndex=-1; if (wasPlaying) activeView=null;
+    } else {
+      if (wasPlaying){ currentVideoIndex=Math.min(index, videoFiles.length-1); renderVideoList(); }
+      else { if (index<currentVideoIndex) currentVideoIndex--; renderVideoList(); }
+    }
+    renderModalVideoList(); populateCompactSelects(); updateVideoTopBar(); saveState();
+  }
+
+  // PDF open
+  async function loadPresentation(index){
+    stopVideo();
+
+    if (presentationIndex>=0 && pdfDoc){
+      const prev=presentationFiles[presentationIndex]; if(prev) prev._currentPage=currentPage;
+    }
+    presentationIndex=index; activeView='presentation';
+
+    const meta = presentationFiles[index];
+    if (!meta){
+      pdfDoc=null; pdfCtx.clearRect(0,0,pdfCanvas.width,pdfCanvas.height); pageInfo.textContent='';
+      presentationContainer.style.display='none'; emptyState.style.display='flex';
+      renderPresentationList(); renderVideoList(); populateCompactSelects(); updateVideoTopBar(); return;
+    }
+
+    const myToken = ++pdfLoadToken;
+    try {
+      if (!meta._arrayBuffer) meta._arrayBuffer = await readFileAsArrayBuffer(meta.file);
+      if (pdfLoadToken !== myToken) return;
+      const typed = toUint8Array(meta._arrayBuffer);
+      const doc1 = await openPdf({ data: typed });
+      if (pdfLoadToken !== myToken) return;
+      pdfDoc = doc1;
+    } catch (e1) {
+      try {
+        if (pdfLoadToken !== myToken) return;
+        const blobUrl = URL.createObjectURL(meta.file);
+        const doc2 = await openPdf({ url: blobUrl, withCredentials: false, disableRange: true, disableAutoFetch: true });
+        if (pdfLoadToken !== myToken) return;
+        pdfDoc = doc2;
+      } catch (e2) {
+        console.error('PDF open failed', e1, e2);
+        alert('Unable to open this PDF. Please verify the file is valid.');
+        return;
+      }
+    }
+
+    currentPage = (typeof meta._currentPage==='number' && meta._currentPage>=1 && meta._currentPage<=pdfDoc.numPages) ? meta._currentPage : 1;
+    presentationContainer.style.display='flex'; videoContainer.style.display='none'; emptyState.style.display='none';
+    renderPresentationList(); renderVideoList(); populateCompactSelects(); updateVideoTopBar(); saveState();
+    renderPdfPage(currentPage);
+  }
+  function updateVideoTopBar(){ const show = presentationFiles.length > 0; videoTopBar.style.display = show ? 'flex' : 'none'; }
+
+  function openPdf(opts){
+    return new Promise((resolve, reject) => {
+      try { const task = pdfjsLib.getDocument(opts); task.promise.then(resolve).catch(reject); }
+      catch (err) { reject(err); }
+    });
+  }
+  function toUint8Array(buf){
+    if (buf instanceof ArrayBuffer) return new Uint8Array(buf);
+    if (ArrayBuffer.isView(buf)) return new Uint8Array(buf.buffer);
+    return new Uint8Array(buf);
+  }
+  function readFileAsArrayBuffer(file){
+    return new Promise((resolve, reject) => {
+      const r = new FileReader();
+      r.onload = () => resolve(r.result);
+      r.onerror = () => reject(r.error || new Error('File read error'));
+      r.readAsArrayBuffer(file);
+    });
+  }
+
+  function renderPdfPage(pageNum){
+    if (!pdfDoc) return;
+    pdfDoc.getPage(pageNum).then(page=>{
+      const containerW = mainContent.clientWidth || window.innerWidth;
+      const unscaled = page.getViewport({ scale: 1 });
+      const maxScale = Math.min(2, (window.devicePixelRatio || 1) * 1.5);
+      const scale = Math.min(maxScale, Math.max(0.5, (containerW - 40) / unscaled.width));
+      const vp = page.getViewport({ scale });
+
+      pdfCanvas.width = Math.round(vp.width);
+      pdfCanvas.height = Math.round(vp.height);
+      pdfCanvas.style.width = vp.width + 'px';
+      pdfCanvas.style.height = vp.height + 'px';
+
+      return page.render({ canvasContext: pdfCanvas.getContext('2d'), viewport: vp }).promise
+        .then(()=> { pageInfo.textContent = `Page ${pageNum} of ${pdfDoc.numPages}`; });
+    }).catch(err=> console.error('renderPdfPage error', err));
+  }
+
+  function removePresentation(index){
+    const wasActive = (index===presentationIndex && activeView==='presentation');
+    presentationFiles.splice(index,1);
+    if (presentationFiles.length===0){
+      pdfDoc=null; pdfCtx.clearRect(0,0,pdfCanvas.width,pdfCanvas.height); pageInfo.textContent='';
+      presentationContainer.style.display='none'; emptyState.style.display='flex'; presentationIndex=-1; if (wasActive) activeView=null;
+    } else {
+      if (wasActive){ const newIdx=Math.min(index, presentationFiles.length-1); loadPresentation(newIdx); }
+      else { if (index<presentationIndex) presentationIndex--; renderPresentationList(); }
+    }
+    renderModalPresentationList(); populateCompactSelects(); updateVideoTopBar(); saveState();
+  }
+
+  // Compact selects
+  function populateCompactSelects(){
+    videoSelectCompact.innerHTML=''; presentationSelectCompact.innerHTML='';
+    if (!videoFiles.length){ const o=document.createElement('option'); o.value='-1'; o.textContent='—'; videoSelectCompact.appendChild(o); videoSelectCompact.disabled=true; }
+    else { videoFiles.forEach((m,i)=>{ const o=document.createElement('option'); o.value=String(i); o.textContent=displayName(m); videoSelectCompact.appendChild(o); }); videoSelectCompact.disabled=false; videoSelectCompact.value=String(Math.max(0,currentVideoIndex)); }
+    if (!presentationFiles.length){ const o=document.createElement('option'); o.value='-1'; o.textContent='—'; presentationSelectCompact.appendChild(o); presentationSelectCompact.disabled=true; }
+    else { presentationFiles.forEach((m,i)=>{ const o=document.createElement('option'); o.value=String(i); o.textContent=displayName(m); presentationSelectCompact.appendChild(o); }); presentationSelectCompact.disabled=false; presentationSelectCompact.value=String(Math.max(0,presentationIndex)); }
+  }
+
+  // Add files — NO auto-play
+  async function handleVideoAdd(files){
+    const savedMap=buildSavedMap();
+    const now = Date.now();
+    const metas= await Promise.all([...files].filter(f=>f.type.startsWith('video/')).map(async f=>{
+      const sm=savedMap[f.name];
+      // FEATURE 1: Extract duration
+      const duration = await getVideoDuration(f);
+      return {file:f,_id:makeId(), _customName: sm? sm._customName || null : null, _addedAt: (sm && sm._addedAt) || now, _duration: duration};
+    }));
+    if (!metas.length) return;
+    videoFiles.push(...metas);
+    if (sortModeVideos!=='custom') applySortVideos();
+    renderVideoList();
+    renderModalVideoList();
+    saveState();
+    markOnboarded();
+    showToast(`${metas.length} video${metas.length>1?'s':''} imported`);
+  }
+  function handlePresentationAdd(files){
+    const savedMap=buildSavedMap();
+    const now = Date.now();
+    const metas=[...files].filter(f=>f.name.toLowerCase().endsWith('.pdf')).map(f=>{
+      const sm=savedMap[f.name];
+      return {file:f,_id:makeId(), _customName: sm? sm._customName || null : null, _currentPage: sm? sm._currentPage || 1 : 1, _addedAt: (sm && sm._addedAt) || now};
+    });
+    if (!metas.length) return;
+    presentationFiles.push(...metas);
+    if (sortModePresentations!=='custom') applySortPresentations();
+    renderPresentationList();
+    renderModalPresentationList();
+    saveState();
+    markOnboarded();
+    showToast(`${metas.length} presentation${metas.length>1?'s':''} imported`);
+  }
+
+  // Loop UI (Settings)
+  function updateLoopUI(){
+    loopSwitch.style.background = loopMode ? 'var(--se-life-green)' : 'var(--border)';
+    loopSwitchKnob.style.left = loopMode ? '19px' : '3px';
+    loopToggle.setAttribute('aria-pressed', loopMode ? 'true' : 'false');
+    loopLabel.textContent = 'Loop: ' + (loopMode ? 'On' : 'Off');
+    videoPlayer.loop = !!loopMode && (loopModeType === 'single');
+    loopModeBtn.classList.toggle('active', !!loopMode);
+  }
+
+  // Fullscreen helpers
+  function isFullscreen(){
+    return document.fullscreenElement || document.webkitFullscreenElement || document.msFullscreenElement;
+  }
+  async function toggleFullscreen(){
+    try{
+      if (!isFullscreen()){
+        const el = document.documentElement;
+        if (el.requestFullscreen) await el.requestFullscreen();
+        else if (el.webkitRequestFullscreen) el.webkitRequestFullscreen();
+        else if (el.msRequestFullscreen) el.msRequestFullscreen();
+      } else {
+        if (document.exitFullscreen) await document.exitFullscreen();
+        else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
+        else if (document.msExitFullscreen) document.msExitFullscreen();
+      }
+    }catch(e){ console.error('Fullscreen toggle error', e); }
+    updateFullscreenUI();
+  }
+  function updateFullscreenUI(){
+    const enabled = document.fullscreenEnabled || document.webkitFullscreenEnabled || document.msFullscreenEnabled;
+    fullscreenBtns.forEach(btn=>{
+      btn.disabled = !enabled;
+      btn.title = isFullscreen() ? 'Exit Fullscreen' : 'Enter Fullscreen';
+      setUseHref(btn, isFullscreen() ? 'minimize' : 'maximize');
+    });
+    setMenuPosition(menuPos);
+    if (pdfDoc && activeView==='presentation') renderPdfPage(currentPage);
+  }
+
+  // Settings + onboarding
+  function showSettings(){
+    if (timeZoneSelect) timeZoneSelect.value = timeZone;
+    modalOverlay.classList.add('show');
+    renderModalVideoList();
+    renderModalPresentationList();
+    refreshModeControls();
+    renderAgendaRows();
+    updateLoopUI();
+  }
+  function markOnboarded(){ try { localStorage.setItem(ONBOARDED_KEY, '1'); } catch(e){} }
+
+  // Mode handling
+  function refreshModeControls(){
+    if (modePresentation) modePresentation.checked = (appMode==='presentation');
+    if (modeMeeting) modeMeeting.checked = (appMode==='meeting');
+    const disablePositions = (appMode==='meeting');
+    positionButtonsWrap.querySelectorAll('button').forEach(b=>{
+      b.disabled = disablePositions;
+      b.title = disablePositions ? 'Menu position is fixed to Left in Meeting mode' : (b.getAttribute('data-title') || b.title || '');
+      b.style.opacity = disablePositions ? 0.5 : 1;
+    });
+    positionHelper.textContent = (appMode==='meeting')
+      ? 'Menu position is fixed to Left in Meeting mode.'
+      : 'Use these buttons to change menu position.';
+    agendaSection.style.display = (appMode==='meeting') ? 'block' : 'none';
+  }
+  function setAppMode(mode){
+    appMode = (mode==='meeting') ? 'meeting' : 'presentation';
+    if (appMode==='meeting'){
+      if (menuPos!=='left'){ setMenuPosition('left'); }
+    }
+    refreshModeControls();
+    renderAgendaPanel();
+    saveState();
+  }
+
+  // Agenda in Settings
+  function ensureEndAfterStart(slot){
+    const s = parseHHMM(slot.start);
+    let e = parseHHMM(slot.end);
+    if (s==null) return;
+    if (e==null || e <= s){ e = s + MIN_SLOT_MINUTES; slot.end = fmtHHMM(e); }
+  }
+  function rechainStarts(fromIndex=1){
+    for (let i=Math.max(1, fromIndex); i<agendaSlots.length; i++){
+      const prevEnd = parseHHMM(agendaSlots[i-1].end);
+      if (prevEnd!=null){
+        agendaSlots[i].start = fmtHHMM(prevEnd);
+        ensureEndAfterStart(agendaSlots[i]);
+      }
+    }
+  }
+  function renderAgendaRows(){
+    agendaRows.innerHTML = '';
+    agendaSlots.forEach((slot, idx)=>{
+      const row = document.createElement('div'); row.className='agenda-row'; row.dataset.id = slot.id; row.draggable=true;
+
+      const grip = document.createElement('div'); grip.className='grip'; grip.textContent='⋮⋮';
+
+      const titleWrap = document.createElement('div'); titleWrap.style.display='flex'; titleWrap.style.flexDirection='column'; titleWrap.style.gap='4px';
+      const title = document.createElement('input'); title.type='text'; title.value = slot.title || ''; title.placeholder='Title';
+      title.addEventListener('input', ()=>{ slot.title = title.value.trim(); renderAgendaPanel(); saveState(); });
+      titleWrap.appendChild(title);
+      
+      // FEATURE 5: Subtitle input
+      const subtitle = document.createElement('input'); subtitle.type='text'; subtitle.className='subtitle-input';
+      subtitle.value = slot.subtitle || ''; subtitle.placeholder='Subtitle (optional)';
+      subtitle.addEventListener('input', ()=>{ slot.subtitle = subtitle.value.trim(); renderAgendaPanel(); saveState(); });
+      titleWrap.appendChild(subtitle);
+
+      const start = document.createElement('input'); start.type='time'; start.value = slot.start || ''; start.step=60;
+      const end = document.createElement('input'); end.type='time'; end.value = slot.end || ''; end.step=60;
+
+      // FEATURE 4: Duration input
+      const duration = document.createElement('input'); duration.type='number'; duration.min='5'; duration.step='5';
+      const startMins = parseHHMM(slot.start);
+      const endMins = parseHHMM(slot.end);
+      if (startMins !== null && endMins !== null) {
+        duration.value = endMins - startMins;
+      }
+      duration.placeholder='mins';
+      duration.addEventListener('input', ()=>{
+        const dur = parseInt(duration.value, 10);
+        if (!isNaN(dur) && dur > 0) {
+          const s = parseHHMM(slot.start);
+          if (s !== null) {
+            slot.end = fmtHHMM(s + dur);
+            rechainStarts(idx+1);
+            renderAgendaRows();
+            renderAgendaPanel();
+            saveState();
+          }
+        }
+      });
+
+      // Only first slot start editable
+      start.disabled = (idx !== 0);
+
+      start.addEventListener('change', ()=>{
+        slot.start = start.value;
+        ensureEndAfterStart(slot);
+        // re-chain all subsequent
+        rechainStarts(1);
+        renderAgendaRows();
+        renderAgendaPanel();
+        saveState();
+      });
+      end.addEventListener('change', ()=>{
+        slot.end = end.value;
+        ensureEndAfterStart(slot);
+        // next slot start becomes this end
+        rechainStarts(idx+1);
+        renderAgendaRows();
+        renderAgendaPanel();
+        saveState();
+      });
+
+      const del = document.createElement('button'); del.type='button'; del.className='del-slot'; del.title='Remove slot'; del.textContent='✕';
+      del.addEventListener('click', ()=>{
+        agendaSlots.splice(idx,1);
+        rechainStarts(1);
+        renderAgendaRows();
+        renderAgendaPanel();
+        saveState();
+      });
+
+      // Drag reorder: moved slot inherits the time of its new index (slot # position)
+      row.addEventListener('dragstart', ()=> row.classList.add('dragging'));
+      row.addEventListener('dragover', (e)=>{
+        e.preventDefault();
+        const dragging = agendaRows.querySelector('.agenda-row.dragging');
+        if (!dragging) return;
+        const after = getAgendaRowAfter(agendaRows, e.clientY);
+        if (after==null) agendaRows.appendChild(dragging);
+        else agendaRows.insertBefore(dragging, after);
+      });
+      row.addEventListener('dragend', ()=>{
+        row.classList.remove('dragging');
+        // Capture current time pairs by index
+        const timesByIndex = agendaSlots.map(s=> ({ start:s.start, end:s.end }));
+        // Build new order by DOM
+        const newOrder = [...agendaRows.querySelectorAll('.agenda-row')].map(n => agendaSlots.find(s=>s.id===n.dataset.id)).filter(Boolean);
+        if (newOrder.length === agendaSlots.length){
+          // Assign times by index: position defines time (slot moved to #2 takes old #2 times)
+          newOrder.forEach((s,i)=>{
+            s.start = timesByIndex[i]?.start || s.start;
+            s.end   = timesByIndex[i]?.end   || s.end;
+            ensureEndAfterStart(s);
+          });
+          agendaSlots = newOrder;
+          // After reassigning, rechain from index 1 to ensure continuity if desired (keep exact assigned schedule)
+          // We will NOT override slot[1] time; chaining starts from the slot after the one you edit at runtime.
+        }
+        renderAgendaRows();
+        renderAgendaPanel();
+        saveState();
+      });
+
+      row.appendChild(grip);
+      row.appendChild(titleWrap);
+      row.appendChild(start);
+      row.appendChild(end);
+      row.appendChild(duration);
+      row.appendChild(del);
+      agendaRows.appendChild(row);
+    });
+  }
+  function getAgendaRowAfter(container,y){
+    const rows=[...container.querySelectorAll('.agenda-row:not(.dragging)')];
+    return rows.reduce((closest,child)=>{
+      const box=child.getBoundingClientRect();
+      const offset=y - box.top - box.height/2;
+      if(offset<0 && offset>closest.offset) return {offset,element:child};
+      return closest;
+    },{offset:Number.NEGATIVE_INFINITY}).element;
+  }
+
+  function addAgendaSlotWithDuration(minutes){
+    const dur = Math.max(MIN_SLOT_MINUTES, minutes|0);
+    let startMins;
+    if (agendaSlots.length === 0){
+      startMins = roundDownTo5(getNowTZMinutes());
+    } else {
+      const last = agendaSlots[agendaSlots.length-1];
+      const lastEndM = parseHHMM(last.end);
+      startMins = (lastEndM!=null) ? lastEndM : roundDownTo5(getNowTZMinutes());
+    }
+    const endMins = startMins + dur;
+    agendaSlots.push({ id: makeId(), title:'', start: fmtHHMM(startMins), end: fmtHHMM(endMins), items:[] });
+    // Ensure chaining integrity
+    rechainStarts(1);
+    renderAgendaRows();
+    renderAgendaPanel();
+    saveState();
+  }
+
+  // Agenda in Menu (Meeting)
+  function renderAgendaPanel(){
+    if (appMode!=='meeting'){ agendaPanel.innerHTML=''; return; }
+    agendaPanel.innerHTML = '';
+    const nowMins = getNowTZMinutes();
+
+    agendaSlots.forEach((slot)=>{
+      const sStart = parseHHMM(slot.start);
+      const sEnd = parseHHMM(slot.end);
+      const active = (sStart!=null && sEnd!=null && nowMins>=sStart && nowMins<=sEnd);
+
+      const card = document.createElement('div'); card.className='agenda-slot' + (active?' active':''); card.dataset.id = slot.id;
+
+      const header = document.createElement('div'); header.className='slot-header';
+      const titleWrap = document.createElement('div'); titleWrap.style.display='flex'; titleWrap.style.flexDirection='column'; titleWrap.style.width='100%';
+      const title = document.createElement('div'); title.className='slot-title'; title.textContent = slot.title || '(Untitled)';
+      titleWrap.appendChild(title);
+      // FEATURE 5: Display subtitle
+      if (slot.subtitle) {
+        const subtitle = document.createElement('div'); subtitle.className='slot-subtitle'; subtitle.textContent = slot.subtitle;
+        titleWrap.appendChild(subtitle);
+      }
+      const right = document.createElement('div'); right.style.display='flex'; right.style.alignItems='center'; right.style.gap='8px';
+      if (active){ const badge=document.createElement('span'); badge.className='slot-badge'; badge.textContent='NOW'; right.appendChild(badge); }
+      const time = document.createElement('div'); time.className='slot-time'; time.textContent = (slot.start||'--:--') + ' – ' + (slot.end||'--:--');
+      right.appendChild(time);
+      header.appendChild(titleWrap); header.appendChild(right);
+      card.appendChild(header);
+
+      // Progress
+      const progWrap = document.createElement('div'); progWrap.className='slot-progress';
+      const prog = document.createElement('div');
+      let pct = 0;
+      if (sStart!=null && sEnd!=null && sEnd>sStart){
+        pct = clamp(((nowMins - sStart) / (sEnd - sStart)) * 100, 0, 100);
+        if (!(nowMins>=sStart && nowMins<=sEnd)) pct = (nowMins < sStart) ? 0 : 100;
+      }
+      prog.style.width = pct.toFixed(1)+'%';
+      progWrap.appendChild(prog);
+      card.appendChild(progWrap);
+
+      // Items list
+      const itemsWrap = document.createElement('div'); itemsWrap.className='slot-items';
+      itemsWrap.addEventListener('dragover', (e)=>{ e.preventDefault(); itemsWrap.classList.add('drag-over'); });
+      itemsWrap.addEventListener('dragleave', ()=> itemsWrap.classList.remove('drag-over'));
+      itemsWrap.addEventListener('drop', (e)=>{
+        e.preventDefault(); itemsWrap.classList.remove('drag-over');
+        try{
+          const raw = e.dataTransfer.getData('application/x-smo-media');
+          if (!raw) return;
+          const data = JSON.parse(raw);
+          if (!data || !data.kind || !data.id) return;
+          if (!slot.items) slot.items=[];
+          const exists = slot.items.some(it=> it.id===data.id && it.type===data.kind);
+          if (!exists){
+            slot.items.push({ id:data.id, type:data.kind });
+            renderAgendaPanel(); saveState();
+          }
+        }catch(err){}
+      });
+
+      (slot.items||[]).forEach((it, idx)=>{
+        const itemRow = document.createElement('div'); itemRow.className='slot-item'; itemRow.draggable=true; itemRow.dataset.index=idx;
+
+        const nameSpan = document.createElement('span'); nameSpan.className='si-name';
+        const typeSpan = document.createElement('span'); typeSpan.className='si-type';
+        typeSpan.textContent = (it.type==='video') ? 'Video' : 'PDF';
+
+        // Resolve name from libraries
+        let openHandler = null;
+        if (it.type==='video'){
+          const meta = videoFiles.find(v=> v._id===it.id);
+          nameSpan.textContent = meta ? (meta._customName || baseName(meta.file.name)) : '(missing video)';
+          openHandler = ()=> {
+            const vi = videoFiles.findIndex(v=> v._id===it.id);
+            if (vi>=0) playVideo(vi);
+          };
+        } else {
+          const meta = presentationFiles.find(p=> p._id===it.id);
+          nameSpan.textContent = meta ? (meta._customName || baseName(meta.file.name)) : '(missing PDF)';
+          openHandler = ()=> {
+            const pi = presentationFiles.findIndex(p=> p._id===it.id);
+            if (pi>=0) loadPresentation(pi);
+          };
+        }
+
+        // Open on row/name click
+        itemRow.addEventListener('click', (e)=>{
+          if (e.target && e.target.classList && e.target.classList.contains('si-x')) return;
+          if (openHandler) openHandler();
+        });
+        nameSpan.addEventListener('click', (e)=>{ e.stopPropagation(); if (openHandler) openHandler(); });
+
+        // Small X remove button
+        const btnX = document.createElement('button'); btnX.className='si-x'; btnX.title='Remove'; btnX.textContent='×';
+        btnX.addEventListener('click', (e)=>{
+          e.stopPropagation();
+          slot.items.splice(idx,1);
+          renderAgendaPanel(); saveState();
+        });
+
+        // Drag reorder within slot
+        itemRow.addEventListener('dragstart', ()=> itemRow.classList.add('dragging'));
+        itemRow.addEventListener('dragover', (e)=>{
+          e.preventDefault();
+          const dragging = itemsWrap.querySelector('.slot-item.dragging');
+          if (!dragging) return;
+          const after = getSlotItemAfter(itemsWrap, e.clientY);
+          if (after==null) itemsWrap.appendChild(dragging);
+          else itemsWrap.insertBefore(dragging, after);
+        });
+        itemRow.addEventListener('dragend', ()=>{
+          itemRow.classList.remove('dragging');
+          const nodes=[...itemsWrap.querySelectorAll('.slot-item')];
+          const newOrder = nodes.map(n=>{
+            const i = parseInt(n.dataset.index,10);
+            return slot.items[i];
+          }).filter(Boolean);
+          if (newOrder.length === (slot.items||[]).length){
+            slot.items = newOrder;
+            renderAgendaPanel(); saveState();
+          }
+        });
+
+        itemRow.appendChild(nameSpan);
+        itemRow.appendChild(typeSpan);
+        itemRow.appendChild(btnX);
+        itemsWrap.appendChild(itemRow);
+      });
+
+      card.appendChild(itemsWrap);
+      agendaPanel.appendChild(card);
+    });
+  }
+  function getSlotItemAfter(container, y){
+    const draggable=[...container.querySelectorAll('.slot-item:not(.dragging)')];
+    return draggable.reduce((closest,child)=>{
+      const box=child.getBoundingClientRect();
+      const offset = y - box.top - box.height/2;
+      if (offset<0 && offset>closest.offset) return {offset,element:child};
+      return closest;
+    },{offset:Number.NEGATIVE_INFINITY}).element;
+  }
+
+  // Clock (uses selected TZ)
+  function updateTZClock(){
+    const p = tzNowHM(timeZone);
+    if (gmtClockValue) gmtClockValue.textContent = `${String(p.h).padStart(2,'0')}:${String(p.m).padStart(2,'0')}:${String(p.s).padStart(2,'0')}`;
+    if (tzLabel) tzLabel.textContent = `Current time (${zoneShortLabel(timeZone)})`;
+    if (appMode==='meeting') renderAgendaPanel();
+  }
+  let clockTimer = null;
+  function startClock(){ if (clockTimer) clearInterval(clockTimer); clockTimer = setInterval(updateTZClock, 1000); updateTZClock(); }
+
+  // Events
+  settingsBtn.addEventListener('click', showSettings);
+  modalClose.addEventListener('click', ()=> { modalOverlay.classList.remove('show'); markOnboarded(); });
+  modalOverlay.addEventListener('click', (e)=>{ if (e.target===modalOverlay) { modalOverlay.classList.remove('show'); markOnboarded(); } });
+
+  // Mode radios
+  if (modePresentation) modePresentation.addEventListener('change', ()=> setAppMode('presentation'));
+  if (modeMeeting) modeMeeting.addEventListener('change', ()=> setAppMode('meeting'));
+
+  // Time zone change
+  if (timeZoneSelect){
+    timeZoneSelect.addEventListener('change', (e)=>{
+      timeZone = e.target.value || 'Europe/Paris';
+      saveState();
+      updateTZClock();
+      renderAgendaPanel();
+    });
+  }
+
+  // Agenda quick add buttons
+  addSlot15Btn.addEventListener('click', ()=> addAgendaSlotWithDuration(15));
+  addSlot30Btn.addEventListener('click', ()=> addAgendaSlotWithDuration(30));
+  addSlot60Btn.addEventListener('click', ()=> addAgendaSlotWithDuration(60));
+
+  // Sort events (modal only)
+  if (videoSortSelectModal) videoSortSelectModal.addEventListener('change', e=> { sortModeVideos = e.target.value; applySortVideos(); renderVideoList(); renderModalVideoList(); saveState(); });
+  if (presSortSelectModal) presSortSelectModal.addEventListener('change', e=> { sortModePresentations = e.target.value; applySortPresentations(); renderPresentationList(); renderModalPresentationList(); saveState(); });
+
+  // Fullscreen events
+  if (fullscreenBtns.length){
+    fullscreenBtns.forEach(btn=> btn.addEventListener('click', toggleFullscreen));
+    document.addEventListener('keydown', (e)=>{ if (e.key==='f' || e.key==='F') toggleFullscreen(); });
+    ['fullscreenchange','webkitfullscreenchange','msfullscreenchange'].forEach(ev => document.addEventListener(ev, updateFullscreenUI));
+  }
+
+  // Settings: Loop on/off
+  function toggleLoop(){
+    loopMode = !loopMode;
+    updateLoopUI();
+    saveState();
+  }
+  loopToggle.addEventListener('click', toggleLoop);
+  loopToggle.addEventListener('keydown', (e)=>{ if (e.key==='Enter' || e.key===' ') { e.preventDefault(); toggleLoop(); } });
+
+  // Loop mode type toggle (header button)
+  loopModeBtn.addEventListener('click', toggleLoopModeType);
+
+  // Add buttons
+  videoAddBtn.addEventListener('click', ()=> videoInputAdd.click());
+  presentationAddBtn.addEventListener('click', ()=> presentationInputAdd.click());
+  videoInputAdd.addEventListener('change', e=>{ handleVideoAdd(e.target.files); e.target.value=''; });
+  presentationInputAdd.addEventListener('change', e=>{ handlePresentationAdd(e.target.files); e.target.value=''; });
+
+  // Compact selects
+  videoSelectCompact.addEventListener('change', e=>{ const idx=parseInt(e.target.value,10); if(!isNaN(idx)&&idx>=0) playVideo(idx); });
+  presentationSelectCompact.addEventListener('change', e=>{ const idx=parseInt(e.target.value,10); if(!isNaN(idx)&&idx>=0) loadPresentation(idx); });
+
+  // Video ended behavior
+  videoPlayer.addEventListener('ended', ()=>{
+    if (!loopMode) return;
+    if (loopModeType === 'single'){
+      if (!videoPlayer.loop) { videoPlayer.play().catch(()=>{}); }
+    } else if (loopModeType === 'playlist'){
+      playNextInPlaylist();
+    }
+  });
+
+  // PDF controls
+  prevPageBtn.addEventListener('click', ()=>{ if (pdfDoc && currentPage>1){ currentPage--; renderPdfPage(currentPage); const meta=presentationFiles[presentationIndex]; if(meta) meta._currentPage=currentPage; saveState(); }});
+  nextPageBtn.addEventListener('click', ()=>{ if (pdfDoc && currentPage<pdfDoc.numPages){ currentPage++; renderPdfPage(currentPage); const meta=presentationFiles[presentationIndex]; if(meta) meta._currentPage=currentPage; saveState(); }});
+
+  // Back to Video (no auto-play)
+  backToVideoBtn.addEventListener('click', ()=>{
+    if (presentationIndex>=0 && pdfDoc){
+      const pres=presentationFiles[presentationIndex]; if(pres) pres._currentPage=currentPage;
+    }
+    presentationContainer.style.display='none';
+    if (videoFiles.length){
+      activeView='video';
+      videoContainer.style.display='flex';
+      emptyState.style.display='none';
+      stopVideo();
+    } else {
+      videoContainer.style.display='none';
+      emptyState.style.display='flex';
+      activeView=null;
+    }
+    updateVideoTopBar();
+  });
+
+  // Back to Presentation
+  backToPresentationBtn.addEventListener('click', ()=>{
+    if (presentationFiles.length>0){
+      const idx = Math.max(0, presentationIndex);
+      loadPresentation(idx);
+    }
+  });
+
+  // Position buttons
+  document.querySelectorAll('.position-btn').forEach(btn=> {
+    // store original title for later
+    btn.setAttribute('data-title', btn.title || '');
+    btn.addEventListener('click', ()=> setMenuPosition(btn.dataset.position));
+  });
+
+  // Resize handle
+  resizeHandle.addEventListener('mousedown', e=>{
+    e.preventDefault(); resizing=true; resizeHandle.classList.add('active');
+    start = (menuPos==='left'||menuPos==='right') ? e.clientX : e.clientY;
+    orig  = (menuPos==='left'||menuPos==='right') ? menuPanel.offsetWidth : menuPanel.offsetHeight;
+    document.body.style.cursor = (menuPos==='left'||menuPos==='right') ? 'ew-resize' : 'ns-resize';
+    window.addEventListener('mousemove', doResize);
+    window.addEventListener('mouseup', stopResize);
+  });
+  function doResize(e){
+    if (!resizing) return; let delta,newSize;
+    if (menuPos==='left'){ delta=e.clientX-start; newSize=clamp(orig+delta,240,720); menuPanel.style.width=newSize+'px'; mainContent.style.left=newSize+'px'; mainContent.style.width=`calc(100vw - ${newSize}px)`; }
+    else if (menuPos==='right'){ delta=start-e.clientX; newSize=clamp(orig+delta,240,720); menuPanel.style.width=newSize+'px'; mainContent.style.right=newSize+'px'; mainContent.style.width=`calc(100vw - ${newSize}px)`; }
+    else if (menuPos==='top'){ delta=e.clientY-start; const minH=Math.floor(innerHeight*0.10), maxH=Math.floor(innerHeight*0.35); newSize=clamp(orig+delta,minH,maxH); menuPanel.style.height=newSize+'px'; mainContent.style.top=newSize+'px'; mainContent.style.height=`calc(100vh - ${newSize}px)`; }
+    else { delta=start-e.clientY; const minH=Math.floor(innerHeight*0.10), maxH=Math.floor(innerHeight*0.35); newSize=clamp(orig+delta,minH,maxH); menuPanel.style.height=newSize+'px'; mainContent.style.bottom=newSize+'px'; mainContent.style.height=`calc(100vh - ${newSize}px)`; }
+    applyMenuFontScale();
+    if (pdfDoc && activeView==='presentation') renderPdfPage(currentPage);
+  }
+  function stopResize(){ resizing=false; resizeHandle.classList.remove('active'); document.body.style.cursor=''; window.removeEventListener('mousemove', doResize); window.removeEventListener('mouseup', stopResize); saveState(); }
+
+  // Window resize
+  window.addEventListener('resize', ()=>{ setMenuPosition(menuPos); applyMenuFontScale(); if (pdfDoc && activeView==='presentation') renderPdfPage(currentPage); });
+
+  // FEATURE 2: Search functionality
+  function filterVideos(searchTerm) {
+    const term = searchTerm.toLowerCase().trim();
+    const items = videoList.querySelectorAll('.file-item');
+    items.forEach(item => {
+      const name = item.querySelector('.file-item-name')?.textContent.toLowerCase() || '';
+      if (!term || name.includes(term)) {
+        item.classList.remove('hidden');
+      } else {
+        item.classList.add('hidden');
+      }
+    });
+  }
+
+  function filterPresentations(searchTerm) {
+    const term = searchTerm.toLowerCase().trim();
+    const items = presentationList.querySelectorAll('.file-item');
+    items.forEach(item => {
+      const name = item.querySelector('.file-item-name')?.textContent.toLowerCase() || '';
+      if (!term || name.includes(term)) {
+        item.classList.remove('hidden');
+      } else {
+        item.classList.add('hidden');
+      }
+    });
+  }
+
+  if (videoSearchInput) {
+    videoSearchInput.addEventListener('input', (e) => filterVideos(e.target.value));
+  }
+
+  if (presentationSearchInput) {
+    presentationSearchInput.addEventListener('input', (e) => filterPresentations(e.target.value));
+  }
+
+  // FEATURE 6: Menu toggle functionality
+  function toggleMenu() {
+    menuVisible = !menuVisible;
+    if (menuVisible) {
+      menuPanel.classList.remove('hidden');
+      mainContent.classList.remove('menu-hidden');
+      menuToggleBtn.classList.remove('show');
+    } else {
+      menuPanel.classList.add('hidden');
+      mainContent.classList.add('menu-hidden');
+      menuToggleBtn.classList.add('show');
+    }
+    // Adjust toggle button position based on menu position
+    menuToggleBtn.className = 'menu-toggle-btn ' + menuPos;
+    if (!menuVisible) {
+      menuToggleBtn.classList.add('show');
+    }
+    // Trigger resize for PDF if needed
+    setTimeout(() => {
+      if (pdfDoc && activeView==='presentation') renderPdfPage(currentPage);
+    }, 350);
+  }
+
+  if (menuToggleBtn) {
+    menuToggleBtn.addEventListener('click', toggleMenu);
+  }
+
+  // Init
+  (function init(){
+    tryAttachQuartzSprite();
+
+    const s = loadState();
+    if (s){
+      menuPos = s.menuPos || 'left';
+      appMode = s.appMode || 'presentation';
+      loopMode = !!s.loopMode;
+      loopModeType = s.loopModeType || 'single';
+      agendaSlots = Array.isArray(s.agendaSlots) ? s.agendaSlots : [];
+      if (s.sortModeVideos) sortModeVideos = s.sortModeVideos;
+      if (s.sortModePresentations) sortModePresentations = s.sortModePresentations;
+      if (s.timeZone) timeZone = s.timeZone; // load TZ
+    } else {
+      // default to CET
+      timeZone = 'Europe/Paris';
+    }
+    if (timeZoneSelect) timeZoneSelect.value = timeZone;
+
+    if (appMode==='meeting' && menuPos!=='left'){ menuPos='left'; }
+    setMenuPosition(menuPos);
+    applyMenuFontScale();
+
+    updateLoopModeBtn();
+    updateLoopUI();
+
+    applySortVideos();
+    applySortPresentations();
+
+    renderVideoList();
+    renderPresentationList();
+
+    refreshModeControls();
+    renderAgendaRows();
+    renderAgendaPanel();
+    startClock(); // uses TZ
+
+    updateFullscreenUI();
+
+    const onboarded = (localStorage.getItem(ONBOARDED_KEY) === '1');
+    if (!onboarded){
+      setTimeout(showSettings, 0);
+    }
+  })();
+
+  // Expose for debug
+  window.__SMO = { setLoopModeType, toggleLoopModeType, setAppMode };
+
+})();
+</script>
 </body>
-</html>
+
