@@ -676,6 +676,19 @@
             <input id="videoInputAdd" type="file" accept="video/*" multiple style="display:none" aria-hidden="true">
             <div class="mini-list" id="modalVideoList"></div>
             <div class="helper-text">Click name to rename, drag to reorder</div>
+            
+            <!-- Playback (moved to be with Videos) -->
+            <div style="margin-top:16px;padding-top:16px;border-top:1px solid var(--border)">
+              <div style="display:flex;gap:12px;align-items:center">
+                <div class="toggle-wrap" id="loopToggle" role="button" aria-pressed="true" title="Toggle loop" tabindex="0" style="display:flex;gap:10px;align-items:center;cursor:pointer">
+                  <div id="loopSwitch" style="width:38px;height:22px;border-radius:22px;background:var(--se-life-green);position:relative;transition:background .2s">
+                    <div style="position:absolute;top:3px;left:3px;width:16px;height:16px;border-radius:50%;background:var(--se-white);transition:left .2s" id="loopSwitchKnob"></div>
+                  </div>
+                  <span id="loopLabel" style="color:var(--text-muted);font-weight:700">Loop: On</span>
+                </div>
+              </div>
+              <div class="helper-text" style="margin-top:4px">Controls video playback loop behavior</div>
+            </div>
           </div>
 
           <!-- Presentations -->
@@ -706,23 +719,6 @@
             <input id="presentationInputAdd" type="file" accept=".pdf" multiple style="display:none" aria-hidden="true">
             <div class="mini-list" id="modalPresentationList"></div>
             <div class="helper-text">Click name to rename, drag to reorder</div>
-          </div>
-
-          <!-- Playback -->
-          <div class="modal-section">
-            <div class="section-title" style="display:flex;align-items:center;gap:10px">
-              <svg viewBox="0 0 24 24" aria-hidden="true"><use href="#play"></use></svg>
-              <span>Playback</span>
-            </div>
-            <div style="display:flex;gap:12px;align-items:center">
-              <div class="toggle-wrap" id="loopToggle" role="button" aria-pressed="true" title="Toggle loop" tabindex="0" style="display:flex;gap:10px;align-items:center;cursor:pointer">
-                <div id="loopSwitch" style="width:38px;height:22px;border-radius:22px;background:var(--se-life-green);position:relative;transition:background .2s">
-                  <div style="position:absolute;top:3px;left:3px;width:16px;height:16px;border-radius:50%;background:var(--se-white);transition:left .2s" id="loopSwitchKnob"></div>
-                </div>
-                <span id="loopLabel" style="color:var(--text-muted);font-weight:700">Loop: On</span>
-              </div>
-            </div>
-            <div class="helper-text" style="margin-top:8px">Controls video playback loop behavior</div>
           </div>
           </div>
           <!-- End Media Library Tab -->
