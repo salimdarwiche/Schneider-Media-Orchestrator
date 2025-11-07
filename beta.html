@@ -102,7 +102,8 @@
   .label-actions { display:flex; gap:10px; align-items:center; }
 
   .file-list { display:flex; flex-direction:column; gap:10px; }
-  .menu-panel.top .file-list, .menu-panel.bottom .file-list { display:flex; flex-direction:row; gap:12px; align-items:center; overflow-x:auto; -webkit-overflow-scrolling:touch; padding:8px 10px; width:100%; height:100%; }
+  /* NEW: Hide scrolling lists in top/bottom, show only dropdowns */
+  .menu-panel.top .file-list, .menu-panel.bottom .file-list { display:none; }
 
   .compact-row { display:none; gap:10px; align-items:center; justify-content:center; width:100%; }
   .menu-panel.top .compact-row, .menu-panel.bottom .compact-row { display:flex; padding:6px 10px; }
@@ -145,6 +146,8 @@
   }
   .search-input:focus { outline:2px solid var(--focus); outline-offset:2px; border-color:var(--focus); }
   .file-item.hidden { display:none; }
+  /* NEW: Hide search in top/bottom layouts (using dropdowns) */
+  .menu-panel.top .search-container, .menu-panel.bottom .search-container { display:none; }
 
   .helper-text { font-size:calc(11px * var(--menu-font-scale,1)); color:var(--text-muted); margin-top:8px; font-weight:500; }
   .menu-footer { border-top:1px solid var(--border); padding:12px 16px; background:var(--surface-alt); display:flex; gap:10px; align-items:center; justify-content:center; flex-wrap:wrap; }
