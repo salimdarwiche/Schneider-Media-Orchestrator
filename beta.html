@@ -107,6 +107,10 @@
 
   .compact-row { display:none; gap:10px; align-items:center; justify-content:center; width:100%; }
   .menu-panel.top .compact-row, .menu-panel.bottom .compact-row { display:flex; padding:6px 10px; }
+  /* NEW: Hide individual compact rows in top/bottom, show combined only */
+  .menu-panel.top #videoCompactRow, .menu-panel.bottom #videoCompactRow,
+  .menu-panel.top #presentationCompactRow, .menu-panel.bottom #presentationCompactRow { display:none!important; }
+  .menu-panel.top .combined-media-row, .menu-panel.bottom .combined-media-row { display:flex!important; }
   .compact-row label { font-size: clamp(13px, calc(14px * var(--menu-font-scale,1)), 16px); }
   select.compact-select { padding:8px 10px; border-radius:8px; border:1.5px solid var(--border); min-width:220px; font-weight:600; color:var(--text-muted); background:var(--se-white); font-size: clamp(13px, calc(14px * var(--menu-font-scale,1)), 16px); }
 
@@ -221,13 +225,17 @@
   .modal-close:focus { outline:2px solid var(--focus); outline-offset:2px; }
   .modal-body { padding:20px; overflow:auto; display:grid; grid-template-columns:1fr 1fr; gap:20px; }
   /* NEW: Better Settings organization */
-  .modal-body.tabbed { display:block; }
-  .settings-tabs { display:flex; gap:10px; border-bottom:2px solid var(--border); margin-bottom:20px; }
-  .settings-tab { padding:12px 20px; background:transparent; border:none; border-bottom:3px solid transparent; cursor:pointer; font-weight:700; color:var(--text-muted); transition:all .15s; }
-  .settings-tab.active { color:var(--se-life-green); border-bottom-color:var(--se-life-green); }
-  .settings-tab:hover { background:var(--surface-alt); }
-  .tab-content { display:none; }
+  .modal-body.tabbed { display:block; padding:0; }
+  .settings-tabs { display:flex; gap:10px; border-bottom:2px solid var(--border); margin-bottom:0; padding:0 20px; background:var(--surface-alt); }
+  .settings-tab { padding:14px 24px; background:transparent; border:none; border-bottom:3px solid transparent; cursor:pointer; font-weight:700; color:var(--text-muted); transition:all .15s; font-size:15px; }
+  .settings-tab.active { color:var(--se-life-green); border-bottom-color:var(--se-life-green); background:var(--se-white); }
+  .settings-tab:hover { background:rgba(255,255,255,0.5); }
+  .tab-content { display:none; padding:20px; }
   .tab-content.active { display:grid; grid-template-columns:1fr 1fr; gap:20px; }
+  /* NEW: Media Library symmetric layout */
+  #mediaTab.active { display:flex; flex-direction:column; gap:20px; align-items:center; }
+  #mediaTab .modal-section { width:100%; max-width:800px; }
+  #mediaTab .mini-list { min-height:250px; max-height:350px; }
   
   .modal-section { border:1.5px solid var(--border); border-radius:12px; padding:14px; background:var(--se-white); box-shadow:0 8px 18px rgba(0,0,0,0.04); }
   .section-title { display:flex; align-items:center; gap:10px; font-weight:800; color:var(--se-dark-gray); margin-bottom:10px; }
@@ -298,11 +306,13 @@
   .slot-items { margin-top:8px; display:flex; flex-direction:column; gap:8px; min-height:34px; border:1.5px dashed var(--border); border-radius:8px; padding:8px; }
   .slot-items.drag-over { background:var(--surface-alt); border-color:var(--agenda-accent); }
 
-  .slot-item { display:flex; align-items:center; gap:8px; background:var(--surface); border:1.5px solid var(--border); border-radius:8px; padding:8px; cursor:grab; }
-  .slot-item .si-name { font-weight:700; color:var(--text); flex:1; cursor:pointer; }
-  .slot-item .si-type { font-size:12px; color:var(--text-muted); font-weight:800; }
-  .slot-item .si-x { width:22px; height:22px; border-radius:6px; border:1.5px solid var(--border); color:var(--text-muted); background:var(--se-white); cursor:pointer; display:flex; align-items:center; justify-content:center; font-weight:900; line-height:1; }
-  .slot-item .si-x:hover { background:var(--surface-alt); }
+  .slot-item { display:flex; align-items:center; gap:8px; background:var(--surface); border:1.5px solid var(--se-life-green); border-radius:8px; padding:10px 12px; cursor:grab; transition:all .15s; box-shadow:0 2px 4px rgba(61,205,88,0.1); }
+  .slot-item:hover { background:var(--surface-alt); box-shadow:0 4px 8px rgba(61,205,88,0.15); transform:translateY(-1px); }
+  .slot-item .si-name { font-weight:700; color:var(--text); flex:1; cursor:pointer; font-size:14px; }
+  .slot-item .si-name:hover { color:var(--se-life-green); }
+  .slot-item .si-type { font-size:11px; color:var(--se-white); font-weight:800; background:var(--se-life-green); padding:2px 8px; border-radius:10px; text-transform:uppercase; }
+  .slot-item .si-x { width:22px; height:22px; border-radius:6px; border:1.5px solid var(--border); color:var(--text-muted); background:var(--se-white); cursor:pointer; display:flex; align-items:center; justify-content:center; font-weight:900; line-height:1; font-size:14px; }
+  .slot-item .si-x:hover { background:var(--surface-alt); border-color:var(--se-life-green); color:var(--se-life-green); }
   .slot-item.dragging { opacity:.6; }
 
   .toast { position:fixed; top:16px; left:50%; transform:translateX(-50%) translateY(-16px); background:var(--se-life-green); color:var(--se-white); padding:10px 14px; border-radius:10px; box-shadow:0 10px 25px rgba(0,0,0,.15); opacity:0; pointer-events:none; transition:opacity .25s, transform .25s; z-index:3000; font-weight:700; }
@@ -461,6 +471,14 @@
           <div class="compact-row" id="videoCompactRow">
             <label style="font-weight:700;color:var(--text-muted)">Current video</label>
             <select id="videoSelectCompact" class="compact-select"></select>
+          </div>
+          
+          <!-- NEW: Combined dropdown for top/bottom menu -->
+          <div class="compact-row combined-media-row" id="combinedMediaRow" style="display:none">
+            <label style="font-weight:700;color:var(--text-muted);margin-right:8px">Media</label>
+            <select id="combinedMediaSelect" class="compact-select" style="flex:1">
+              <option value="">Select media...</option>
+            </select>
           </div>
 
           <div class="file-list" id="videoList"></div>
@@ -825,6 +843,8 @@
   // Compact selects
   const videoSelectCompact = document.getElementById('videoSelectCompact');
   const presentationSelectCompact = document.getElementById('presentationSelectCompact');
+  const combinedMediaSelect = document.getElementById('combinedMediaSelect');
+  const combinedMediaRow = document.getElementById('combinedMediaRow');
   const videoCompactRow = document.getElementById('videoCompactRow');
   const presentationCompactRow = document.getElementById('presentationCompactRow');
 
@@ -1507,6 +1527,40 @@
     else { videoFiles.forEach((m,i)=>{ const o=document.createElement('option'); o.value=String(i); o.textContent=displayName(m); videoSelectCompact.appendChild(o); }); videoSelectCompact.disabled=false; videoSelectCompact.value=String(Math.max(0,currentVideoIndex)); }
     if (!presentationFiles.length){ const o=document.createElement('option'); o.value='-1'; o.textContent='—'; presentationSelectCompact.appendChild(o); presentationSelectCompact.disabled=true; }
     else { presentationFiles.forEach((m,i)=>{ const o=document.createElement('option'); o.value=String(i); o.textContent=displayName(m); presentationSelectCompact.appendChild(o); }); presentationSelectCompact.disabled=false; presentationSelectCompact.value=String(Math.max(0,presentationIndex)); }
+    
+    // NEW: Populate combined dropdown for top/bottom menu
+    if (combinedMediaSelect) {
+      combinedMediaSelect.innerHTML = '<option value="">Select media...</option>';
+      if (videoFiles.length) {
+        const vidGroup = document.createElement('optgroup');
+        vidGroup.label = 'Videos';
+        videoFiles.forEach((m,i)=>{
+          const o=document.createElement('option'); 
+          o.value=`video:${i}`; 
+          o.textContent=displayName(m); 
+          vidGroup.appendChild(o);
+        });
+        combinedMediaSelect.appendChild(vidGroup);
+      }
+      if (presentationFiles.length) {
+        const presGroup = document.createElement('optgroup');
+        presGroup.label = 'Presentations';
+        presentationFiles.forEach((m,i)=>{
+          const o=document.createElement('option'); 
+          o.value=`pdf:${i}`; 
+          o.textContent=displayName(m); 
+          presGroup.appendChild(o);
+        });
+        combinedMediaSelect.appendChild(presGroup);
+      }
+      combinedMediaSelect.disabled = !videoFiles.length && !presentationFiles.length;
+      // Set current selection
+      if (activeView==='video' && currentVideoIndex>=0) {
+        combinedMediaSelect.value = `video:${currentVideoIndex}`;
+      } else if (activeView==='presentation' && presentationIndex>=0) {
+        combinedMediaSelect.value = `pdf:${presentationIndex}`;
+      }
+    }
   }
 
   // Add files — NO auto-play
@@ -1661,8 +1715,8 @@
       subtitle.addEventListener('input', ()=>{ slot.subtitle = subtitle.value.trim(); renderAgendaPanel(); saveState(); });
       titleWrap.appendChild(subtitle);
 
-      const start = document.createElement('input'); start.type='time'; start.value = slot.start || ''; start.step=60;
-      const end = document.createElement('input'); end.type='time'; end.value = slot.end || ''; end.step=60;
+      const start = document.createElement('input'); start.type='time'; start.value = slot.start || '';
+      const end = document.createElement('input'); end.type='time'; end.value = slot.end || '';
 
       // FEATURE 4: Duration input
       const duration = document.createElement('input'); duration.type='number'; duration.min='5'; duration.step='5';
@@ -2069,6 +2123,19 @@
   // Compact selects
   videoSelectCompact.addEventListener('change', e=>{ const idx=parseInt(e.target.value,10); if(!isNaN(idx)&&idx>=0) playVideo(idx); });
   presentationSelectCompact.addEventListener('change', e=>{ const idx=parseInt(e.target.value,10); if(!isNaN(idx)&&idx>=0) loadPresentation(idx); });
+  
+  // NEW: Combined dropdown handler for top/bottom menu
+  if (combinedMediaSelect) {
+    combinedMediaSelect.addEventListener('change', e=>{
+      const val = e.target.value;
+      if (!val) return;
+      const [type, idxStr] = val.split(':');
+      const idx = parseInt(idxStr,10);
+      if (isNaN(idx) || idx<0) return;
+      if (type==='video') playVideo(idx);
+      else if (type==='pdf') loadPresentation(idx);
+    });
+  }
 
   // Video ended behavior
   videoPlayer.addEventListener('ended', ()=>{
