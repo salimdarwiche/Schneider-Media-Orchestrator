@@ -61,17 +61,20 @@
     position:fixed; z-index:150;
     background:var(--se-life-green); color:var(--se-white);
     border:2px solid var(--se-white); border-radius:9999px;
-    width:48px; height:48px; display:none; align-items:center; justify-content:center;
+    width:48px; height:48px; display:flex; align-items:center; justify-content:center;
     cursor:pointer; box-shadow:0 4px 12px rgba(0,0,0,0.25);
     transition:all .15s;
   }
   .menu-toggle-btn:hover { transform:scale(1.05); box-shadow:0 6px 16px rgba(0,0,0,0.3); }
   .menu-toggle-btn svg { width:24px; height:24px; }
-  .menu-toggle-btn.show { display:flex; }
-  .menu-toggle-btn.left { top:20px; left:20px; }
-  .menu-toggle-btn.right { top:20px; right:20px; }
-  .menu-toggle-btn.top { top:20px; left:20px; }
-  .menu-toggle-btn.bottom { bottom:20px; left:20px; }
+  .menu-toggle-btn.left { top:20px; left:360px; }
+  .menu-toggle-btn.right { top:20px; right:360px; }
+  .menu-toggle-btn.top { top:120px; left:20px; }
+  .menu-toggle-btn.bottom { bottom:120px; left:20px; }
+  .menu-toggle-btn.hidden-position.left { left:20px; }
+  .menu-toggle-btn.hidden-position.right { right:20px; }
+  .menu-toggle-btn.hidden-position.top { top:20px; }
+  .menu-toggle-btn.hidden-position.bottom { bottom:20px; }
 
   .logo-header { height:72px; background:var(--se-life-green); display:flex; align-items:center; justify-content:center; padding:0 20px; flex-shrink:0; }
   .menu-panel.top .logo-header, .menu-panel.bottom .logo-header { display:none; }
@@ -1872,16 +1875,16 @@
     if (menuVisible) {
       menuPanel.classList.remove('hidden');
       mainContent.classList.remove('menu-hidden');
-      menuToggleBtn.classList.remove('show');
+      menuToggleBtn.classList.remove('hidden-position');
     } else {
       menuPanel.classList.add('hidden');
       mainContent.classList.add('menu-hidden');
-      menuToggleBtn.classList.add('show');
+      menuToggleBtn.classList.add('hidden-position');
     }
-    // Adjust toggle button position based on menu position
+    // Update toggle button position based on menu position
     menuToggleBtn.className = 'menu-toggle-btn ' + menuPos;
     if (!menuVisible) {
-      menuToggleBtn.classList.add('show');
+      menuToggleBtn.classList.add('hidden-position');
     }
     // Trigger resize for PDF if needed
     setTimeout(() => {
@@ -1891,6 +1894,8 @@
 
   if (menuToggleBtn) {
     menuToggleBtn.addEventListener('click', toggleMenu);
+    // Initialize button position
+    menuToggleBtn.className = 'menu-toggle-btn ' + menuPos;
   }
 
   // Init
