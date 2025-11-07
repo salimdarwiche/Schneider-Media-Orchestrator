@@ -211,6 +211,8 @@
   .presentation-controls button { padding:8px 12px; background:var(--se-life-green); border:none; color:var(--se-white); border-radius:8px; cursor:pointer; font-weight:700; }
   /* NEW: PDF canvas sizing - maintain aspect ratio through JS rendering */
   #pdfCanvas { flex:1; width:100%; max-width:100%; max-height:100%; background:var(--se-white); object-fit:contain; }
+  /* NEW: Ensure PDF uses full viewport when menu is hidden */
+  .main-content.menu-hidden .presentation-container { width:100vw; height:100vh; }
 
   /* Modals */
   .modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.6); display:none; align-items:center; justify-content:center; z-index:1000; }
@@ -1504,19 +1506,20 @@
       const containerAspect = containerW / containerH;
       
       // Calculate scale to fit within container while maintaining aspect ratio
+      // Use maximum available space while respecting aspect ratio
       let scale;
       if (pdfAspect > containerAspect) {
-        // PDF is wider - fit to width
+        // PDF is wider - fit to width (use full width)
         scale = containerW / unscaled.width;
       } else {
-        // PDF is taller - fit to height
+        // PDF is taller - fit to height (use full height)
         scale = containerH / unscaled.height;
       }
       
       // Apply device pixel ratio for crisp rendering, but limit max scale
       const deviceScale = window.devicePixelRatio || 1;
       const maxScale = Math.min(3, deviceScale * 1.5);
-      scale = Math.min(maxScale, Math.max(0.5, scale * 0.95)); // 0.95 for slight padding
+      scale = Math.min(maxScale, Math.max(0.5, scale)); // No padding reduction - use full space
       
       const vp = page.getViewport({ scale });
 
@@ -1738,11 +1741,15 @@
       subtitle.addEventListener('input', ()=>{ slot.subtitle = subtitle.value.trim(); renderAgendaPanel(); saveState(); });
       titleWrap.appendChild(subtitle);
 
-      const start = document.createElement('input'); start.type='time'; start.value = slot.start || '';
-      const end = document.createElement('input'); end.type='time'; end.value = slot.end || '';
+      // FEATURE 3: Text inputs for time to allow slower typing (e.g., "07" without rushing)
+      const start = document.createElement('input'); start.type='text'; start.value = slot.start || ''; 
+      start.placeholder='HH:MM'; start.pattern='[0-2][0-9]:[0-5][0-9]'; start.maxLength='5';
+      const end = document.createElement('input'); end.type='text'; end.value = slot.end || '';
+      end.placeholder='HH:MM'; end.pattern='[0-2][0-9]:[0-5][0-9]'; end.maxLength='5';
 
       // FEATURE 4: Duration input with better number handling
-      const duration = document.createElement('input'); duration.type='number'; duration.min='5'; duration.step='1';
+      const duration = document.createElement('input'); duration.type='text'; duration.inputMode='numeric'; 
+      duration.pattern='[0-9]+'; duration.maxLength='4';
       const startMins = parseHHMM(slot.start);
       const endMins = parseHHMM(slot.end);
       if (startMins !== null && endMins !== null) {
@@ -1750,8 +1757,8 @@
       }
       duration.placeholder='mins';
       
-      // Better input handling: update on change instead of continuous input
-      duration.addEventListener('change', ()=>{
+      // Better input handling: update on blur (after user finishes typing)
+      duration.addEventListener('blur', ()=>{
         const dur = parseInt(duration.value, 10);
         if (!isNaN(dur) && dur >= 5) {
           const s = parseHHMM(slot.start);
@@ -1762,29 +1769,49 @@
             renderAgendaPanel();
             saveState();
           }
+        } else if (duration.value.trim() !== '') {
+          // Reset to current duration if invalid
+          const s = parseHHMM(slot.start);
+          const e = parseHHMM(slot.end);
+          if (s !== null && e !== null) {
+            duration.value = e - s;
+          }
         }
       });
 
       // Only first slot start editable
       start.disabled = (idx !== 0);
 
-      start.addEventListener('change', ()=>{
-        slot.start = start.value;
-        ensureEndAfterStart(slot);
-        // re-chain all subsequent
-        rechainStarts(1);
-        renderAgendaRows();
-        renderAgendaPanel();
-        saveState();
+      // Validate and format time inputs on blur
+      start.addEventListener('blur', ()=>{
+        const val = start.value.trim();
+        if (val && parseHHMM(val) !== null) {
+          slot.start = val;
+          ensureEndAfterStart(slot);
+          // re-chain all subsequent
+          rechainStarts(1);
+          renderAgendaRows();
+          renderAgendaPanel();
+          saveState();
+        } else if (val !== '') {
+          // Reset to current value if invalid
+          start.value = slot.start || '';
+        }
       });
-      end.addEventListener('change', ()=>{
-        slot.end = end.value;
-        ensureEndAfterStart(slot);
-        // next slot start becomes this end
-        rechainStarts(idx+1);
-        renderAgendaRows();
-        renderAgendaPanel();
-        saveState();
+      end.addEventListener('blur', ()=>{
+        const val = end.value.trim();
+        if (val && parseHHMM(val) !== null) {
+          slot.end = val;
+          ensureEndAfterStart(slot);
+          // next slot start becomes this end
+          rechainStarts(idx+1);
+          renderAgendaRows();
+          renderAgendaPanel();
+          saveState();
+        } else if (val !== '') {
+          // Reset to current value if invalid
+          end.value = slot.end || '';
+        }
       });
 
       const del = document.createElement('button'); del.type='button'; del.className='del-slot'; del.title='Remove slot'; del.textContent='✕';
