@@ -125,6 +125,10 @@
   .compact-dropdown { width:100%; max-width:300px; padding:10px 12px; border:1.5px solid var(--border); border-radius:10px; background:var(--se-white); font-weight:600; color:var(--text); cursor:pointer; font-size:14px; }
   .compact-dropdown:focus { outline:2px solid var(--focus); outline-offset:2px; }
 
+  /* NEW: Multi-select toolbar */
+  .multi-select-toolbar { padding:12px; background:var(--surface-alt); border-radius:10px; margin-top:12px; }
+  .multi-select-toolbar .compact-dropdown { max-width:100%; }
+
   .file-item-name { flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
   .menu-panel.top .file-item .file-item-name, .menu-panel.bottom .file-item .file-item-name { white-space:normal; overflow:visible; }
 
@@ -418,6 +422,19 @@
           </div>
           <div class="agenda-panel" id="agendaPanel"></div>
           <div class="helper-text">Drag videos or presentations into a slot. Click an item to open it. Use the small × to remove.</div>
+          
+          <!-- NEW: Multi-select assignment toolbar for Meeting mode -->
+          <div class="multi-select-toolbar" id="multiSelectToolbar" style="display:none">
+            <div style="display:flex;gap:8px;align-items:center;margin-top:12px">
+              <span style="font-size:13px;font-weight:700;color:var(--text-muted)">Assign selected to:</span>
+              <select id="slotAssignDropdown" class="compact-dropdown" style="flex:1;max-width:200px">
+                <option value="">Select slot...</option>
+              </select>
+              <button class="icon-btn" id="clearSelectionBtn" title="Clear selection">
+                <svg viewBox="0 0 24 24"><use href="#plus" style="transform:rotate(45deg)"></use></svg>
+              </button>
+            </div>
+          </div>
         </div>
 
         <div class="menu-section" id="videosSection">
@@ -831,6 +848,14 @@
   const videoClearBtn = document.getElementById('videoClearBtn');
   const buildAgendaBtn = document.getElementById('buildAgendaBtn');
 
+  // NEW: Multi-select UI elements
+  const multiSelectToolbar = document.getElementById('multiSelectToolbar');
+  const slotAssignDropdown = document.getElementById('slotAssignDropdown');
+  const clearSelectionBtn = document.getElementById('clearSelectionBtn');
+
+  // NEW: Track multi-selected items
+  let multiSelectedItems = new Set(); // stores {type:'video'|'pdf', id}
+
   // Resize
   const resizeHandle = document.getElementById('resizeHandle');
   let resizing = false, start = 0, orig = 0;
@@ -1105,15 +1130,48 @@
     videoList.innerHTML='';
     videoFiles.forEach((m,i)=>{
       ensureId(m);
+      
+      // NEW: Filter out videos assigned to slots in Meeting mode
+      if (appMode==='meeting') {
+        const isAssigned = agendaSlots.some(slot => 
+          (slot.items || []).some(it => it.type==='video' && it.id===m._id)
+        );
+        if (isAssigned) return; // Skip assigned videos
+      }
+      
       const item=document.createElement('div'); item.className='file-item'; item.dataset.id=m._id; item.dataset.kind='video';
       if (activeView==='video' && i===currentVideoIndex) item.classList.add('selected');
+      
+      // NEW: Add checkbox in Meeting mode
+      if (appMode==='meeting') {
+        const checkbox = document.createElement('input');
+        checkbox.type = 'checkbox';
+        checkbox.className = 'multi-select-checkbox';
+        checkbox.checked = Array.from(multiSelectedItems).some(sel => sel.type==='video' && sel.id===m._id);
+        checkbox.addEventListener('change', (e)=> {
+          e.stopPropagation();
+          const key = JSON.stringify({type:'video', id:m._id});
+          if (checkbox.checked) {
+            multiSelectedItems.add(key);
+            item.classList.add('multi-selected');
+          } else {
+            multiSelectedItems.delete(key);
+            item.classList.remove('multi-selected');
+          }
+          updateMultiSelectUI();
+        });
+        checkbox.addEventListener('click', e=> e.stopPropagation());
+        item.appendChild(checkbox);
+        if (checkbox.checked) item.classList.add('multi-selected');
+      }
+      
       const name=document.createElement('div'); name.className='file-item-name'; name.textContent=displayName(m); item.appendChild(name);
       // FEATURE 1: Add duration display
       if (m._duration) {
         const duration=document.createElement('div'); duration.className='file-item-duration';
         duration.textContent=formatDuration(m._duration); item.appendChild(duration);
       }
-      item.addEventListener('click',()=> playVideo(i));
+      item.addEventListener('click',()=> { if (appMode!=='meeting' || !item.querySelector('.multi-select-checkbox')) playVideo(i); });
       // Drag out to agenda slot
       item.draggable=true;
       item.addEventListener('dragstart',e=>{
@@ -1132,10 +1190,43 @@
     presentationList.innerHTML='';
     presentationFiles.forEach((m,i)=>{
       ensureId(m);
+      
+      // NEW: Filter out presentations assigned to slots in Meeting mode
+      if (appMode==='meeting') {
+        const isAssigned = agendaSlots.some(slot => 
+          (slot.items || []).some(it => it.type==='pdf' && it.id===m._id)
+        );
+        if (isAssigned) return; // Skip assigned presentations
+      }
+      
       const item=document.createElement('div'); item.className='file-item'; item.dataset.id=m._id; item.dataset.kind='pdf';
       if (activeView==='presentation' && i===presentationIndex) item.classList.add('selected');
+      
+      // NEW: Add checkbox in Meeting mode
+      if (appMode==='meeting') {
+        const checkbox = document.createElement('input');
+        checkbox.type = 'checkbox';
+        checkbox.className = 'multi-select-checkbox';
+        checkbox.checked = Array.from(multiSelectedItems).some(sel => sel.type==='pdf' && sel.id===m._id);
+        checkbox.addEventListener('change', (e)=> {
+          e.stopPropagation();
+          const key = JSON.stringify({type:'pdf', id:m._id});
+          if (checkbox.checked) {
+            multiSelectedItems.add(key);
+            item.classList.add('multi-selected');
+          } else {
+            multiSelectedItems.delete(key);
+            item.classList.remove('multi-selected');
+          }
+          updateMultiSelectUI();
+        });
+        checkbox.addEventListener('click', e=> e.stopPropagation());
+        item.appendChild(checkbox);
+        if (checkbox.checked) item.classList.add('multi-selected');
+      }
+      
       const name=document.createElement('div'); name.className='file-item-name'; name.textContent=displayName(m); item.appendChild(name);
-      item.addEventListener('click',()=> loadPresentation(i));
+      item.addEventListener('click',()=> { if (appMode!=='meeting' || !item.querySelector('.multi-select-checkbox')) loadPresentation(i); });
       // Drag out to agenda slot
       item.draggable=true;
       item.addEventListener('dragstart',e=>{
@@ -1149,6 +1240,63 @@
     document.getElementById('presentationHelperText').style.display = presentationFiles.length? 'none':'block';
     populateCompactSelects();
     updateVideoTopBar();
+  }
+
+  // NEW: Multi-select UI functions
+  function updateMultiSelectUI() {
+    const hasSelection = multiSelectedItems.size > 0;
+    if (multiSelectToolbar) {
+      multiSelectToolbar.style.display = (appMode==='meeting' && hasSelection) ? 'block' : 'none';
+    }
+    // Update slot assignment dropdown
+    if (slotAssignDropdown && appMode==='meeting') {
+      populateSlotDropdown();
+    }
+  }
+
+  function populateSlotDropdown() {
+    if (!slotAssignDropdown) return;
+    slotAssignDropdown.innerHTML = '<option value="">Select slot...</option>';
+    agendaSlots.forEach((slot, idx) => {
+      const option = document.createElement('option');
+      option.value = slot.id;
+      option.textContent = `${idx + 1}. ${slot.title || '(Untitled)'} - ${slot.start || '--:--'}`;
+      slotAssignDropdown.appendChild(option);
+    });
+  }
+
+  function assignSelectedToSlot(slotId) {
+    const slot = agendaSlots.find(s => s.id === slotId);
+    if (!slot) return;
+    
+    if (!slot.items) slot.items = [];
+    
+    let addedCount = 0;
+    multiSelectedItems.forEach(itemKey => {
+      try {
+        const item = JSON.parse(itemKey);
+        // Check if already in slot
+        const exists = slot.items.some(it => it.type===item.type && it.id===item.id);
+        if (!exists) {
+          slot.items.push(item);
+          addedCount++;
+        }
+      } catch(e) {}
+    });
+    
+    // Clear selection
+    multiSelectedItems.clear();
+    
+    // Re-render
+    renderVideoList();
+    renderPresentationList();
+    renderAgendaPanel();
+    updateMultiSelectUI();
+    saveState();
+    
+    if (addedCount > 0) {
+      showToast(`${addedCount} item(s) assigned to slot`);
+    }
   }
 
   function getDragAfterElement(container,y){
@@ -1458,8 +1606,13 @@
     if (appMode==='meeting'){
       if (menuPos!=='left'){ setMenuPosition('left'); }
     }
+    // Clear multi-select when switching modes
+    multiSelectedItems.clear();
     refreshModeControls();
     renderAgendaPanel();
+    renderVideoList();
+    renderPresentationList();
+    updateMultiSelectUI();
     saveState();
   }
 
@@ -1881,6 +2034,26 @@
       document.getElementById(tabName+'Tab')?.classList.add('active');
     });
   });
+
+  // NEW: Multi-select event handlers
+  if (slotAssignDropdown) {
+    slotAssignDropdown.addEventListener('change', (e)=> {
+      const slotId = e.target.value;
+      if (slotId && multiSelectedItems.size > 0) {
+        assignSelectedToSlot(slotId);
+        e.target.value = ''; // Reset dropdown
+      }
+    });
+  }
+
+  if (clearSelectionBtn) {
+    clearSelectionBtn.addEventListener('click', ()=> {
+      multiSelectedItems.clear();
+      renderVideoList();
+      renderPresentationList();
+      updateMultiSelectUI();
+    });
+  }
 
   // Compact selects
   videoSelectCompact.addEventListener('change', e=>{ const idx=parseInt(e.target.value,10); if(!isNaN(idx)&&idx>=0) playVideo(idx); });
