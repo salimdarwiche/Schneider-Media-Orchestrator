@@ -73,6 +73,19 @@
   .menu-toggle-btn.right { top:20px; right:360px; }
   .menu-toggle-btn.top { top:120px; left:20px; }
   .menu-toggle-btn.bottom { bottom:120px; left:20px; }
+
+  /* Back navigation button - opposite side of menu toggle */
+  .nav-back-btn {
+    position:fixed; top:20px; right:20px; z-index:150;
+    background:var(--se-life-green); color:var(--se-white);
+    border:2px solid var(--se-white); border-radius:9999px;
+    width:48px; height:48px; display:flex; align-items:center; justify-content:center;
+    cursor:pointer; box-shadow:0 4px 12px rgba(0,0,0,0.25);
+    transition:all .15s; opacity:0; pointer-events:none;
+  }
+  .nav-back-btn.show { opacity:1; pointer-events:auto; }
+  .nav-back-btn:hover { transform:scale(1.05); box-shadow:0 6px 16px rgba(0,0,0,0.3); }
+  .nav-back-btn svg { width:24px; height:24px; }
   .menu-toggle-btn.hidden-position.left { left:20px; }
   .menu-toggle-btn.hidden-position.right { right:20px; }
   .menu-toggle-btn.hidden-position.top { top:20px; }
@@ -90,6 +103,10 @@
   .menu-panel.bottom .resize-handle{ left:0; right:0; top:0; height:8px; cursor:ns-resize; }
 
   .menu-content { flex:1; overflow:auto; padding:20px; display:flex; flex-direction:column; gap:18px; }
+  
+  /* Scrollbar opposite to resize handle for easier scrolling */
+  .menu-panel.left .menu-content { direction: rtl; }
+  .menu-panel.left .menu-content > * { direction: ltr; }
 
   /* Sections and headers larger and spaced */
   .menu-section { display:flex; flex-direction:column; gap:10px; }
@@ -208,11 +225,37 @@
   .main-content.left .video-topbar { left:80px; }
   .main-content.menu-hidden.left .video-topbar { left:80px; }
 
-  .presentation-container { display:none; width:100%; height:100%; flex-direction:column; background:var(--se-black); color:var(--se-white); }
-  .presentation-controls { display:flex; gap:12px; padding:12px; justify-content:center; align-items:center; background:rgba(0,0,0,0.5); flex-shrink:0; }
-  .presentation-controls button { padding:8px 12px; background:var(--se-life-green); border:none; color:var(--se-white); border-radius:8px; cursor:pointer; font-weight:700; }
+  .presentation-container { display:none; width:100%; height:100%; flex-direction:column; background:var(--se-black); color:var(--se-white); position:relative; }
+  
+  /* Modern compact presentation controls - PowerPoint-style, bottom-right (opposite of menu) */
+  .presentation-controls {
+    position:absolute; bottom:12px; right:12px;
+    display:flex; gap:6px; padding:6px 10px; align-items:center;
+    background:rgba(0,0,0,0.8); backdrop-filter:blur(8px);
+    border-radius:20px; border:1px solid rgba(255,255,255,0.2);
+    box-shadow:0 2px 8px rgba(0,0,0,0.4);
+    z-index:100; transition:opacity .2s;
+  }
+  .presentation-controls button {
+    padding:4px 10px; background:transparent; border:1px solid rgba(255,255,255,0.25);
+    color:var(--se-white); border-radius:12px; cursor:pointer; font-weight:600;
+    font-size:12px; transition:all .15s; display:flex; align-items:center; gap:3px;
+    min-width:55px; justify-content:center;
+  }
+  .presentation-controls button:hover:not(:disabled) {
+    background:var(--se-life-green); border-color:var(--se-life-green);
+    transform:scale(1.05);
+  }
+  .presentation-controls button:disabled {
+    opacity:0.3; cursor:not-allowed;
+  }
+  .presentation-controls .page-info {
+    color:var(--se-white); font-weight:600; font-size:11px;
+    padding:0 6px; white-space:nowrap; opacity:0.85;
+  }
+  
   /* PDF canvas wrapper and sizing - maintain aspect ratio through JS rendering */
-  .pdf-canvas-wrapper { flex:1; display:flex; align-items:center; justify-content:center; background:var(--se-black); width:100%; overflow:hidden; }
+  .pdf-canvas-wrapper { flex:1; display:flex; align-items:center; justify-content:center; background:var(--se-black); width:100%; overflow:hidden; position:relative; }
   #pdfCanvas { background:var(--se-white); display:block; }
 
   /* Modals */
@@ -519,27 +562,24 @@
     </div>
 
     <div class="main-content left" id="mainContent">
+      <!-- Back navigation button (overlaid, opposite to menu toggle) -->
+      <button class="nav-back-btn" id="navBackBtn" title="Switch Media" aria-label="Switch to other media type">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><use href="#chevron-left"></use></svg>
+      </button>
+
       <div class="video-container" id="videoContainer" style="display:none">
-        <div class="video-topbar" id="videoTopBar" style="display:none">
-          <button class="icon-btn" id="backToPresentationBtn" title="Back to Presentation" aria-label="Back to Presentation">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><use href="#chevron-left"></use></svg>
-          </button>
-        </div>
         <video id="videoPlayer" controls></video>
       </div>
 
       <div class="presentation-container" id="presentationContainer">
-        <div class="presentation-controls">
-          <button id="prevPageBtn">← Prev</button>
-          <span id="pageInfo">Page</span>
-          <button id="nextPageBtn">Next →</button>
-          <button id="backToVideoBtn" style="margin-left:20px;background:var(--se-white);color:var(--text);padding:8px 12px;border-radius:8px;font-weight:700;border:2px solid var(--border)">Back to Video</button>
-          <button id="fullscreenBtnPres" class="icon-btn fullscreen-btn" title="Enter Fullscreen" aria-label="Toggle fullscreen">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><use href="#maximize"></use></svg>
-          </button>
-        </div>
         <div class="pdf-canvas-wrapper">
           <canvas id="pdfCanvas"></canvas>
+          <!-- Modern compact controls overlaid at bottom -->
+          <div class="presentation-controls">
+            <button id="prevPageBtn" title="Previous page">← Prev</button>
+            <span class="page-info" id="pageInfo">Page</span>
+            <button id="nextPageBtn" title="Next page">Next →</button>
+          </div>
         </div>
       </div>
 
@@ -859,11 +899,9 @@
   const prevPageBtn = document.getElementById('prevPageBtn');
   const nextPageBtn = document.getElementById('nextPageBtn');
   const pageInfo = document.getElementById('pageInfo');
-  const backToVideoBtn = document.getElementById('backToVideoBtn');
 
-  // Video topbar
-  const backToPresentationBtn = document.getElementById('backToPresentationBtn');
-  const videoTopBar = document.getElementById('videoTopBar');
+  // NEW: Back navigation button (unified, overlaid)
+  const navBackBtn = document.getElementById('navBackBtn');
 
   // FEATURE 6: Menu toggle
   const menuToggleBtn = document.getElementById('menuToggleBtn');
@@ -1215,7 +1253,7 @@
     });
     document.getElementById('videoHelperText').style.display = videoFiles.length? 'none':'block';
     populateCompactSelects();
-    updateVideoTopBar();
+    updateNavBackBtn();
   }
   function renderPresentationList(){
     presentationList.innerHTML='';
@@ -1273,7 +1311,7 @@
     });
     document.getElementById('presentationHelperText').style.display = presentationFiles.length? 'none':'block';
     populateCompactSelects();
-    updateVideoTopBar();
+    updateNavBackBtn();
   }
 
   // NEW: Multi-select UI functions
@@ -1393,7 +1431,7 @@
     const meta = videoFiles[index];
     if (!meta){
       videoContainer.style.display='none'; emptyState.style.display='flex';
-      renderVideoList(); renderPresentationList(); populateCompactSelects(); updateVideoTopBar(); return;
+      renderVideoList(); renderPresentationList(); populateCompactSelects(); updateNavBackBtn(); return;
     }
 
     if (currentVideoUrl) { try{ URL.revokeObjectURL(currentVideoUrl); }catch(_){} }
@@ -1404,7 +1442,7 @@
     videoContainer.style.display='flex'; presentationContainer.style.display='none'; emptyState.style.display='none';
     videoPlayer.play().catch(()=>{});
 
-    renderVideoList(); renderPresentationList(); populateCompactSelects(); updateVideoTopBar(); saveState();
+    renderVideoList(); renderPresentationList(); populateCompactSelects(); updateNavBackBtn(); saveState();
   }
   function stopVideo(){ try{ videoPlayer.pause(); }catch(_){} }
   function playNextInPlaylist(){
@@ -1425,7 +1463,7 @@
       if (wasPlaying){ currentVideoIndex=Math.min(index, videoFiles.length-1); renderVideoList(); }
       else { if (index<currentVideoIndex) currentVideoIndex--; renderVideoList(); }
     }
-    renderModalVideoList(); populateCompactSelects(); updateVideoTopBar(); saveState();
+    renderModalVideoList(); populateCompactSelects(); updateNavBackBtn(); saveState();
   }
 
   // PDF open
@@ -1441,7 +1479,7 @@
     if (!meta){
       pdfDoc=null; pdfCtx.clearRect(0,0,pdfCanvas.width,pdfCanvas.height); pageInfo.textContent='';
       presentationContainer.style.display='none'; emptyState.style.display='flex';
-      renderPresentationList(); renderVideoList(); populateCompactSelects(); updateVideoTopBar(); return;
+      renderPresentationList(); renderVideoList(); populateCompactSelects(); updateNavBackBtn(); return;
     }
 
     const myToken = ++pdfLoadToken;
@@ -1468,10 +1506,19 @@
 
     currentPage = (typeof meta._currentPage==='number' && meta._currentPage>=1 && meta._currentPage<=pdfDoc.numPages) ? meta._currentPage : 1;
     presentationContainer.style.display='flex'; videoContainer.style.display='none'; emptyState.style.display='none';
-    renderPresentationList(); renderVideoList(); populateCompactSelects(); updateVideoTopBar(); saveState();
+    renderPresentationList(); renderVideoList(); populateCompactSelects(); updateNavBackBtn(); saveState();
     renderPdfPage(currentPage);
   }
-  function updateVideoTopBar(){ const show = presentationFiles.length > 0; videoTopBar.style.display = show ? 'flex' : 'none'; }
+  function updateNavBackBtn() {
+    const shouldShow = (activeView === 'video' && presentationFiles.length > 0) || 
+                       (activeView === 'presentation' && videoFiles.length > 0);
+    if (shouldShow) {
+      navBackBtn.classList.add('show');
+      navBackBtn.title = activeView === 'video' ? 'Switch to Presentation' : 'Switch to Video';
+    } else {
+      navBackBtn.classList.remove('show');
+    }
+  }
 
   function openPdf(opts){
     return new Promise((resolve, reject) => {
@@ -1533,7 +1580,12 @@
       pdfCanvas.style.height = (vp.height / deviceScale) + 'px';
 
       return page.render({ canvasContext: pdfCanvas.getContext('2d'), viewport: vp }).promise
-        .then(()=> { pageInfo.textContent = `Page ${pageNum} of ${pdfDoc.numPages}`; });
+        .then(()=> { 
+          pageInfo.textContent = `Page ${pageNum} of ${pdfDoc.numPages}`;
+          // Update button states
+          prevPageBtn.disabled = (pageNum <= 1);
+          nextPageBtn.disabled = (pageNum >= pdfDoc.numPages);
+        });
     }).catch(err=> console.error('renderPdfPage error', err));
   }
 
@@ -1547,7 +1599,7 @@
       if (wasActive){ const newIdx=Math.min(index, presentationFiles.length-1); loadPresentation(newIdx); }
       else { if (index<presentationIndex) presentationIndex--; renderPresentationList(); }
     }
-    renderModalPresentationList(); populateCompactSelects(); updateVideoTopBar(); saveState();
+    renderModalPresentationList(); populateCompactSelects(); updateNavBackBtn(); saveState();
   }
 
   // Compact selects
@@ -2126,7 +2178,7 @@
         renderVideoList();
         renderModalVideoList();
         populateCompactSelects();
-        updateVideoTopBar();
+        updateNavBackBtn();
         saveState();
         showToast('All videos cleared');
       }
@@ -2207,32 +2259,37 @@
   prevPageBtn.addEventListener('click', ()=>{ if (pdfDoc && currentPage>1){ currentPage--; renderPdfPage(currentPage); const meta=presentationFiles[presentationIndex]; if(meta) meta._currentPage=currentPage; saveState(); }});
   nextPageBtn.addEventListener('click', ()=>{ if (pdfDoc && currentPage<pdfDoc.numPages){ currentPage++; renderPdfPage(currentPage); const meta=presentationFiles[presentationIndex]; if(meta) meta._currentPage=currentPage; saveState(); }});
 
-  // Back to Video (no auto-play)
-  backToVideoBtn.addEventListener('click', ()=>{
-    if (presentationIndex>=0 && pdfDoc){
-      const pres=presentationFiles[presentationIndex]; if(pres) pres._currentPage=currentPage;
-    }
-    presentationContainer.style.display='none';
-    if (videoFiles.length){
+  // NEW: Unified back navigation button
+  navBackBtn.addEventListener('click', ()=>{
+    if (activeView === 'video' && presentationFiles.length > 0) {
+      // From video to last viewed presentation
+      const idx = Math.max(0, presentationIndex);
+      loadPresentation(idx);
+    } else if (activeView === 'presentation' && videoFiles.length > 0) {
+      // From presentation to last played video (or first)
+      if (presentationIndex>=0 && pdfDoc){
+        const pres=presentationFiles[presentationIndex]; if(pres) pres._currentPage=currentPage;
+      }
+      presentationContainer.style.display='none';
       activeView='video';
       videoContainer.style.display='flex';
       emptyState.style.display='none';
       stopVideo();
-    } else {
-      videoContainer.style.display='none';
-      emptyState.style.display='flex';
-      activeView=null;
+      updateNavBackBtn();
     }
-    updateVideoTopBar();
   });
 
-  // Back to Presentation
-  backToPresentationBtn.addEventListener('click', ()=>{
-    if (presentationFiles.length>0){
-      const idx = Math.max(0, presentationIndex);
-      loadPresentation(idx);
+  // Update navBackBtn visibility based on available media
+  function updateNavBackBtn() {
+    const shouldShow = (activeView === 'video' && presentationFiles.length > 0) || 
+                       (activeView === 'presentation' && videoFiles.length > 0);
+    if (shouldShow) {
+      navBackBtn.classList.add('show');
+      navBackBtn.title = activeView === 'video' ? 'Switch to Presentation' : 'Switch to Video';
+    } else {
+      navBackBtn.classList.remove('show');
     }
-  });
+  }
 
   // Position buttons
   document.querySelectorAll('.position-btn').forEach(btn=> {
