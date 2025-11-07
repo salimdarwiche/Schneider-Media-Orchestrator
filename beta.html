@@ -205,8 +205,8 @@
   .presentation-container { display:none; width:100%; height:100%; flex-direction:column; background:#111827; color:var(--se-white); }
   .presentation-controls { display:flex; gap:12px; padding:12px; justify-content:center; align-items:center; background:rgba(255,255,255,0.02); }
   .presentation-controls button { padding:8px 12px; background:var(--se-life-green); border:none; color:var(--se-white); border-radius:8px; cursor:pointer; font-weight:700; }
-  /* NEW: Fix presentation aspect ratio - maintain correct dimensions */
-  #pdfCanvas { flex:1; width:100%; background:var(--se-white); object-fit:contain; }
+  /* NEW: PDF canvas sizing - maintain aspect ratio through JS rendering */
+  #pdfCanvas { flex:1; width:100%; background:var(--se-white); }
   .main-content.menu-hidden #pdfCanvas { max-width:100vw; max-height:100vh; }
 
   /* Modals */
@@ -1150,10 +1150,10 @@
         const checkbox = document.createElement('input');
         checkbox.type = 'checkbox';
         checkbox.className = 'multi-select-checkbox';
-        checkbox.checked = Array.from(multiSelectedItems).some(sel => sel.type==='video' && sel.id===m._id);
+        const key = `video:${m._id}`; // Simple string key
+        checkbox.checked = multiSelectedItems.has(key);
         checkbox.addEventListener('change', (e)=> {
           e.stopPropagation();
-          const key = JSON.stringify({type:'video', id:m._id});
           if (checkbox.checked) {
             multiSelectedItems.add(key);
             item.classList.add('multi-selected');
@@ -1174,7 +1174,10 @@
         const duration=document.createElement('div'); duration.className='file-item-duration';
         duration.textContent=formatDuration(m._duration); item.appendChild(duration);
       }
-      item.addEventListener('click',()=> { if (appMode!=='meeting' || !item.querySelector('.multi-select-checkbox')) playVideo(i); });
+      
+      // Click handler - don't play if checkbox exists in Meeting mode
+      const shouldPlay = () => appMode!=='meeting' || !item.querySelector('.multi-select-checkbox');
+      item.addEventListener('click',()=> { if (shouldPlay()) playVideo(i); });
       // Drag out to agenda slot
       item.draggable=true;
       item.addEventListener('dragstart',e=>{
@@ -1210,10 +1213,10 @@
         const checkbox = document.createElement('input');
         checkbox.type = 'checkbox';
         checkbox.className = 'multi-select-checkbox';
-        checkbox.checked = Array.from(multiSelectedItems).some(sel => sel.type==='pdf' && sel.id===m._id);
+        const key = `pdf:${m._id}`; // Simple string key
+        checkbox.checked = multiSelectedItems.has(key);
         checkbox.addEventListener('change', (e)=> {
           e.stopPropagation();
-          const key = JSON.stringify({type:'pdf', id:m._id});
           if (checkbox.checked) {
             multiSelectedItems.add(key);
             item.classList.add('multi-selected');
@@ -1229,7 +1232,10 @@
       }
       
       const name=document.createElement('div'); name.className='file-item-name'; name.textContent=displayName(m); item.appendChild(name);
-      item.addEventListener('click',()=> { if (appMode!=='meeting' || !item.querySelector('.multi-select-checkbox')) loadPresentation(i); });
+      
+      // Click handler - don't load if checkbox exists in Meeting mode
+      const shouldLoad = () => appMode!=='meeting' || !item.querySelector('.multi-select-checkbox');
+      item.addEventListener('click',()=> { if (shouldLoad()) loadPresentation(i); });
       // Drag out to agenda slot
       item.draggable=true;
       item.addEventListener('dragstart',e=>{
@@ -1276,15 +1282,17 @@
     
     let addedCount = 0;
     multiSelectedItems.forEach(itemKey => {
-      try {
-        const item = JSON.parse(itemKey);
+      // Parse simple string key format "type:id"
+      const [type, id] = itemKey.split(':');
+      if (type && id) {
+        const item = { type, id };
         // Check if already in slot
         const exists = slot.items.some(it => it.type===item.type && it.id===item.id);
         if (!exists) {
           slot.items.push(item);
           addedCount++;
         }
-      } catch(e) {}
+      }
     });
     
     // Clear selection
