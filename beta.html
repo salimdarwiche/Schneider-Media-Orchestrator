@@ -2776,7 +2776,56 @@
     const p = tzNowHM(timeZone);
     if (gmtClockValue) gmtClockValue.textContent = `${String(p.h).padStart(2,'0')}:${String(p.m).padStart(2,'0')}:${String(p.s).padStart(2,'0')}`;
     if (tzLabel) tzLabel.textContent = `Current time (${zoneShortLabel(timeZone)})`;
-    if (appMode==='meeting') renderAgendaPanel();
+    if (appMode==='meeting') updateAgendaDynamicParts();
+  }
+  
+  // Update only dynamic parts of agenda (NOW badges and progress bars) without re-rendering
+  function updateAgendaDynamicParts(){
+    const nowMins = getNowTZMinutes();
+    const slots = agendaPanel.querySelectorAll('.agenda-slot');
+    
+    slots.forEach((card, idx) => {
+      const slot = agendaSlots[idx];
+      if (!slot) return;
+      
+      const sStart = parseHHMM(slot.start);
+      const sEnd = parseHHMM(slot.end);
+      const active = (sStart!=null && sEnd!=null && nowMins>=sStart && nowMins<=sEnd);
+      
+      // Update active class
+      if (active) {
+        card.classList.add('active');
+      } else {
+        card.classList.remove('active');
+      }
+      
+      // Update NOW badge
+      const header = card.querySelector('.slot-header');
+      if (header) {
+        const existingBadge = header.querySelector('.slot-badge');
+        if (active && !existingBadge) {
+          // Add NOW badge
+          const right = Array.from(header.children).find(el => el.style.display === 'flex' && el.style.alignItems === 'center');
+          if (right) {
+            const badge = document.createElement('span');
+            badge.className = 'slot-badge';
+            badge.textContent = 'NOW';
+            right.insertBefore(badge, right.firstChild);
+          }
+        } else if (!active && existingBadge) {
+          // Remove NOW badge
+          existingBadge.remove();
+        }
+      }
+      
+      // Update progress bar
+      const progBar = card.querySelector('.slot-progress > div');
+      if (progBar && sStart!=null && sEnd!=null && sEnd>sStart) {
+        let pct = clamp(((nowMins - sStart) / (sEnd - sStart)) * 100, 0, 100);
+        if (!(nowMins>=sStart && nowMins<=sEnd)) pct = (nowMins < sStart) ? 0 : 100;
+        progBar.style.width = pct.toFixed(1)+'%';
+      }
+    });
   }
   let clockTimer = null;
   function startClock(){ if (clockTimer) clearInterval(clockTimer); clockTimer = setInterval(updateTZClock, 1000); updateTZClock(); }
