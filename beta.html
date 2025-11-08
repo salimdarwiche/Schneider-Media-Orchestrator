@@ -110,6 +110,17 @@
   .floating-settings-btn:hover { transform:scale(1.05); box-shadow:0 6px 16px rgba(0,0,0,0.3); }
   .floating-settings-btn svg { width:24px; height:24px; }
   
+  .floating-mode-toggle-btn {
+    position:fixed; top:20px; right:200px; z-index:150;
+    background:var(--se-life-green); color:var(--se-white);
+    border:2px solid var(--se-white); border-radius:9999px;
+    width:48px; height:48px; display:flex; align-items:center; justify-content:center;
+    cursor:pointer; box-shadow:0 4px 12px rgba(0,0,0,0.25);
+    transition:all .15s;
+  }
+  .floating-mode-toggle-btn:hover { transform:scale(1.05); box-shadow:0 6px 16px rgba(0,0,0,0.3); }
+  .floating-mode-toggle-btn svg { width:24px; height:24px; }
+  
   .menu-toggle-btn.hidden-position.left { left:20px; }
   .menu-toggle-btn.hidden-position.right { right:20px; }
   .menu-toggle-btn.hidden-position.top { top:20px; }
@@ -869,6 +880,17 @@
       <rect x="2" y="3" width="20" height="14" rx="2" fill="none" stroke="currentColor" stroke-width="2"/>
       <line x1="12" y1="17" x2="12" y2="21" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
       <line x1="8" y1="21" x2="16" y2="21" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+      <path d="M7 7h10M7 10h6" fill="none" stroke="currentColor" stroke-width="1.5"/>
+    </symbol>
+    <symbol id="meeting" viewBox="0 0 24 24">
+      <rect x="3" y="4" width="18" height="18" rx="2" fill="none" stroke="currentColor" stroke-width="2"/>
+      <line x1="3" y1="10" x2="21" y2="10" stroke="currentColor" stroke-width="2"/>
+      <line x1="3" y1="14" x2="21" y2="14" stroke="currentColor" stroke-width="2"/>
+      <line x1="3" y1="18" x2="21" y2="18" stroke="currentColor" stroke-width="2"/>
+      <circle cx="7" cy="7" r="1" fill="currentColor"/>
+      <circle cx="12" cy="7" r="1" fill="currentColor"/>
+    </symbol>
+      <line x1="8" y1="21" x2="16" y2="21" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
       <path d="M8 10l3 3 5-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
     </symbol>
   </svg>
@@ -991,6 +1013,11 @@
       <!-- Back navigation button (overlaid, opposite to menu toggle) -->
       <button class="nav-back-btn" id="navBackBtn" title="Switch Media" aria-label="Switch to other media type">
         <svg viewBox="0 0 24 24" aria-hidden="true"><use href="#chevron-left"></use></svg>
+      </button>
+      
+      <!-- Floating mode toggle button -->
+      <button class="floating-mode-toggle-btn" id="floatingModeToggleBtn" title="Switch to Meeting Mode" aria-label="Toggle between presentation and meeting mode">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><use href="#meeting"></use></svg>
       </button>
       
       <!-- Floating fullscreen button (near back button) -->
@@ -2305,6 +2332,18 @@
       ? 'Menu position is fixed to Left in Meeting mode.'
       : 'Use these buttons to change menu position.';
     agendaSection.style.display = (appMode==='meeting') ? 'block' : 'none';
+    // Update floating mode toggle button
+    const floatingModeToggleBtn = document.getElementById('floatingModeToggleBtn');
+    if (floatingModeToggleBtn) {
+      const icon = floatingModeToggleBtn.querySelector('use');
+      if (appMode === 'presentation') {
+        icon.setAttribute('href', '#meeting');
+        floatingModeToggleBtn.setAttribute('title', 'Switch to Meeting Mode');
+      } else {
+        icon.setAttribute('href', '#presentation');
+        floatingModeToggleBtn.setAttribute('title', 'Switch to Presentation Mode');
+      }
+    }
   }
   function setAppMode(mode){
     appMode = (mode==='meeting') ? 'meeting' : 'presentation';
@@ -2977,6 +3016,25 @@
   }
 
   // Events
+  
+  // Floating mode toggle button
+  const floatingModeToggleBtn = document.getElementById('floatingModeToggleBtn');
+  if (floatingModeToggleBtn) {
+    floatingModeToggleBtn.addEventListener('click', ()=> {
+      const newMode = (appMode === 'presentation') ? 'meeting' : 'presentation';
+      setAppMode(newMode);
+      // Update button icon and tooltip
+      const icon = floatingModeToggleBtn.querySelector('use');
+      const titleText = floatingModeToggleBtn.getAttribute('title');
+      if (appMode === 'presentation') {
+        icon.setAttribute('href', '#meeting');
+        floatingModeToggleBtn.setAttribute('title', 'Switch to Meeting Mode');
+      } else {
+        icon.setAttribute('href', '#presentation');
+        floatingModeToggleBtn.setAttribute('title', 'Switch to Presentation Mode');
+      }
+    });
+  }
   
   // Floating settings button (for presentation mode)
   if (floatingSettingsBtn) {
