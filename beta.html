@@ -2749,10 +2749,11 @@
     if (quickActionsClickHandlerSetup) return;
     quickActionsClickHandlerSetup = true;
     
-    document.addEventListener('click', (e)=>{
-      // Close all quick action menus if clicking outside any of them
-      const clickedInsideMenu = e.target.closest('.quick-actions-container');
-      if (!clickedInsideMenu) {
+    // Use mousedown instead of click to avoid conflicts with button handlers
+    document.addEventListener('mousedown', (e)=>{
+      // Check if click is outside all quick actions containers
+      const clickedInContainer = e.target.closest('.quick-actions-container');
+      if (!clickedInContainer) {
         document.querySelectorAll('.custom-media-menu, .quick-assign-menu').forEach(menu => {
           menu.style.display = 'none';
         });
