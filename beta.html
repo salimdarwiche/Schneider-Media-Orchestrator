@@ -2781,6 +2781,10 @@
   
   // Update only dynamic parts of agenda (NOW badges and progress bars) without re-rendering
   function updateAgendaDynamicParts(){
+    // Safety check: if any menus are open, skip the update to avoid interfering
+    const anyMenuOpen = document.querySelector('.custom-media-menu[style*="flex"], .quick-assign-menu[style*="block"]');
+    if (anyMenuOpen) return;
+    
     const nowMins = getNowTZMinutes();
     const slots = agendaPanel.querySelectorAll('.agenda-slot');
     
