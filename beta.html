@@ -361,6 +361,76 @@
   .slot-item .si-x:hover { background:var(--surface-alt); border-color:var(--se-life-green); color:var(--se-life-green); }
   .slot-item.dragging { opacity:.6; }
 
+  /* FEATURE: Highlight currently playing media in agenda */
+  .slot-item.active-media {
+    background:var(--se-life-green) !important;
+    color:var(--se-white);
+    border-color:var(--se-life-green);
+    box-shadow:0 4px 12px rgba(61,205,88,0.3);
+  }
+  .slot-item.active-media .si-name { color:var(--se-white) !important; }
+  .slot-item.active-media .si-type { background:var(--se-white); color:var(--se-life-green); }
+  .slot-item.active-media .si-x { background:rgba(255,255,255,0.9); }
+
+
+  /* FEATURE: Custom media types (text, link, photo) */
+  .slot-item .si-type.type-text { background:#3b82f6; }
+  .slot-item .si-type.type-link { background:#f97316; }
+  .slot-item .si-type.type-photo { background:#a855f7; }
+  
+  .custom-media-add {
+    margin-top:8px; display:flex; gap:8px; align-items:center;
+  }
+  .custom-media-add select {
+    padding:6px 10px; border-radius:6px; border:1.5px solid var(--border);
+    font-size:13px; font-weight:600; cursor:pointer;
+  }
+  .custom-media-add button {
+    padding:6px 12px; border-radius:6px; border:none;
+    background:var(--se-life-green); color:var(--se-white);
+    font-weight:700; font-size:13px; cursor:pointer;
+  }
+  .custom-media-add button:hover { opacity:0.9; }
+  .custom-media-add .cancel-btn {
+    background:var(--se-dark-gray);
+  }
+  
+  .custom-media-form {
+    margin-top:8px; padding:10px; background:var(--surface-alt);
+    border-radius:8px; border:1.5px solid var(--border);
+  }
+  .custom-media-form input, .custom-media-form textarea {
+    width:100%; padding:8px; margin-bottom:8px;
+    border:1.5px solid var(--border); border-radius:6px;
+    font-size:13px;
+  }
+  .custom-media-form textarea {
+    min-height:60px; resize:vertical; font-family:inherit;
+  }
+  .custom-media-form-actions {
+    display:flex; gap:8px;
+  }
+  .custom-media-form-actions button {
+    flex:1; padding:8px; border:none; border-radius:6px;
+    font-weight:700; font-size:13px; cursor:pointer;
+  }
+  .custom-media-form-actions .add-btn {
+    background:var(--se-life-green); color:var(--se-white);
+  }
+  .custom-media-form-actions .cancel-btn {
+    background:var(--se-dark-gray); color:var(--se-white);
+  }
+  
+  .slot-item .photo-thumbnail {
+    width:40px; height:40px; object-fit:cover;
+    border-radius:4px; margin-right:8px;
+  }
+  .slot-item .link-icon {
+    color:var(--se-life-green); text-decoration:none;
+    font-size:16px; margin-left:4px;
+  }
+
+
   .toast { position:fixed; top:16px; left:50%; transform:translateX(-50%) translateY(-16px); background:var(--se-life-green); color:var(--se-white); padding:10px 14px; border-radius:10px; box-shadow:0 10px 25px rgba(0,0,0,.15); opacity:0; pointer-events:none; transition:opacity .25s, transform .25s; z-index:3000; font-weight:700; }
   .toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
 
@@ -373,12 +443,45 @@
   .agenda-display-overlay.show { display:flex; }
   @keyframes fadeIn { from { opacity:0; } to { opacity:1; } }
   
+
   .agenda-display-content {
     background:var(--se-white); border-radius:20px;
-    max-width:900px; width:92%; max-height:90vh;
+    max-width:1200px; width:92%; max-height:90vh;
     padding:40px; overflow:auto; box-shadow:0 20px 60px rgba(0,0,0,0.5);
     position:relative;
   }
+  .agenda-display-logo {
+    text-align:center; margin-bottom:30px;
+  }
+  .agenda-display-logo img {
+    max-width:300px; height:auto;
+  }
+  .agenda-display-actions {
+    display:flex; gap:12px; justify-content:center;
+    margin-bottom:30px;
+  }
+  .agenda-display-actions button {
+    padding:10px 20px; border-radius:10px;
+    border:2px solid var(--border); background:var(--se-white);
+    font-weight:700; font-size:14px; cursor:pointer;
+    display:flex; align-items:center; gap:8px;
+    transition:all .15s; color:var(--text);
+  }
+  .agenda-display-actions button:hover {
+    background:var(--se-life-green); color:var(--se-white);
+    border-color:var(--se-life-green);
+  }
+  .agenda-display-actions button svg {
+    width:18px; height:18px;
+  }
+  
+  /* Print styles */
+  @media print {
+    .agenda-display-overlay { background:white; }
+    .agenda-display-close, .agenda-display-actions { display:none !important; }
+    .agenda-display-content { box-shadow:none; max-width:100%; padding:20px; }
+  }
+
   .agenda-display-close {
     position:absolute; top:20px; right:20px;
     background:transparent; border:none; font-size:32px;
@@ -442,6 +545,40 @@
   .agenda-display-empty p {
     font-size:16px;
   }
+
+
+  /* FEATURE: Floating assign toolbar (outside menu) */
+  .floating-assign-toolbar {
+    position:fixed; z-index:300;
+    background:rgba(255,255,255,0.95); backdrop-filter:blur(10px);
+    border:2px solid var(--se-life-green); border-radius:12px;
+    padding:12px 16px; box-shadow:0 8px 24px rgba(0,0,0,0.15);
+    display:none; align-items:center; gap:12px;
+    min-width:350px;
+  }
+  .floating-assign-toolbar.show { display:flex; }
+  .floating-assign-toolbar .toolbar-label {
+    font-weight:700; font-size:14px; color:var(--text);
+  }
+  .floating-assign-toolbar select {
+    flex:1; padding:8px 12px; border-radius:8px;
+    border:1.5px solid var(--border); font-size:13px;
+    font-weight:600; cursor:pointer;
+  }
+  .floating-assign-toolbar button {
+    padding:8px 16px; border-radius:8px; border:none;
+    font-weight:700; font-size:13px; cursor:pointer;
+    transition:all .15s;
+  }
+  .floating-assign-toolbar .assign-btn {
+    background:var(--se-life-green); color:var(--se-white);
+  }
+  .floating-assign-toolbar .assign-btn:hover { opacity:0.9; }
+  .floating-assign-toolbar .clear-btn {
+    background:var(--se-dark-gray); color:var(--se-white);
+  }
+  .floating-assign-toolbar .clear-btn:hover { opacity:0.9; }
+
 
   @media (max-width:768px) { .modal-body{ grid-template-columns:1fr } }
 </style>
@@ -2169,7 +2306,10 @@
       });
 
       (slot.items||[]).forEach((it, idx)=>{
-        const itemRow = document.createElement('div'); itemRow.className='slot-item'; itemRow.draggable=true; itemRow.dataset.index=idx;
+        const itemRow = document.createElement('div'); itemRow.className='slot-item';
+        // FEATURE: Highlight if this media is currently playing
+        const isActive = (it.type==='video' && activeView==='video' && videoFiles[currentVideoIndex]?._id===it.id) || (it.type==='pdf' && activeView==='presentation' && presentationFiles[presentationIndex]?._id===it.id);
+        if (isActive) itemRow.classList.add('active-media'); itemRow.draggable=true; itemRow.dataset.index=idx;
 
         const nameSpan = document.createElement('span'); nameSpan.className='si-name';
         const typeSpan = document.createElement('span'); typeSpan.className='si-type';
@@ -2238,6 +2378,26 @@
       });
 
       card.appendChild(itemsWrap);
+      
+      // FEATURE: Add custom media button
+      const addCustomDiv = document.createElement('div');
+      addCustomDiv.className = 'custom-media-add';
+      addCustomDiv.innerHTML = `
+        <select class="media-type-select">
+          <option value="">+ Add Custom Media...</option>
+          <option value="text">Free Text</option>
+          <option value="link">Link/URL</option>
+          <option value="photo">Photo</option>
+        </select>
+      `;
+      const typeSelect = addCustomDiv.querySelector('.media-type-select');
+      typeSelect.addEventListener('change', (e)=>{
+        const type = e.target.value;
+        if (!type) return;
+        e.target.value = '';
+        showCustomMediaForm(card, slot, type);
+      });
+      card.appendChild(addCustomDiv);
       agendaPanel.appendChild(card);
     });
   }
@@ -2691,6 +2851,155 @@
       setTimeout(showSettings, 0);
     }
   })();
+
+
+  
+  // FEATURE: Show form to add custom media
+  function showCustomMediaForm(card, slot, type){
+    const existing = card.querySelector('.custom-media-form');
+    if (existing) existing.remove();
+    
+    const form = document.createElement('div');
+    form.className = 'custom-media-form';
+    
+    if (type === 'text'){
+      form.innerHTML = `
+        <textarea placeholder="Enter text content..." class="text-input"></textarea>
+        <div class="custom-media-form-actions">
+          <button class="add-btn">Add Text</button>
+          <button class="cancel-btn">Cancel</button>
+        </div>
+      `;
+      form.querySelector('.add-btn').addEventListener('click', ()=>{
+        const content = form.querySelector('.text-input').value.trim();
+        if (!content) return alert('Please enter some text');
+        if (!slot.items) slot.items = [];
+        slot.items.push({id:makeId(), type:'text', data:{content}});
+        form.remove();
+        renderAgendaPanel(); saveState();
+      });
+    } else if (type === 'link'){
+      form.innerHTML = `
+        <input type="text" placeholder="Link name..." class="name-input" />
+        <input type="url" placeholder="https://..." class="url-input" />
+        <div class="custom-media-form-actions">
+          <button class="add-btn">Add Link</button>
+          <button class="cancel-btn">Cancel</button>
+        </div>
+      `;
+      form.querySelector('.add-btn').addEventListener('click', ()=>{
+        const name = form.querySelector('.name-input').value.trim();
+        const url = form.querySelector('.url-input').value.trim();
+        if (!name || !url) return alert('Please enter both name and URL');
+        if (!slot.items) slot.items = [];
+        slot.items.push({id:makeId(), type:'link', data:{name, url}});
+        form.remove();
+        renderAgendaPanel(); saveState();
+      });
+    } else if (type === 'photo'){
+      form.innerHTML = `
+        <input type="file" accept="image/*" class="photo-input" />
+        <div class="custom-media-form-actions">
+          <button class="add-btn">Add Photo</button>
+          <button class="cancel-btn">Cancel</button>
+        </div>
+      `;
+      form.querySelector('.add-btn').addEventListener('click', ()=>{
+        const fileInput = form.querySelector('.photo-input');
+        const file = fileInput.files[0];
+        if (!file) return alert('Please select a photo');
+        if (!slot.items) slot.items = [];
+        const url = URL.createObjectURL(file);
+        slot.items.push({id:makeId(), type:'photo', data:{name:file.name, file, url}});
+        form.remove();
+        renderAgendaPanel(); saveState();
+      });
+    }
+    
+    form.querySelector('.cancel-btn').addEventListener('click', ()=> form.remove());
+    card.appendChild(form);
+  }
+
+
+  
+  // FEATURE: Floating assign toolbar positioning and logic
+  const floatingToolbar = document.getElementById('floatingAssignToolbar');
+  const floatingToolbarLabel = document.getElementById('floatingToolbarLabel');
+  const floatingSlotDropdown = document.getElementById('floatingSlotDropdown');
+  const floatingAssignBtn = document.getElementById('floatingAssignBtn');
+  const floatingClearBtn = document.getElementById('floatingClearBtn');
+  
+  function updateFloatingToolbarPosition(){
+    if (menuPos === 'left'){
+      floatingToolbar.style.left = '370px';
+      floatingToolbar.style.top = '80px';
+      floatingToolbar.style.right = 'auto';
+      floatingToolbar.style.bottom = 'auto';
+    } else if (menuPos === 'right'){
+      floatingToolbar.style.right = '370px';
+      floatingToolbar.style.top = '80px';
+      floatingToolbar.style.left = 'auto';
+      floatingToolbar.style.bottom = 'auto';
+    } else if (menuPos === 'top'){
+      floatingToolbar.style.left = '20px';
+      floatingToolbar.style.top = '130px';
+      floatingToolbar.style.right = 'auto';
+      floatingToolbar.style.bottom = 'auto';
+    } else {
+      floatingToolbar.style.left = '20px';
+      floatingToolbar.style.bottom = '130px';
+      floatingToolbar.style.top = 'auto';
+      floatingToolbar.style.right = 'auto';
+    }
+  }
+  
+  function updateFloatingToolbar(){
+    const count = multiSelectedItems.size;
+    if (count > 0 && appMode === 'meeting'){
+      floatingToolbarLabel.textContent = count + ' selected';
+      populateFloatingSlotDropdown();
+      floatingToolbar.classList.add('show');
+      updateFloatingToolbarPosition();
+    } else {
+      floatingToolbar.classList.remove('show');
+    }
+  }
+  
+  function populateFloatingSlotDropdown(){
+    floatingSlotDropdown.innerHTML = '<option value="">Select slot...</option>';
+    agendaSlots.forEach((s,i)=>{
+      const opt = document.createElement('option');
+      opt.value = i;
+      opt.textContent = (s.title||'Untitled') + ' (' + (s.start||'') + ' - ' + (s.end||'') + ')';
+      floatingSlotDropdown.appendChild(opt);
+    });
+  }
+  
+  function assignSelectedToFloatingSlot(){
+    const slotIdx = parseInt(floatingSlotDropdown.value, 10);
+    if (isNaN(slotIdx) || slotIdx < 0 || slotIdx >= agendaSlots.length) return alert('Please select a slot');
+    const slot = agendaSlots[slotIdx];
+    if (!slot.items) slot.items = [];
+    
+    multiSelectedItems.forEach(key=>{
+      const [type, id] = key.split(':');
+      const exists = slot.items.some(it=> it.id===id && it.type===type);
+      if (!exists) slot.items.push({id, type});
+    });
+    
+    multiSelectedItems.clear();
+    renderVideoList(); renderPresentationList(); renderAgendaPanel(); saveState();
+    updateFloatingToolbar();
+  }
+  
+  function clearFloatingSelection(){
+    multiSelectedItems.clear();
+    renderVideoList(); renderPresentationList();
+    updateFloatingToolbar();
+  }
+  
+  floatingAssignBtn.addEventListener('click', assignSelectedToFloatingSlot);
+  floatingClearBtn.addEventListener('click', clearFloatingSelection);
 
   // Expose for debug
   window.__SMO = { setLoopModeType, toggleLoopModeType, setAppMode };
