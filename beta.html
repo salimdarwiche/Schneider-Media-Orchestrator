@@ -363,7 +363,19 @@
   .grip { user-select:none; cursor:grab; text-align:center; color:var(--text-muted); font-weight:800; }
 
   /* Meeting Mode: Agenda in Menu */
-  .agenda-panel { display:flex; flex-direction:column; gap:10px; }
+  .agenda-panel { display:flex; flex-direction:column; gap:10px; position:relative; }
+  
+  /* Overall progress bar (vertical, left side) */
+  .agenda-overall-progress { position:absolute; left:-20px; top:0; bottom:0; width:8px; background:var(--agenda-progress-bg); border-radius:9999px; overflow:hidden; }
+  .agenda-overall-progress .progress-fill { position:absolute; top:0; left:0; right:0; background:var(--agenda-accent); transition:height .3s; height:0%; }
+  .agenda-overall-progress .progress-indicator { position:absolute; left:50%; transform:translateX(-50%); width:16px; height:16px; background:var(--agenda-accent); border:3px solid var(--se-white); border-radius:50%; transition:top .3s; top:0%; margin-top:-8px; box-shadow:0 2px 6px rgba(0,0,0,0.2); }
+  
+  /* Locked agenda state */
+  .agenda-panel.locked .quick-actions-container,
+  .agenda-panel.locked .slot-checkbox,
+  .agenda-panel.locked .si-x { display:none !important; }
+  .agenda-panel.locked .slot-items { border-style:solid; border-color:var(--border); }
+  .agenda-panel.locked .agenda-slot { padding-left:8px; }
   .gmt-clock { display:flex; align-items:center; justify-content:space-between; background:var(--surface-alt); border:1.5px solid var(--border); border-radius:10px; padding:10px 12px; font-weight:800; color:var(--text-muted); }
   .agenda-slot {
     border:2px solid var(--border);
@@ -826,6 +838,16 @@
       <line x1="8" y1="2" x2="8" y2="6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
       <line x1="3" y1="10" x2="21" y2="10" stroke="currentColor" stroke-width="2"/>
     </symbol>
+    <symbol id="lock" viewBox="0 0 24 24">
+      <rect x="5" y="11" width="14" height="10" rx="2" fill="none" stroke="currentColor" stroke-width="2"/>
+      <path d="M8 11V7a4 4 0 0 1 8 0v4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+      <circle cx="12" cy="16" r="1.5" fill="currentColor"/>
+    </symbol>
+    <symbol id="unlock" viewBox="0 0 24 24">
+      <rect x="5" y="11" width="14" height="10" rx="2" fill="none" stroke="currentColor" stroke-width="2"/>
+      <path d="M8 11V7a4 4 0 0 1 7.5-2" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+      <circle cx="12" cy="16" r="1.5" fill="currentColor"/>
+    </symbol>
     <symbol id="trash" viewBox="0 0 24 24">
       <polyline points="3 6 5 6 21 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
       <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
@@ -870,9 +892,9 @@
               <button class="icon-btn" id="buildAgendaBtn" title="Build Agenda" aria-label="Build Agenda">
                 <svg viewBox="0 0 24 24" aria-hidden="true"><use href="#calendar"></use></svg>
               </button>
-              <!-- Settings button moved here from footer -->
-              <button class="icon-btn" id="settingsBtn" title="Settings" aria-label="Settings">
-                <svg viewBox="0 0 24 24" aria-hidden="true"><use href="#settings"></use></svg>
+              <!-- Lock/Unlock agenda button -->
+              <button class="icon-btn" id="lockAgendaBtn" title="Lock Agenda" aria-label="Lock/Unlock Agenda">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><use href="#unlock"></use></svg>
               </button>
             </span>
           </div>
@@ -950,9 +972,9 @@
       </div>
 
       <div class="menu-footer">
-        <!-- Settings button moved to agenda section -->
-        <button class="icon-btn fullscreen-btn" id="fullscreenBtnFooter" title="Enter Fullscreen" aria-label="Toggle fullscreen">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><use href="#maximize"></use></svg>
+        <!-- Settings button - always visible -->
+        <button class="icon-btn" id="settingsBtn" title="Settings" aria-label="Settings">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><use href="#settings"></use></svg>
         </button>
       </div>
     </div>
@@ -2519,17 +2541,8 @@
       header.appendChild(checkbox); header.appendChild(titleWrap); header.appendChild(right);
       card.appendChild(header);
 
-      // Progress
-      const progWrap = document.createElement('div'); progWrap.className='slot-progress';
-      const prog = document.createElement('div');
-      let pct = 0;
-      if (sStart!=null && sEnd!=null && sEnd>sStart){
-        pct = clamp(((nowMins - sStart) / (sEnd - sStart)) * 100, 0, 100);
-        if (!(nowMins>=sStart && nowMins<=sEnd)) pct = (nowMins < sStart) ? 0 : 100;
-      }
-      prog.style.width = pct.toFixed(1)+'%';
-      progWrap.appendChild(prog);
-      card.appendChild(progWrap);
+      // Individual progress bars removed - using overall progress bar instead
+      // See overall progress bar added after the forEach loop
 
       // Items list
       const itemsWrap = document.createElement('div'); itemsWrap.className='slot-items';
@@ -2766,6 +2779,15 @@
       agendaPanel.appendChild(card);
     });
     
+    // Add overall vertical progress bar
+    addOverallProgressBar();
+    
+    // Apply locked state if enabled
+    const isLocked = localStorage.getItem('agenda_locked') === 'true';
+    if (isLocked) {
+      agendaPanel.classList.add('locked');
+    }
+    
     // Set up global click handler for closing menus (only once, outside the loop)
     setupQuickActionsClickHandler();
   }
@@ -2849,17 +2871,81 @@
         }
       }
       
-      // Update progress bar
-      const progBar = card.querySelector('.slot-progress > div');
-      if (progBar && sStart!=null && sEnd!=null && sEnd>sStart) {
-        let pct = clamp(((nowMins - sStart) / (sEnd - sStart)) * 100, 0, 100);
-        if (!(nowMins>=sStart && nowMins<=sEnd)) pct = (nowMins < sStart) ? 0 : 100;
-        progBar.style.width = pct.toFixed(1)+'%';
-      }
+      // Individual progress bars removed - using overall progress bar instead
     });
+    
+    // Update overall progress bar
+    updateOverallProgressBar();
   }
   let clockTimer = null;
   function startClock(){ if (clockTimer) clearInterval(clockTimer); clockTimer = setInterval(updateTZClock, 1000); updateTZClock(); }
+
+  // Add overall vertical progress bar to agenda panel
+  function addOverallProgressBar(){
+    // Remove existing progress bar if any
+    const existing = agendaPanel.querySelector('.agenda-overall-progress');
+    if (existing) existing.remove();
+    
+    if (agendaSlots.length === 0) return;
+    
+    const progressBar = document.createElement('div');
+    progressBar.className = 'agenda-overall-progress';
+    
+    const progressFill = document.createElement('div');
+    progressFill.className = 'progress-fill';
+    
+    const progressIndicator = document.createElement('div');
+    progressIndicator.className = 'progress-indicator';
+    
+    progressBar.appendChild(progressFill);
+    progressBar.appendChild(progressIndicator);
+    agendaPanel.appendChild(progressBar);
+    
+    // Initial update
+    updateOverallProgressBar();
+  }
+  
+  // Update overall progress bar position
+  function updateOverallProgressBar(){
+    const progressBar = agendaPanel.querySelector('.agenda-overall-progress');
+    if (!progressBar || agendaSlots.length === 0) return;
+    
+    const progressFill = progressBar.querySelector('.progress-fill');
+    const progressIndicator = progressBar.querySelector('.progress-indicator');
+    if (!progressFill || !progressIndicator) return;
+    
+    // Find first and last slot times
+    const firstStart = parseHHMM(agendaSlots[0].start);
+    const lastEnd = parseHHMM(agendaSlots[agendaSlots.length - 1].end);
+    
+    if (firstStart == null || lastEnd == null || lastEnd <= firstStart) {
+      progressFill.style.height = '0%';
+      progressIndicator.style.top = '0%';
+      return;
+    }
+    
+    const nowMins = getNowTZMinutes();
+    let pct = clamp(((nowMins - firstStart) / (lastEnd - firstStart)) * 100, 0, 100);
+    
+    progressFill.style.height = pct.toFixed(1) + '%';
+    progressIndicator.style.top = pct.toFixed(1) + '%';
+  }
+  
+  // Toggle agenda lock state
+  function toggleAgendaLock(){
+    const isLocked = agendaPanel.classList.toggle('locked');
+    localStorage.setItem('agenda_locked', isLocked ? 'true' : 'false');
+    
+    // Update button icon and title
+    const lockBtn = document.getElementById('lockAgendaBtn');
+    if (lockBtn) {
+      const icon = lockBtn.querySelector('use');
+      if (icon) {
+        icon.setAttribute('href', isLocked ? '#lock' : '#unlock');
+      }
+      lockBtn.title = isLocked ? 'Unlock Agenda' : 'Lock Agenda';
+    }
+  }
 
   // Events
   settingsBtn.addEventListener('click', showSettings);
@@ -3091,6 +3177,19 @@
     agendaDisplayOverlay.addEventListener('click', (e)=>{
       if (e.target === agendaDisplayOverlay) hideFullAgenda();
     });
+  }
+  
+  // Lock/Unlock agenda button
+  const lockAgendaBtn = document.getElementById('lockAgendaBtn');
+  if (lockAgendaBtn){
+    lockAgendaBtn.addEventListener('click', toggleAgendaLock);
+    // Initialize lock state on page load
+    const isLocked = localStorage.getItem('agenda_locked') === 'true';
+    if (isLocked) {
+      const icon = lockAgendaBtn.querySelector('use');
+      if (icon) icon.setAttribute('href', '#lock');
+      lockAgendaBtn.title = 'Unlock Agenda';
+    }
   }
   // ESC key to close full-screen agenda
   document.addEventListener('keydown', (e)=>{
