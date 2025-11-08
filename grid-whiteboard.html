@@ -1,0 +1,1891 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Electrical Grid Whiteboard - ISO/IEC Compliant</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f0f0f0;
+            overflow: hidden;
+            height: 100vh;
+        }
+
+        .container {
+            display: flex;
+            height: 100%;
+            flex-direction: column;
+        }
+
+        /* Top Toolbar */
+        .toolbar {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 10px 15px;
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+            flex-wrap: wrap;
+            height: auto;
+            min-height: 50px;
+        }
+
+        .toolbar-section {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            padding-right: 15px;
+            border-right: 1px solid rgba(255,255,255,0.3);
+        }
+
+        .toolbar-section:last-child {
+            border-right: none;
+        }
+
+        button, .color-box {
+            padding: 8px 12px;
+            background: rgba(255,255,255,0.2);
+            border: 1px solid rgba(255,255,255,0.4);
+            color: white;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 12px;
+            font-weight: 500;
+        }
+
+        button:hover {
+            background: rgba(255,255,255,0.3);
+            border-color: rgba(255,255,255,0.6);
+            transform: translateY(-1px);
+        }
+
+        button.active {
+            background: rgba(255,255,255,0.5);
+            border-color: white;
+        }
+
+        input[type="color"] {
+            width: 40px;
+            height: 35px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        input[type="range"] {
+            width: 80px;
+        }
+
+        .zoom-display {
+            color: white;
+            font-size: 12px;
+            min-width: 50px;
+        }
+
+        /* Main Layout */
+        .main-content {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+        }
+
+        /* Left Palette */
+        .palette {
+            width: 250px;
+            background: #2c3e50;
+            color: white;
+            overflow-y: auto;
+            border-right: 2px solid #34495e;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .palette-header {
+            padding: 12px;
+            background: #1a252f;
+            font-weight: bold;
+            border-bottom: 1px solid #34495e;
+            font-size: 13px;
+        }
+
+        .palette-category {
+            border-bottom: 1px solid #34495e;
+        }
+
+        .palette-category-header {
+            padding: 10px 12px;
+            background: #34495e;
+            cursor: pointer;
+            user-select: none;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 12px;
+            font-weight: bold;
+            transition: background 0.2s;
+        }
+
+        .palette-category-header:hover {
+            background: #3d5269;
+        }
+
+        .palette-category-header.collapsed .arrow {
+            transform: rotate(-90deg);
+        }
+
+        .arrow {
+            display: inline-block;
+            transform: rotate(0deg);
+            transition: transform 0.2s;
+        }
+
+        .palette-items {
+            display: flex;
+            flex-direction: column;
+            padding: 5px;
+            gap: 5px;
+        }
+
+        .palette-items.collapsed {
+            display: none;
+        }
+
+        .equipment-item {
+            padding: 8px;
+            background: #3d5269;
+            border: 1px solid #505f79;
+            border-radius: 4px;
+            cursor: grab;
+            user-select: none;
+            transition: all 0.2s;
+            font-size: 11px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .equipment-item:hover {
+            background: #4a6a92;
+            border-color: #667eea;
+            transform: translateX(3px);
+        }
+
+        .equipment-item:active {
+            cursor: grabbing;
+        }
+
+        .equipment-icon {
+            width: 24px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+        }
+
+        /* Canvas Area */
+        .canvas-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            background: white;
+        }
+
+        canvas {
+            flex: 1;
+            display: block;
+            background-image: 
+                linear-gradient(0deg, transparent 24%, rgba(200, 200, 200, 0.05) 25%, rgba(200, 200, 200, 0.05) 26%, transparent 27%, transparent 74%, rgba(200, 200, 200, 0.05) 75%, rgba(200, 200, 200, 0.05) 76%, transparent 77%, transparent),
+                linear-gradient(90deg, transparent 24%, rgba(200, 200, 200, 0.05) 25%, rgba(200, 200, 200, 0.05) 26%, transparent 27%, transparent 74%, rgba(200, 200, 200, 0.05) 75%, rgba(200, 200, 200, 0.05) 76%, transparent 77%, transparent);
+            background-size: 20px 20px;
+            cursor: default;
+        }
+
+        /* Right Properties Panel */
+        .properties {
+            width: 280px;
+            background: #ecf0f1;
+            border-left: 2px solid #bdc3c7;
+            overflow-y: auto;
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .properties-empty {
+            color: #7f8c8d;
+            font-size: 12px;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .property-group {
+            background: white;
+            padding: 12px;
+            border-radius: 4px;
+            border: 1px solid #bdc3c7;
+        }
+
+        .property-group-title {
+            font-weight: bold;
+            font-size: 11px;
+            color: #2c3e50;
+            text-transform: uppercase;
+            margin-bottom: 8px;
+            border-bottom: 1px solid #ecf0f1;
+            padding-bottom: 6px;
+        }
+
+        .property-field {
+            margin-bottom: 8px;
+            display: flex;
+            flex-direction: column;
+            gap: 3px;
+        }
+
+        .property-field:last-child {
+            margin-bottom: 0;
+        }
+
+        .property-label {
+            font-size: 11px;
+            font-weight: 600;
+            color: #34495e;
+            text-transform: uppercase;
+        }
+
+        .property-field input,
+        .property-field select,
+        .property-field textarea {
+            padding: 6px;
+            border: 1px solid #bdc3c7;
+            border-radius: 3px;
+            font-size: 11px;
+            font-family: inherit;
+        }
+
+        .property-field textarea {
+            resize: vertical;
+            min-height: 50px;
+        }
+
+        /* Status Bar */
+        .status-bar {
+            background: #34495e;
+            color: #ecf0f1;
+            padding: 8px 15px;
+            font-size: 11px;
+            display: flex;
+            justify-content: space-between;
+            border-top: 1px solid #2c3e50;
+        }
+
+        /* Context Menu */
+        .context-menu {
+            position: fixed;
+            background: white;
+            border: 1px solid #bdc3c7;
+            border-radius: 4px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+            z-index: 1000;
+            min-width: 180px;
+            display: none;
+        }
+
+        .context-menu.show {
+            display: block;
+        }
+
+        .context-menu-item {
+            padding: 8px 12px;
+            cursor: pointer;
+            border-bottom: 1px solid #ecf0f1;
+            font-size: 12px;
+            color: #2c3e50;
+            transition: background 0.2s;
+        }
+
+        .context-menu-item:last-child {
+            border-bottom: none;
+        }
+
+        .context-menu-item:hover {
+            background: #667eea;
+            color: white;
+        }
+
+        .context-menu-item.disabled {
+            color: #bdc3c7;
+            cursor: not-allowed;
+            pointer-events: none;
+        }
+
+        /* Modals */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 2000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal.show {
+            display: flex;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+            max-width: 400px;
+            width: 90%;
+        }
+
+        .modal-header {
+            font-size: 16px;
+            font-weight: bold;
+            margin-bottom: 15px;
+            color: #2c3e50;
+        }
+
+        .modal-body {
+            margin-bottom: 15px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .modal-footer {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+        }
+
+        .modal-footer button {
+            padding: 8px 16px;
+            border-radius: 4px;
+        }
+
+        /* Tooltips */
+        .tooltip {
+            position: absolute;
+            background: #2c3e50;
+            color: white;
+            padding: 6px 10px;
+            border-radius: 4px;
+            font-size: 11px;
+            white-space: nowrap;
+            pointer-events: none;
+            z-index: 999;
+            display: none;
+        }
+
+        .tooltip.show {
+            display: block;
+        }
+
+        /* Selection Box */
+        .selection-box {
+            position: absolute;
+            border: 2px dashed #667eea;
+            background: rgba(102, 126, 234, 0.1);
+            display: none;
+            pointer-events: none;
+        }
+
+        .selection-box.active {
+            display: block;
+        }
+
+        /* Scrollbars */
+        .palette::-webkit-scrollbar,
+        .properties::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .palette::-webkit-scrollbar-track,
+        .properties::-webkit-scrollbar-track {
+            background: #f1f1f1;
+        }
+
+        .palette::-webkit-scrollbar-thumb,
+        .properties::-webkit-scrollbar-thumb {
+            background: #888;
+            border-radius: 4px;
+        }
+
+        .palette::-webkit-scrollbar-thumb:hover,
+        .properties::-webkit-scrollbar-thumb:hover {
+            background: #555;
+        }
+
+        /* Equipment List Modal */
+        .equipment-list {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .equipment-list-item {
+            padding: 8px;
+            border-bottom: 1px solid #ecf0f1;
+            font-size: 11px;
+        }
+
+        .equipment-list-item:last-child {
+            border-bottom: none;
+        }
+
+        /* Keyboard Shortcut Help */
+        .shortcut-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            font-size: 11px;
+        }
+
+        .shortcut-item {
+            display: flex;
+            flex-direction: column;
+            gap: 3px;
+        }
+
+        .shortcut-key {
+            background: #f0f0f0;
+            padding: 4px 6px;
+            border-radius: 3px;
+            font-family: monospace;
+            font-weight: bold;
+            font-size: 10px;
+        }
+
+        .shortcut-desc {
+            color: #7f8c8d;
+        }
+
+        /* Color Voltage Selector */
+        .color-selector {
+            display: flex;
+            gap: 5px;
+            flex-wrap: wrap;
+        }
+
+        .voltage-color-btn {
+            width: 30px;
+            height: 30px;
+            border: 2px solid transparent;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .voltage-color-btn:hover {
+            transform: scale(1.1);
+        }
+
+        .voltage-color-btn.active {
+            border-color: white;
+            box-shadow: 0 0 8px rgba(0,0,0,0.3);
+        }
+
+        /* Responsive Design */
+        @media (max-width: 1280px) {
+            .palette {
+                width: 200px;
+            }
+
+            .properties {
+                width: 200px;
+            }
+        }
+
+        /* Loading Indicator */
+        .loading {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border: 2px solid rgba(255,255,255,0.3);
+            border-radius: 50%;
+            border-top: 2px solid white;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Top Toolbar -->
+        <div class="toolbar">
+            <!-- Drawing Tools -->
+            <div class="toolbar-section">
+                <button id="btn-select" title="Selection tool (ESC)" class="active">✓ Select</button>
+                <button id="btn-line" title="Line tool">—</button>
+                <button id="btn-pen" title="Pen/Pencil tool">✏</button>
+                <button id="btn-eraser" title="Eraser">⊘</button>
+                <button id="btn-text" title="Text tool (T)">T</button>
+            </div>
+
+            <!-- Pan & Zoom -->
+            <div class="toolbar-section">
+                <button id="btn-pan" title="Pan view">☚ Pan</button>
+                <button id="btn-zoom-in" title="Zoom in">+</button>
+                <button id="btn-zoom-out" title="Zoom out">−</button>
+                <button id="btn-zoom-fit" title="Fit to view">Fit</button>
+                <span class="zoom-display" id="zoom-display">100%</span>
+            </div>
+
+            <!-- Undo/Redo -->
+            <div class="toolbar-section">
+                <button id="btn-undo" title="Undo (Ctrl+Z)">↶</button>
+                <button id="btn-redo" title="Redo (Ctrl+Y)">↷</button>
+                <button id="btn-clear" title="Clear canvas">Clear</button>
+            </div>
+
+            <!-- Voltage Color Selector -->
+            <div class="toolbar-section">
+                <span style="font-size: 12px; font-weight: bold;">Voltage:</span>
+                <button class="voltage-color-btn active" id="color-hv" style="background: #FF0000;" title="High Voltage (Red)"></button>
+                <button class="voltage-color-btn" id="color-mv" style="background: #FF851B;" title="Medium Voltage (Orange)"></button>
+                <button class="voltage-color-btn" id="color-lv" style="background: #0074D9;" title="Low Voltage (Blue)"></button>
+                <button class="voltage-color-btn" id="color-ehv" style="background: #800080;" title="Extra High Voltage (Purple)"></button>
+                <input type="color" id="custom-color" title="Custom color">
+            </div>
+
+            <!-- Line Styles -->
+            <div class="toolbar-section">
+                <label title="Line thickness">Line:</label>
+                <input type="range" id="line-width" min="1" max="10" value="2" title="Line thickness (1-10px)">
+            </div>
+
+            <!-- Grid Options -->
+            <div class="toolbar-section">
+                <button id="btn-grid" title="Toggle grid">⊞ Grid</button>
+                <button id="btn-snap" title="Toggle snap to grid" class="active">🔗 Snap</button>
+            </div>
+
+            <!-- File Operations -->
+            <div class="toolbar-section">
+                <button id="btn-save" title="Save diagram (Ctrl+S)">💾 Save</button>
+                <button id="btn-load" title="Load diagram">📂 Load</button>
+                <button id="btn-export-png" title="Export as PNG">PNG</button>
+                <button id="btn-export-svg" title="Export as SVG">SVG</button>
+            </div>
+
+            <!-- Help -->
+            <div class="toolbar-section">
+                <button id="btn-help" title="Show help">?</button>
+                <button id="btn-equipment-list" title="Equipment list">📋</button>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="main-content">
+            <!-- Left Palette -->
+            <div class="palette" id="palette">
+                <div class="palette-header">⚡ Equipment Palette</div>
+            </div>
+
+            <!-- Canvas -->
+            <div class="canvas-container">
+                <canvas id="canvas"></canvas>
+                <div class="selection-box" id="selection-box"></div>
+            </div>
+
+            <!-- Right Properties Panel -->
+            <div class="properties" id="properties">
+                <div class="properties-empty">Select an element to view properties</div>
+            </div>
+        </div>
+
+        <!-- Status Bar -->
+        <div class="status-bar">
+            <div id="status-text">Ready</div>
+            <div id="status-coords">0, 0</div>
+        </div>
+    </div>
+
+    <!-- Context Menu -->
+    <div class="context-menu" id="context-menu"></div>
+
+    <!-- Modals -->
+    <div class="modal" id="modal-help">
+        <div class="modal-content">
+            <div class="modal-header">⌨ Keyboard Shortcuts</div>
+            <div class="modal-body">
+                <div class="shortcut-grid">
+                    <div class="shortcut-item">
+                        <span class="shortcut-key">Ctrl+Z</span>
+                        <span class="shortcut-desc">Undo</span>
+                    </div>
+                    <div class="shortcut-item">
+                        <span class="shortcut-key">Ctrl+Y</span>
+                        <span class="shortcut-desc">Redo</span>
+                    </div>
+                    <div class="shortcut-item">
+                        <span class="shortcut-key">Ctrl+C</span>
+                        <span class="shortcut-desc">Copy</span>
+                    </div>
+                    <div class="shortcut-item">
+                        <span class="shortcut-key">Ctrl+V</span>
+                        <span class="shortcut-desc">Paste</span>
+                    </div>
+                    <div class="shortcut-item">
+                        <span class="shortcut-key">Ctrl+D</span>
+                        <span class="shortcut-desc">Duplicate</span>
+                    </div>
+                    <div class="shortcut-item">
+                        <span class="shortcut-key">Ctrl+A</span>
+                        <span class="shortcut-desc">Select All</span>
+                    </div>
+                    <div class="shortcut-item">
+                        <span class="shortcut-key">Delete</span>
+                        <span class="shortcut-desc">Delete selected</span>
+                    </div>
+                    <div class="shortcut-item">
+                        <span class="shortcut-key">T</span>
+                        <span class="shortcut-desc">Text tool</span>
+                    </div>
+                    <div class="shortcut-item">
+                        <span class="shortcut-key">C</span>
+                        <span class="shortcut-desc">Connection mode</span>
+                    </div>
+                    <div class="shortcut-item">
+                        <span class="shortcut-key">ESC</span>
+                        <span class="shortcut-desc">Deselect all</span>
+                    </div>
+                    <div class="shortcut-item">
+                        <span class="shortcut-key">Ctrl+S</span>
+                        <span class="shortcut-desc">Save</span>
+                    </div>
+                    <div class="shortcut-item">
+                        <span class="shortcut-key">0</span>
+                        <span class="shortcut-desc">Rotation 0°</span>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button onclick="closeModal('modal-help')">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal" id="modal-equipment-list">
+        <div class="modal-content">
+            <div class="modal-header">📋 Equipment List</div>
+            <div class="modal-body">
+                <div class="equipment-list" id="equipment-list-content"></div>
+            </div>
+            <div class="modal-footer">
+                <button onclick="app.exportEquipmentList()">📥 Export CSV</button>
+                <button onclick="closeModal('modal-equipment-list')">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Hidden file input for loading -->
+    <input type="file" id="file-input-load" accept=".json" style="display: none;">
+    <input type="file" id="file-input-image" accept="image/*" style="display: none;">
+
+    <script>
+        // ====================
+        // MAIN APPLICATION
+        // ====================
+        const app = {
+            // State
+            canvas: null,
+            ctx: null,
+            zoom: 1,
+            panX: 0,
+            panY: 0,
+            currentTool: 'select',
+            currentColor: '#FF0000',
+            lineWidth: 2,
+            gridSize: 20,
+            gridEnabled: false,
+            snapEnabled: true,
+            selectedId: null,
+            clipboard: null,
+            connectionMode: false,
+            firstConnectionPoint: null,
+            isDrawing: false,
+            drawStartX: 0,
+            drawStartY: 0,
+            isDraggingSelection: false,
+            selectionStartX: 0,
+            selectionStartY: 0,
+
+            // Data structures
+            equipmentLibrary: {},
+            elements: [],
+            connections: [],
+            textElements: [],
+            history: [],
+            historyIndex: -1,
+            nextElementId: 1,
+
+            // Initialize application
+            init() {
+                this.setupCanvas();
+                this.setupEventListeners();
+                this.buildEquipmentLibrary();
+                this.renderPalette();
+                this.updateHistoryStates();
+                this.autoSave();
+                this.redraw();
+                this.loadFromLocalStorage();
+                console.log('Application initialized');
+            },
+
+            // Canvas setup
+            setupCanvas() {
+                this.canvas = document.getElementById('canvas');
+                this.ctx = this.canvas.getContext('2d');
+                this.resizeCanvas();
+                window.addEventListener('resize', () => this.resizeCanvas());
+            },
+
+            resizeCanvas() {
+                const container = this.canvas.parentElement;
+                this.canvas.width = container.clientWidth;
+                this.canvas.height = container.clientHeight;
+                this.redraw();
+            },
+
+            // Event listeners
+            setupEventListeners() {
+                // Toolbar buttons
+                document.getElementById('btn-select').addEventListener('click', () => this.setTool('select'));
+                document.getElementById('btn-line').addEventListener('click', () => this.setTool('line'));
+                document.getElementById('btn-pen').addEventListener('click', () => this.setTool('pen'));
+                document.getElementById('btn-eraser').addEventListener('click', () => this.setTool('eraser'));
+                document.getElementById('btn-text').addEventListener('click', () => this.setTool('text'));
+                document.getElementById('btn-pan').addEventListener('click', () => this.setTool('pan'));
+
+                // Zoom controls
+                document.getElementById('btn-zoom-in').addEventListener('click', () => this.zoom(1.2));
+                document.getElementById('btn-zoom-out').addEventListener('click', () => this.zoom(0.8));
+                document.getElementById('btn-zoom-fit').addEventListener('click', () => this.fitToView());
+
+                // Undo/Redo
+                document.getElementById('btn-undo').addEventListener('click', () => this.undo());
+                document.getElementById('btn-redo').addEventListener('click', () => this.redo());
+                document.getElementById('btn-clear').addEventListener('click', () => this.clearCanvas());
+
+                // Grid & Snap
+                document.getElementById('btn-grid').addEventListener('click', () => this.toggleGrid());
+                document.getElementById('btn-snap').addEventListener('click', () => this.toggleSnap());
+
+                // File operations
+                document.getElementById('btn-save').addEventListener('click', () => this.saveToLocalStorage());
+                document.getElementById('btn-load').addEventListener('click', () => this.triggerLoadDialog());
+                document.getElementById('btn-export-png').addEventListener('click', () => this.exportPNG());
+                document.getElementById('btn-export-svg').addEventListener('click', () => this.exportSVG());
+
+                // Help
+                document.getElementById('btn-help').addEventListener('click', () => this.showModal('modal-help'));
+                document.getElementById('btn-equipment-list').addEventListener('click', () => this.showEquipmentList());
+
+                // Color selector
+                document.getElementById('color-hv').addEventListener('click', () => this.setVoltageColor('#FF0000'));
+                document.getElementById('color-mv').addEventListener('click', () => this.setVoltageColor('#FF851B'));
+                document.getElementById('color-lv').addEventListener('click', () => this.setVoltageColor('#0074D9'));
+                document.getElementById('color-ehv').addEventListener('click', () => this.setVoltageColor('#800080'));
+                document.getElementById('custom-color').addEventListener('change', (e) => this.setVoltageColor(e.target.value));
+
+                // Line width
+                document.getElementById('line-width').addEventListener('input', (e) => {
+                    this.lineWidth = parseInt(e.target.value);
+                    this.updateStatus(`Line width: ${this.lineWidth}px`);
+                });
+
+                // Canvas events
+                this.canvas.addEventListener('mousedown', (e) => this.handleCanvasMouseDown(e));
+                this.canvas.addEventListener('mousemove', (e) => this.handleCanvasMouseMove(e));
+                this.canvas.addEventListener('mouseup', (e) => this.handleCanvasMouseUp(e));
+                this.canvas.addEventListener('contextmenu', (e) => this.handleContextMenu(e));
+                this.canvas.addEventListener('wheel', (e) => this.handleMouseWheel(e));
+
+                // Keyboard shortcuts
+                document.addEventListener('keydown', (e) => this.handleKeyboard(e));
+
+                // File inputs
+                document.getElementById('file-input-load').addEventListener('change', (e) => this.loadDiagram(e));
+                document.getElementById('file-input-image').addEventListener('change', (e) => this.loadImage(e));
+
+                // Palette drag and drop
+                document.addEventListener('dragstart', (e) => this.handleDragStart(e));
+                document.addEventListener('dragover', (e) => this.handleDragOver(e));
+                document.addEventListener('drop', (e) => this.handleDrop(e));
+            },
+
+            // Tool management
+            setTool(tool) {
+                this.currentTool = tool;
+                this.connectionMode = false;
+                this.updateToolButtons();
+                this.updateStatus(`Tool: ${tool.charAt(0).toUpperCase() + tool.slice(1)}`);
+            },
+
+            updateToolButtons() {
+                document.querySelectorAll('.toolbar-section button').forEach(btn => {
+                    btn.classList.remove('active');
+                });
+                const toolBtnId = `btn-${this.currentTool}`;
+                const toolBtn = document.getElementById(toolBtnId);
+                if (toolBtn) toolBtn.classList.add('active');
+            },
+
+            // Equipment Library
+            buildEquipmentLibrary() {
+                this.equipmentLibrary = {
+                    'Power Generation': [
+                        { name: 'Generator', icon: '⚡', symbol: 'generator', desc: 'Synchronous/Asynchronous' },
+                        { name: 'Solar PV', icon: '☀', symbol: 'solar', desc: 'Solar Panel' },
+                        { name: 'Wind Turbine', icon: '💨', symbol: 'wind', desc: 'Wind generation' },
+                        { name: 'Battery', icon: '🔋', symbol: 'battery', desc: 'Energy storage' },
+                    ],
+                    'Transformation': [
+                        { name: 'Power Transformer', icon: '▣', symbol: 'transformer', desc: '2 or 3 winding' },
+                        { name: 'Auto-Transformer', icon: '▢', symbol: 'autotransformer', desc: 'Auto-transformer' },
+                        { name: 'Current Transformer', icon: 'Ⓘ', symbol: 'ct', desc: 'CT' },
+                        { name: 'Voltage Transformer', icon: '◈', symbol: 'vt', desc: 'VT/PT' },
+                    ],
+                    'Protection & Switching': [
+                        { name: 'Circuit Breaker', icon: '▭', symbol: 'cb', desc: 'Circuit Breaker' },
+                        { name: 'Disconnector', icon: '⊢', symbol: 'disconnector', desc: 'Isolator' },
+                        { name: 'Load Break Switch', icon: '⊣', symbol: 'lbs', desc: 'LBS' },
+                        { name: 'Fuse', icon: '⊗', symbol: 'fuse', desc: 'Fuse' },
+                        { name: 'Recloser', icon: '⟳', symbol: 'recloser', desc: 'Recloser' },
+                    ],
+                    'Reactive Compensation': [
+                        { name: 'Capacitor Bank', icon: '╱╲', symbol: 'capacitor', desc: 'Capacitor' },
+                        { name: 'Reactor', icon: '⟳', symbol: 'reactor', desc: 'Reactor/Inductor' },
+                        { name: 'SVC', icon: '◆', symbol: 'svc', desc: 'Static VAR Compensator' },
+                        { name: 'STATCOM', icon: '◇', symbol: 'statcom', desc: 'STATCOM' },
+                    ],
+                    'Distribution Equipment': [
+                        { name: 'Busbar', icon: '━', symbol: 'busbar', desc: 'Single/Double/Ring' },
+                        { name: 'Cable', icon: '〰', symbol: 'cable', desc: 'Underground Cable' },
+                        { name: 'Overhead Line', icon: '〰', symbol: 'overhead', desc: 'Overhead Line' },
+                        { name: 'Cable Termination', icon: '●', symbol: 'cable_term', desc: 'Cable End' },
+                    ],
+                    'Grounding & Safety': [
+                        { name: 'Earthing', icon: '⏚', symbol: 'earthing', desc: 'Ground Symbol' },
+                        { name: 'Lightning Arrester', icon: '⚡', symbol: 'arrester', desc: 'Surge Protection' },
+                    ],
+                    'Metering & Control': [
+                        { name: 'Energy Meter', icon: '⊙', symbol: 'meter', desc: 'Meter' },
+                        { name: 'Protection Relay', icon: '◐', symbol: 'relay', desc: 'Relay' },
+                        { name: 'RTU', icon: '📡', symbol: 'rtu', desc: 'Remote Terminal Unit' },
+                        { name: 'Control Panel', icon: '⊞', symbol: 'panel', desc: 'Control Panel' },
+                    ],
+                    'Loads': [
+                        { name: 'Motor', icon: 'Ⓜ', symbol: 'motor', desc: 'Motor Load' },
+                        { name: 'Generic Load', icon: '▬', symbol: 'load', desc: 'Load' },
+                        { name: 'Resistive Load', icon: '▯', symbol: 'resistor', desc: 'Resistor' },
+                        { name: 'Light Load', icon: '💡', symbol: 'light', desc: 'Lighting Load' },
+                    ],
+                    'Substation Equipment': [
+                        { name: 'Substation', icon: '▭▭▭', symbol: 'substation', desc: 'Substation Boundary' },
+                        { name: 'Control Building', icon: '⌂', symbol: 'building', desc: 'Building' },
+                        { name: 'Switchgear', icon: '▢▢', symbol: 'switchgear', desc: 'Switchgear Assembly' },
+                        { name: 'RMU', icon: '▢⟳', symbol: 'rmu', desc: 'Ring Main Unit' },
+                    ],
+                };
+            },
+
+            // Render equipment palette
+            renderPalette() {
+                const palette = document.getElementById('palette');
+                palette.innerHTML = '<div class="palette-header">⚡ Equipment Palette</div>';
+
+                Object.entries(this.equipmentLibrary).forEach(([category, items]) => {
+                    const categoryEl = document.createElement('div');
+                    categoryEl.className = 'palette-category';
+
+                    const headerEl = document.createElement('div');
+                    headerEl.className = 'palette-category-header';
+                    headerEl.innerHTML = `<span>${category}</span><span class="arrow">▶</span>`;
+
+                    const itemsContainer = document.createElement('div');
+                    itemsContainer.className = 'palette-items';
+
+                    items.forEach(item => {
+                        const itemEl = document.createElement('div');
+                        itemEl.className = 'equipment-item';
+                        itemEl.draggable = true;
+                        itemEl.innerHTML = `
+                            <div class="equipment-icon">${item.icon}</div>
+                            <div>
+                                <div style="font-weight: bold;">${item.name}</div>
+                                <div style="color: #bdc3c7; font-size: 10px;">${item.desc}</div>
+                            </div>
+                        `;
+                        itemEl.dataset.equipmentName = item.name;
+                        itemEl.dataset.equipmentSymbol = item.symbol;
+                        itemEl.dataset.equipmentIcon = item.icon;
+
+                        itemsContainer.appendChild(itemEl);
+                    });
+
+                    headerEl.addEventListener('click', () => {
+                        itemsContainer.classList.toggle('collapsed');
+                        headerEl.classList.toggle('collapsed');
+                    });
+
+                    categoryEl.appendChild(headerEl);
+                    categoryEl.appendChild(itemsContainer);
+                    palette.appendChild(categoryEl);
+                });
+            },
+
+            // Color management
+            setVoltageColor(color) {
+                this.currentColor = color;
+                document.querySelectorAll('.voltage-color-btn').forEach(btn => btn.classList.remove('active'));
+                if (color === '#FF0000') document.getElementById('color-hv').classList.add('active');
+                else if (color === '#FF851B') document.getElementById('color-mv').classList.add('active');
+                else if (color === '#0074D9') document.getElementById('color-lv').classList.add('active');
+                else if (color === '#800080') document.getElementById('color-ehv').classList.add('active');
+                this.updateStatus(`Color: ${color}`);
+            },
+
+            // Grid management
+            toggleGrid() {
+                this.gridEnabled = !this.gridEnabled;
+                document.getElementById('btn-grid').classList.toggle('active');
+                this.updateStatus(this.gridEnabled ? 'Grid: ON' : 'Grid: OFF');
+                this.redraw();
+            },
+
+            toggleSnap() {
+                this.snapEnabled = !this.snapEnabled;
+                document.getElementById('btn-snap').classList.toggle('active');
+                this.updateStatus(this.snapEnabled ? 'Snap: ON' : 'Snap: OFF');
+            },
+
+            // Zoom management
+            zoom(factor) {
+                const oldZoom = this.zoom;
+                this.zoom = Math.max(0.1, Math.min(5, this.zoom * factor));
+                const zoomPercent = Math.round(this.zoom * 100);
+                document.getElementById('zoom-display').textContent = `${zoomPercent}%`;
+                this.redraw();
+                this.updateStatus(`Zoom: ${zoomPercent}%`);
+            },
+
+            fitToView() {
+                if (this.elements.length === 0) {
+                    this.zoom = 1;
+                    this.panX = 0;
+                    this.panY = 0;
+                } else {
+                    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+                    this.elements.forEach(el => {
+                        minX = Math.min(minX, el.x - 30);
+                        minY = Math.min(minY, el.y - 30);
+                        maxX = Math.max(maxX, el.x + 30);
+                        maxY = Math.max(maxY, el.y + 30);
+                    });
+
+                    const width = maxX - minX;
+                    const height = maxY - minY;
+                    this.zoom = Math.min(
+                        (this.canvas.width * 0.9) / width,
+                        (this.canvas.height * 0.9) / height
+                    );
+                    this.panX = -(minX * this.zoom) + 50;
+                    this.panY = -(minY * this.zoom) + 50;
+                }
+                const zoomPercent = Math.round(this.zoom * 100);
+                document.getElementById('zoom-display').textContent = `${zoomPercent}%`;
+                this.redraw();
+            },
+
+            // Canvas event handlers
+            handleCanvasMouseDown(e) {
+                const rect = this.canvas.getBoundingClientRect();
+                const x = (e.clientX - rect.left - this.panX) / this.zoom;
+                const y = (e.clientY - rect.top - this.panY) / this.zoom;
+
+                if (this.currentTool === 'select') {
+                    const clickedElement = this.getElementAt(x, y);
+                    if (e.button === 0) {
+                        if (clickedElement) {
+                            this.selectedId = clickedElement.id;
+                            this.isDraggingSelection = true;
+                            this.drawStartX = x;
+                            this.drawStartY = y;
+                            this.updateProperties();
+                        } else {
+                            this.selectedId = null;
+                            this.isDraggingSelection = false;
+                            this.updateProperties();
+                            // Start selection box
+                            this.selectionStartX = x;
+                            this.selectionStartY = y;
+                        }
+                    }
+                } else if (this.currentTool === 'line') {
+                    if (!this.isDrawing) {
+                        this.isDrawing = true;
+                        this.drawStartX = x;
+                        this.drawStartY = y;
+                    }
+                } else if (this.currentTool === 'pen') {
+                    this.isDrawing = true;
+                    this.drawStartX = x;
+                    this.drawStartY = y;
+                } else if (this.currentTool === 'pan') {
+                    this.drawStartX = x;
+                    this.drawStartY = y;
+                }
+                this.redraw();
+            },
+
+            handleCanvasMouseMove(e) {
+                const rect = this.canvas.getBoundingClientRect();
+                const x = (e.clientX - rect.left - this.panX) / this.zoom;
+                const y = (e.clientY - rect.top - this.panY) / this.zoom;
+
+                document.getElementById('status-coords').textContent = `${Math.round(x)}, ${Math.round(y)}`;
+
+                if (this.currentTool === 'select') {
+                    if (this.isDraggingSelection && this.selectedId) {
+                        const element = this.elements.find(el => el.id === this.selectedId);
+                        if (element) {
+                            const dx = x - this.drawStartX;
+                            const dy = y - this.drawStartY;
+
+                            if (this.snapEnabled) {
+                                const snapGrid = this.gridSize;
+                                element.x = Math.round(element.x / snapGrid) * snapGrid + Math.round(dx / snapGrid) * snapGrid;
+                                element.y = Math.round(element.y / snapGrid) * snapGrid + Math.round(dy / snapGrid) * snapGrid;
+                            } else {
+                                element.x += dx;
+                                element.y += dy;
+                            }
+
+                            this.drawStartX = x;
+                            this.drawStartY = y;
+                            this.redraw();
+                        }
+                    }
+                } else if (this.currentTool === 'line') {
+                    if (this.isDrawing) {
+                        this.redraw();
+                        this.ctx.strokeStyle = this.currentColor;
+                        this.ctx.lineWidth = this.lineWidth;
+                        this.ctx.beginPath();
+                        this.ctx.moveTo((this.drawStartX) * this.zoom + this.panX, (this.drawStartY) * this.zoom + this.panY);
+                        this.ctx.lineTo((x) * this.zoom + this.panX, (y) * this.zoom + this.panY);
+                        this.ctx.stroke();
+                    }
+                } else if (this.currentTool === 'pen') {
+                    if (this.isDrawing) {
+                        this.ctx.strokeStyle = this.currentColor;
+                        this.ctx.lineWidth = this.lineWidth;
+                        this.ctx.lineJoin = 'round';
+                        this.ctx.lineCap = 'round';
+                        this.ctx.beginPath();
+                        this.ctx.moveTo((this.drawStartX) * this.zoom + this.panX, (this.drawStartY) * this.zoom + this.panY);
+                        this.ctx.lineTo((x) * this.zoom + this.panX, (y) * this.zoom + this.panY);
+                        this.ctx.stroke();
+                        this.drawStartX = x;
+                        this.drawStartY = y;
+                    }
+                }
+            },
+
+            handleCanvasMouseUp(e) {
+                const rect = this.canvas.getBoundingClientRect();
+                const x = (e.clientX - rect.left - this.panX) / this.zoom;
+                const y = (e.clientY - rect.top - this.panY) / this.zoom;
+
+                if (this.currentTool === 'line' && this.isDrawing) {
+                    const newConnection = {
+                        id: this.nextElementId++,
+                        type: 'connection',
+                        x1: this.drawStartX,
+                        y1: this.drawStartY,
+                        x2: x,
+                        y2: y,
+                        color: this.currentColor,
+                        width: this.lineWidth,
+                        label: '',
+                    };
+                    this.connections.push(newConnection);
+                    this.isDrawing = false;
+                    this.updateHistory();
+                } else if (this.currentTool === 'pen' && this.isDrawing) {
+                    this.isDrawing = false;
+                    this.updateHistory();
+                }
+
+                this.redraw();
+            },
+
+            handleContextMenu(e) {
+                e.preventDefault();
+                const rect = this.canvas.getBoundingClientRect();
+                const x = (e.clientX - rect.left - this.panX) / this.zoom;
+                const y = (e.clientY - rect.top - this.panY) / this.zoom;
+
+                const element = this.getElementAt(x, y);
+                const menu = document.getElementById('context-menu');
+                menu.innerHTML = '';
+
+                if (element) {
+                    if (element.type === 'equipment') {
+                        menu.innerHTML += `<div class="context-menu-item" onclick="app.rotateElement(${element.id}, 90)">Rotate 90°</div>`;
+                        menu.innerHTML += `<div class="context-menu-item" onclick="app.rotateElement(${element.id}, 180)">Rotate 180°</div>`;
+                        menu.innerHTML += `<div class="context-menu-item" onclick="app.rotateElement(${element.id}, 270)">Rotate 270°</div>`;
+                        menu.innerHTML += `<div class="context-menu-item" onclick="app.duplicateElement(${element.id})">Duplicate</div>`;
+                        menu.innerHTML += `<div class="context-menu-item" onclick="app.deleteElement(${element.id})">Delete</div>`;
+                    } else if (element.type === 'connection') {
+                        menu.innerHTML += `<div class="context-menu-item" onclick="app.editConnectionLabel(${element.id})">Edit Label</div>`;
+                        menu.innerHTML += `<div class="context-menu-item" onclick="app.deleteConnection(${element.id})">Delete</div>`;
+                    }
+                } else {
+                    menu.innerHTML += `<div class="context-menu-item" onclick="app.paste()">Paste</div>`;
+                    menu.innerHTML += `<div class="context-menu-item" onclick="app.clearCanvas()">Clear All</div>`;
+                }
+
+                menu.style.left = e.clientX + 'px';
+                menu.style.top = e.clientY + 'px';
+                menu.classList.add('show');
+
+                document.addEventListener('click', () => {
+                    menu.classList.remove('show');
+                }, { once: true });
+            },
+
+            handleMouseWheel(e) {
+                e.preventDefault();
+                const factor = e.deltaY > 0 ? 0.9 : 1.1;
+                this.zoom(factor);
+            },
+
+            handleKeyboard(e) {
+                if (e.ctrlKey || e.metaKey) {
+                    if (e.key === 'z') {
+                        e.preventDefault();
+                        this.undo();
+                    } else if (e.key === 'y') {
+                        e.preventDefault();
+                        this.redo();
+                    } else if (e.key === 'c') {
+                        e.preventDefault();
+                        this.copy();
+                    } else if (e.key === 'v') {
+                        e.preventDefault();
+                        this.paste();
+                    } else if (e.key === 'd') {
+                        e.preventDefault();
+                        if (this.selectedId) this.duplicateElement(this.selectedId);
+                    } else if (e.key === 'a') {
+                        e.preventDefault();
+                        this.selectAll();
+                    } else if (e.key === 's') {
+                        e.preventDefault();
+                        this.saveToLocalStorage();
+                    }
+                } else if (e.key === 'Delete') {
+                    if (this.selectedId) this.deleteElement(this.selectedId);
+                } else if (e.key === 'Escape') {
+                    this.selectedId = null;
+                    this.connectionMode = false;
+                    this.updateProperties();
+                    this.redraw();
+                } else if (e.key === 't' || e.key === 'T') {
+                    this.setTool('text');
+                } else if (e.key === 'c' || e.key === 'C') {
+                    this.connectionMode = !this.connectionMode;
+                    this.updateStatus(this.connectionMode ? 'Connection Mode ON' : 'Connection Mode OFF');
+                } else if (e.key === '0') {
+                    if (this.selectedId) this.rotateElement(this.selectedId, 0);
+                }
+            },
+
+            handleDragStart(e) {
+                if (e.target.classList.contains('equipment-item')) {
+                    e.dataTransfer.effectAllowed = 'copy';
+                    e.dataTransfer.setData('equipmentName', e.target.dataset.equipmentName);
+                    e.dataTransfer.setData('equipmentSymbol', e.target.dataset.equipmentSymbol);
+                    e.dataTransfer.setData('equipmentIcon', e.target.dataset.equipmentIcon);
+                }
+            },
+
+            handleDragOver(e) {
+                if (e.dataTransfer.types.includes('equipmentName')) {
+                    e.preventDefault();
+                    e.dataTransfer.dropEffect = 'copy';
+                }
+            },
+
+            handleDrop(e) {
+                e.preventDefault();
+                const name = e.dataTransfer.getData('equipmentName');
+                const symbol = e.dataTransfer.getData('equipmentSymbol');
+                const icon = e.dataTransfer.getData('equipmentIcon');
+
+                const rect = this.canvas.getBoundingClientRect();
+                const x = (e.clientX - rect.left - this.panX) / this.zoom;
+                const y = (e.clientY - rect.top - this.panY) / this.zoom;
+
+                this.addEquipment(name, symbol, icon, x, y);
+            },
+
+            // Element management
+            addEquipment(name, symbol, icon, x, y) {
+                const element = {
+                    id: this.nextElementId++,
+                    type: 'equipment',
+                    name: name,
+                    symbol: symbol,
+                    icon: icon,
+                    x: x,
+                    y: y,
+                    width: 40,
+                    height: 40,
+                    rotation: 0,
+                    color: this.currentColor,
+                    voltage: '',
+                    current: '',
+                    power: '',
+                    tag: '',
+                    status: 'closed',
+                    lineStyle: 'solid',
+                    notes: '',
+                };
+                this.elements.push(element);
+                this.selectedId = element.id;
+                this.updateProperties();
+                this.updateHistory();
+                this.redraw();
+                this.updateStatus(`Added: ${name}`);
+            },
+
+            getElementAt(x, y) {
+                for (let i = this.elements.length - 1; i >= 0; i--) {
+                    const el = this.elements[i];
+                    if (x >= el.x - 20 && x <= el.x + 20 && y >= el.y - 20 && y <= el.y + 20) {
+                        return el;
+                    }
+                }
+
+                for (let i = this.connections.length - 1; i >= 0; i--) {
+                    const conn = this.connections[i];
+                    if (this.pointNearLine(x, y, conn.x1, conn.y1, conn.x2, conn.y2, 5)) {
+                        return conn;
+                    }
+                }
+
+                return null;
+            },
+
+            pointNearLine(px, py, x1, y1, x2, y2, distance) {
+                const A = px - x1;
+                const B = py - y1;
+                const C = x2 - x1;
+                const D = y2 - y1;
+
+                const dot = A * C + B * D;
+                const lenSq = C * C + D * D;
+                let param = -1;
+                if (lenSq !== 0) param = dot / lenSq;
+
+                let xx, yy;
+                if (param < 0) {
+                    xx = x1;
+                    yy = y1;
+                } else if (param > 1) {
+                    xx = x2;
+                    yy = y2;
+                } else {
+                    xx = x1 + param * C;
+                    yy = y1 + param * D;
+                }
+
+                const dx = px - xx;
+                const dy = py - yy;
+                return Math.sqrt(dx * dx + dy * dy) <= distance;
+            },
+
+            deleteElement(id) {
+                this.elements = this.elements.filter(el => el.id !== id);
+                this.connections = this.connections.filter(conn => conn.id !== id);
+                if (this.selectedId === id) this.selectedId = null;
+                this.updateProperties();
+                this.updateHistory();
+                this.redraw();
+                this.updateStatus('Element deleted');
+            },
+
+            duplicateElement(id) {
+                const original = this.elements.find(el => el.id === id);
+                if (original) {
+                    const duplicate = JSON.parse(JSON.stringify(original));
+                    duplicate.id = this.nextElementId++;
+                    duplicate.x += 20;
+                    duplicate.y += 20;
+                    this.elements.push(duplicate);
+                    this.selectedId = duplicate.id;
+                    this.updateProperties();
+                    this.updateHistory();
+                    this.redraw();
+                }
+            },
+
+            rotateElement(id, angle) {
+                const element = this.elements.find(el => el.id === id);
+                if (element) {
+                    element.rotation = angle % 360;
+                    this.updateProperties();
+                    this.updateHistory();
+                    this.redraw();
+                }
+            },
+
+            deleteConnection(id) {
+                this.connections = this.connections.filter(conn => conn.id !== id);
+                this.updateHistory();
+                this.redraw();
+            },
+
+            editConnectionLabel(id) {
+                const conn = this.connections.find(c => c.id === id);
+                if (conn) {
+                    const label = prompt('Enter connection label:', conn.label || '');
+                    if (label !== null) {
+                        conn.label = label;
+                        this.updateHistory();
+                        this.redraw();
+                    }
+                }
+            },
+
+            copy() {
+                if (this.selectedId) {
+                    const element = this.elements.find(el => el.id === this.selectedId);
+                    if (element) {
+                        this.clipboard = JSON.parse(JSON.stringify(element));
+                        this.updateStatus('Element copied');
+                    }
+                }
+            },
+
+            paste() {
+                if (this.clipboard) {
+                    const newElement = JSON.parse(JSON.stringify(this.clipboard));
+                    newElement.id = this.nextElementId++;
+                    newElement.x += 30;
+                    newElement.y += 30;
+                    this.elements.push(newElement);
+                    this.selectedId = newElement.id;
+                    this.updateProperties();
+                    this.updateHistory();
+                    this.redraw();
+                    this.updateStatus('Element pasted');
+                }
+            },
+
+            selectAll() {
+                if (this.elements.length > 0) {
+                    this.selectedId = this.elements[0].id;
+                    this.updateStatus(`Selected: ${this.elements.length} elements`);
+                    this.redraw();
+                }
+            },
+
+            clearCanvas() {
+                if (confirm('Clear all elements? This cannot be undone.')) {
+                    this.elements = [];
+                    this.connections = [];
+                    this.selectedId = null;
+                    this.updateProperties();
+                    this.updateHistory();
+                    this.redraw();
+                    this.updateStatus('Canvas cleared');
+                }
+            },
+
+            // Properties panel
+            updateProperties() {
+                const propertiesPanel = document.getElementById('properties');
+                if (!this.selectedId) {
+                    propertiesPanel.innerHTML = '<div class="properties-empty">Select an element to view properties</div>';
+                    return;
+                }
+
+                const element = this.elements.find(el => el.id === this.selectedId);
+                if (!element) return;
+
+                let html = '';
+                html += '<div class="property-group">';
+                html += '<div class="property-group-title">Basic Properties</div>';
+                html += `<div class="property-field">
+                    <label class="property-label">Name</label>
+                    <input type="text" value="${element.name}" onchange="app.updateElementProperty(${element.id}, 'name', this.value)">
+                </div>`;
+                html += `<div class="property-field">
+                    <label class="property-label">Symbol</label>
+                    <input type="text" value="${element.symbol}" readonly>
+                </div>`;
+                html += '</div>';
+
+                html += '<div class="property-group">';
+                html += '<div class="property-group-title">Electrical Properties</div>';
+                html += `<div class="property-field">
+                    <label class="property-label">Voltage (kV)</label>
+                    <input type="text" value="${element.voltage}" onchange="app.updateElementProperty(${element.id}, 'voltage', this.value)">
+                </div>`;
+                html += `<div class="property-field">
+                    <label class="property-label">Current (A)</label>
+                    <input type="text" value="${element.current}" onchange="app.updateElementProperty(${element.id}, 'current', this.value)">
+                </div>`;
+                html += `<div class="property-field">
+                    <label class="property-label">Power (MVA)</label>
+                    <input type="text" value="${element.power}" onchange="app.updateElementProperty(${element.id}, 'power', this.value)">
+                </div>`;
+                html += '</div>';
+
+                html += '<div class="property-group">';
+                html += '<div class="property-group-title">Identification</div>';
+                html += `<div class="property-field">
+                    <label class="property-label">Tag/ID</label>
+                    <input type="text" value="${element.tag}" onchange="app.updateElementProperty(${element.id}, 'tag', this.value)">
+                </div>`;
+                html += '</div>';
+
+                html += '<div class="property-group">';
+                html += '<div class="property-group-title">Visual Properties</div>';
+                html += `<div class="property-field">
+                    <label class="property-label">Color</label>
+                    <input type="color" value="${element.color}" onchange="app.updateElementProperty(${element.id}, 'color', this.value)">
+                </div>`;
+                html += `<div class="property-field">
+                    <label class="property-label">Rotation (°)</label>
+                    <select onchange="app.rotateElement(${element.id}, parseInt(this.value))">
+                        <option value="0" ${element.rotation === 0 ? 'selected' : ''}>0°</option>
+                        <option value="90" ${element.rotation === 90 ? 'selected' : ''}>90°</option>
+                        <option value="180" ${element.rotation === 180 ? 'selected' : ''}>180°</option>
+                        <option value="270" ${element.rotation === 270 ? 'selected' : ''}>270°</option>
+                    </select>
+                </div>`;
+                html += '</div>';
+
+                html += '<div class="property-group">';
+                html += '<div class="property-group-title">Notes</div>';
+                html += `<div class="property-field">
+                    <textarea onchange="app.updateElementProperty(${element.id}, 'notes', this.value)">${element.notes}</textarea>
+                </div>`;
+                html += '</div>';
+
+                propertiesPanel.innerHTML = html;
+            },
+
+            updateElementProperty(id, property, value) {
+                const element = this.elements.find(el => el.id === id);
+                if (element) {
+                    element[property] = value;
+                    this.updateHistory();
+                    this.redraw();
+                }
+            },
+
+            // Drawing
+            redraw() {
+                this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+
+                // Draw grid
+                if (this.gridEnabled) {
+                    this.drawGrid();
+                }
+
+                // Apply transformations
+                this.ctx.save();
+                this.ctx.translate(this.panX, this.panY);
+                this.ctx.scale(this.zoom, this.zoom);
+
+                // Draw connections first (background)
+                this.connections.forEach(conn => {
+                    this.drawConnection(conn);
+                });
+
+                // Draw elements
+                this.elements.forEach(el => {
+                    this.drawElement(el);
+                });
+
+                // Highlight selected
+                if (this.selectedId) {
+                    const selected = this.elements.find(el => el.id === this.selectedId);
+                    if (selected) {
+                        this.ctx.strokeStyle = '#667eea';
+                        this.ctx.lineWidth = 3;
+                        this.ctx.shadowColor = '#667eea';
+                        this.ctx.shadowBlur = 10;
+                        this.ctx.strokeRect(selected.x - 25, selected.y - 25, 50, 50);
+                        this.ctx.shadowColor = 'transparent';
+                    }
+                }
+
+                this.ctx.restore();
+            },
+
+            drawGrid() {
+                const gridStep = this.gridSize * this.zoom;
+                this.ctx.strokeStyle = 'rgba(200, 200, 200, 0.2)';
+                this.ctx.lineWidth = 1;
+
+                const startX = Math.floor(this.panX / gridStep) * gridStep;
+                const startY = Math.floor(this.panY / gridStep) * gridStep;
+
+                for (let x = startX; x < this.canvas.width; x += gridStep) {
+                    this.ctx.beginPath();
+                    this.ctx.moveTo(x, 0);
+                    this.ctx.lineTo(x, this.canvas.height);
+                    this.ctx.stroke();
+                }
+
+                for (let y = startY; y < this.canvas.height; y += gridStep) {
+                    this.ctx.beginPath();
+                    this.ctx.moveTo(0, y);
+                    this.ctx.lineTo(this.canvas.width, y);
+                    this.ctx.stroke();
+                }
+            },
+
+            drawElement(element) {
+                this.ctx.save();
+                this.ctx.translate(element.x, element.y);
+                this.ctx.rotate((element.rotation * Math.PI) / 180);
+
+                // Draw equipment symbol
+                this.ctx.fillStyle = 'white';
+                this.ctx.strokeStyle = element.color || '#000';
+                this.ctx.lineWidth = 2;
+                this.ctx.fillRect(-20, -20, 40, 40);
+                this.ctx.strokeRect(-20, -20, 40, 40);
+
+                // Draw icon
+                this.ctx.fillStyle = element.color || '#000';
+                this.ctx.font = 'bold 24px Arial';
+                this.ctx.textAlign = 'center';
+                this.ctx.textBaseline = 'middle';
+                this.ctx.fillText(element.icon, 0, 0);
+
+                // Draw label if tag exists
+                if (element.tag) {
+                    this.ctx.fillStyle = '#000';
+                    this.ctx.font = '11px Arial';
+                    this.ctx.textAlign = 'center';
+                    this.ctx.textBaseline = 'top';
+                    this.ctx.fillText(element.tag, 0, 25);
+                }
+
+                this.ctx.restore();
+
+                // Draw connection points
+                if (this.selectedId === element.id) {
+                    this.ctx.fillStyle = '#667eea';
+                    const points = [
+                        { x: element.x - 25, y: element.y },
+                        { x: element.x + 25, y: element.y },
+                        { x: element.x, y: element.y - 25 },
+                        { x: element.x, y: element.y + 25 }
+                    ];
+                    points.forEach(p => {
+                        this.ctx.beginPath();
+                        this.ctx.arc(p.x, p.y, 4, 0, Math.PI * 2);
+                        this.ctx.fill();
+                    });
+                }
+            },
+
+            drawConnection(conn) {
+                this.ctx.strokeStyle = conn.color || '#000';
+                this.ctx.lineWidth = conn.width || 2;
+                this.ctx.beginPath();
+                this.ctx.moveTo(conn.x1, conn.y1);
+                this.ctx.lineTo(conn.x2, conn.y2);
+                this.ctx.stroke();
+
+                // Draw arrow
+                const angle = Math.atan2(conn.y2 - conn.y1, conn.x2 - conn.x1);
+                const headlen = 8;
+                this.ctx.fillStyle = conn.color || '#000';
+                this.ctx.beginPath();
+                this.ctx.moveTo(conn.x2, conn.y2);
+                this.ctx.lineTo(conn.x2 - headlen * Math.cos(angle - Math.PI / 6), conn.y2 - headlen * Math.sin(angle - Math.PI / 6));
+                this.ctx.lineTo(conn.x2 - headlen * Math.cos(angle + Math.PI / 6), conn.y2 - headlen * Math.sin(angle + Math.PI / 6));
+                this.ctx.closePath();
+                this.ctx.fill();
+
+                // Draw label
+                if (conn.label) {
+                    const midX = (conn.x1 + conn.x2) / 2;
+                    const midY = (conn.y1 + conn.y2) / 2;
+                    this.ctx.fillStyle = '#000';
+                    this.ctx.font = '11px Arial';
+                    this.ctx.textAlign = 'center';
+                    this.ctx.fillText(conn.label, midX, midY - 8);
+                }
+            },
+
+            // History management
+            updateHistory() {
+                this.historyIndex++;
+                this.history = this.history.slice(0, this.historyIndex);
+                this.history.push(JSON.stringify({
+                    elements: this.elements,
+                    connections: this.connections
+                }));
+
+                if (this.history.length > 50) {
+                    this.history.shift();
+                    this.historyIndex--;
+                }
+
+                this.updateHistoryStates();
+            },
+
+            updateHistoryStates() {
+                document.getElementById('btn-undo').disabled = this.historyIndex <= 0;
+                document.getElementById('btn-redo').disabled = this.historyIndex >= this.history.length - 1;
+            },
+
+            undo() {
+                if (this.historyIndex > 0) {
+                    this.historyIndex--;
+                    this.loadHistoryState();
+                }
+            },
+
+            redo() {
+                if (this.historyIndex < this.history.length - 1) {
+                    this.historyIndex++;
+                    this.loadHistoryState();
+                }
+            },
+
+            loadHistoryState() {
+                const state = JSON.parse(this.history[this.historyIndex]);
+                this.elements = state.elements;
+                this.connections = state.connections;
+                this.selectedId = null;
+                this.updateProperties();
+                this.updateHistoryStates();
+                this.redraw();
+            },
+
+            // Export/Import
+            exportPNG() {
+                const link = document.createElement('a');
+                link.href = this.canvas.toDataURL('image/png');
+                link.download = `diagram_${new Date().getTime()}.png`;
+                link.click();
+                this.updateStatus('Exported as PNG');
+            },
+
+            exportSVG() {
+                let svg = '<svg xmlns="http://www.w3.org/2000/svg" width="' + this.canvas.width + '" height="' + this.canvas.height + '">';
+                svg += '<rect width="100%" height="100%" fill="white"/>';
+
+                this.connections.forEach(conn => {
+                    svg += `<line x1="${conn.x1}" y1="${conn.y1}" x2="${conn.x2}" y2="${conn.y2}" stroke="${conn.color}" stroke-width="${conn.width}" />`;
+                });
+
+                this.elements.forEach(el => {
+                    svg += `<g transform="translate(${el.x}, ${el.y}) rotate(${el.rotation})">`;
+                    svg += `<rect x="-20" y="-20" width="40" height="40" fill="white" stroke="${el.color}" stroke-width="2"/>`;
+                    svg += `<text x="0" y="0" text-anchor="middle" dominant-baseline="middle" font-size="20" font-weight="bold" fill="${el.color}">${el.icon}</text>`;
+                    if (el.tag) {
+                        svg += `<text x="0" y="25" text-anchor="middle" font-size="11" fill="black">${el.tag}</text>`;
+                    }
+                    svg += '</g>';
+                });
+
+                svg += '</svg>';
+
+                const link = document.createElement('a');
+                link.href = 'data:image/svg+xml;base64,' + btoa(svg);
+                link.download = `diagram_${new Date().getTime()}.svg`;
+                link.click();
+                this.updateStatus('Exported as SVG');
+            },
+
+            saveDiagram() {
+                const data = {
+                    elements: this.elements,
+                    connections: this.connections,
+                    zoom: this.zoom,
+                    panX: this.panX,
+                    panY: this.panY,
+                };
+
+                const link = document.createElement('a');
+                link.href = 'data:application/json;base64,' + btoa(JSON.stringify(data, null, 2));
+                link.download = `diagram_${new Date().getTime()}.json`;
+                link.click();
+                this.updateStatus('Diagram exported');
+            },
+
+            loadDiagram(e) {
+                const file = e.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = (event) => {
+                        const data = JSON.parse(event.target.result);
+                        this.elements = data.elements;
+                        this.connections = data.connections;
+                        this.zoom = data.zoom || 1;
+                        this.panX = data.panX || 0;
+                        this.panY = data.panY || 0;
+                        this.selectedId = null;
+                        this.updateHistory();
+                        this.redraw();
+                        this.updateStatus('Diagram loaded');
+                    };
+                    reader.readAsText(file);
+                }
+                e.target.value = '';
+            },
+
+            loadImage(e) {
+                const file = e.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = (event) => {
+                        const img = new Image();
+                        img.onload = () => {
+                            this.ctx.drawImage(img, 0, 0);
+                        };
+                        img.src = event.target.result;
+                    };
+                    reader.readAsDataURL(file);
+                }
+                e.target.value = '';
+            },
+
+            triggerLoadDialog() {
+                document.getElementById('file-input-load').click();
+            },
+
+            triggerImageDialog() {
+                document.getElementById('file-input-image').click();
+            },
+
+            // Local storage
+            saveToLocalStorage() {
+                const data = {
+                    elements: this.elements,
+                    connections: this.connections,
+                    zoom: this.zoom,
+                    panX: this.panX,
+                    panY: this.panY,
+                    timestamp: new Date().toISOString(),
+                };
+                localStorage.setItem('gridDiagram', JSON.stringify(data));
+                this.updateStatus('Auto-saved');
+            },
+
+            loadFromLocalStorage() {
+                const data = localStorage.getItem('gridDiagram');
+                if (data) {
+                    try {
+                        const parsed = JSON.parse(data);
+                        this.elements = parsed.elements || [];
+                        this.connections = parsed.connections || [];
+                        this.zoom = parsed.zoom || 1;
+                        this.panX = parsed.panX || 0;
+                        this.panY = parsed.panY || 0;
+                        this.updateHistory();
+                        this.redraw();
+                        this.updateStatus('Loaded from cache');
+                    } catch (e) {
+                        console.error('Failed to load diagram', e);
+                    }
+                }
+            },
+
+            autoSave() {
+                setInterval(() => this.saveToLocalStorage(), 120000);
+            },
+
+            // UI Management
+            showModal(modalId) {
+                document.getElementById(modalId).classList.add('show');
+            },
+
+            showEquipmentList() {
+                let html = '';
+                this.elements.forEach((el, index) => {
+                    html += `<div class="equipment-list-item">
+                        <strong>${index + 1}. ${el.name}</strong><br>
+                        Tag: ${el.tag || 'N/A'}<br>
+                        Voltage: ${el.voltage || 'N/A'}<br>
+                    </div>`;
+                });
+
+                if (html === '') html = '<div class="equipment-list-item">No equipment</div>';
+
+                document.getElementById('equipment-list-content').innerHTML = html;
+                this.showModal('modal-equipment-list');
+            },
+
+            exportEquipmentList() {
+                let csv = 'No.,Name,Tag,Voltage,Current,Power,Notes\n';
+                this.elements.forEach((el, index) => {
+                    csv += `${index + 1},"${el.name}","${el.tag}","${el.voltage}","${el.current}","${el.power}","${el.notes}"\n`;
+                });
+
+                const link = document.createElement('a');
+                link.href = 'data:text/csv;base64,' + btoa(csv);
+                link.download = `equipment_list_${new Date().getTime()}.csv`;
+                link.click();
+            },
+
+            updateStatus(message) {
+                document.getElementById('status-text').textContent = message;
+            }
+        };
+
+        // Helper functions
+        function closeModal(modalId) {
+            document.getElementById(modalId).classList.remove('show');
+        }
+
+        // Initialize app on page load
+        window.addEventListener('load', () => {
+            app.init();
+        });
+
+        // Disable some buttons initially
+        window.addEventListener('load', () => {
+            document.getElementById('btn-undo').disabled = true;
+            document.getElementById('btn-redo').disabled = true;
+        });
+    </script>
+</body>
+</html>
