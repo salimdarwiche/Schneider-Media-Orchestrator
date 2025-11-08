@@ -2557,23 +2557,48 @@
 
         const nameSpan = document.createElement('span'); nameSpan.className='si-name';
         const typeSpan = document.createElement('span'); typeSpan.className='si-type';
-        typeSpan.textContent = (it.type==='video') ? 'Video' : 'PDF';
-
-        // Resolve name from libraries
+        
+        // Resolve name and type from libraries or custom data
         let openHandler = null;
         if (it.type==='video'){
+          typeSpan.textContent = 'Video';
           const meta = videoFiles.find(v=> v._id===it.id);
           nameSpan.textContent = meta ? (meta._customName || baseName(meta.file.name)) : '(missing video)';
           openHandler = ()=> {
             const vi = videoFiles.findIndex(v=> v._id===it.id);
             if (vi>=0) playVideo(vi);
           };
-        } else {
+        } else if (it.type==='pdf'){
+          typeSpan.textContent = 'PDF';
           const meta = presentationFiles.find(p=> p._id===it.id);
           nameSpan.textContent = meta ? (meta._customName || baseName(meta.file.name)) : '(missing PDF)';
           openHandler = ()=> {
             const pi = presentationFiles.findIndex(p=> p._id===it.id);
             if (pi>=0) loadPresentation(pi);
+          };
+        } else if (it.type==='text'){
+          typeSpan.textContent = 'TEXT';
+          typeSpan.style.background = '#3b82f6';
+          nameSpan.textContent = it.data.content.substring(0, 50) + (it.data.content.length > 50 ? '...' : '');
+          openHandler = ()=> alert(`Text: ${it.data.content}`);
+        } else if (it.type==='link'){
+          typeSpan.textContent = 'LINK';
+          typeSpan.style.background = '#f97316';
+          nameSpan.textContent = it.data.name;
+          openHandler = ()=> window.open(it.data.url, '_blank');
+        } else if (it.type==='photo'){
+          typeSpan.textContent = 'PHOTO';
+          typeSpan.style.background = '#a855f7';
+          nameSpan.textContent = it.data.name;
+          // Add thumbnail if available
+          if (it.data.url) {
+            const img = document.createElement('img');
+            img.src = it.data.url;
+            img.className = 'photo-thumbnail';
+            itemRow.insertBefore(img, nameSpan);
+          }
+          openHandler = ()=> {
+            if (it.data.url) window.open(it.data.url, '_blank');
           };
         }
 
