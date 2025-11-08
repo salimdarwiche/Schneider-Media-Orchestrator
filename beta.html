@@ -99,6 +99,17 @@
   .floating-fullscreen-btn:hover { transform:scale(1.05); box-shadow:0 6px 16px rgba(0,0,0,0.3); }
   .floating-fullscreen-btn svg { width:24px; height:24px; }
   
+  .floating-settings-btn {
+    position:fixed; top:20px; right:140px; z-index:150;
+    background:var(--se-life-green); color:var(--se-white);
+    border:2px solid var(--se-white); border-radius:9999px;
+    width:48px; height:48px; display:flex; align-items:center; justify-content:center;
+    cursor:pointer; box-shadow:0 4px 12px rgba(0,0,0,0.25);
+    transition:all .15s;
+  }
+  .floating-settings-btn:hover { transform:scale(1.05); box-shadow:0 6px 16px rgba(0,0,0,0.3); }
+  .floating-settings-btn svg { width:24px; height:24px; }
+  
   .menu-toggle-btn.hidden-position.left { left:20px; }
   .menu-toggle-btn.hidden-position.right { right:20px; }
   .menu-toggle-btn.hidden-position.top { top:20px; }
@@ -990,6 +1001,11 @@
       <button class="floating-fullscreen-btn" id="floatingFullscreenBtn" title="Toggle Fullscreen" aria-label="Toggle fullscreen">
         <svg viewBox="0 0 24 24" aria-hidden="true"><use href="#maximize"></use></svg>
       </button>
+      
+      <!-- Floating settings button (for presentation mode) -->
+      <button class="floating-settings-btn" id="floatingSettingsBtn" title="Settings" aria-label="Open Settings">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><use href="#settings"></use></svg>
+      </button>
 
       <div class="video-container" id="videoContainer" style="display:none">
         <video id="videoPlayer" controls></video>
@@ -1007,11 +1023,11 @@
         </div>
       </div>
 
-      <div class="empty-state" id="emptyState" style="display:flex">
+      <div class="empty-state" id="emptyState" style="display:flex;cursor:pointer" title="Click to add media">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:64px;height:64px;margin-bottom:12px;opacity:.5" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
         <div style="text-align:center;color:white;padding:8px">
           <h3 style="margin-bottom:6px">No media selected</h3>
-          <p style="color:#d1d5db">Please add videos or PDFs in Settings</p>
+          <p style="color:#d1d5db">Please click to add videos or PDF</p>
         </div>
       </div>
     </div>
@@ -1290,6 +1306,8 @@
   const fullscreenBtns = Array.from(document.querySelectorAll('.fullscreen-btn'));
   const floatingFullscreenBtn = document.getElementById('floatingFullscreenBtn');
   if (floatingFullscreenBtn) fullscreenBtns.push(floatingFullscreenBtn);
+  
+  const floatingSettingsBtn = document.getElementById('floatingSettingsBtn');
 
   const settingsBtn = document.getElementById('settingsBtn');
   const modalOverlay = document.getElementById('modalOverlay');
@@ -2965,6 +2983,31 @@
 
   // Events
   settingsBtn.addEventListener('click', showSettings);
+  
+  // Floating settings button (for presentation mode)
+  if (floatingSettingsBtn) {
+    floatingSettingsBtn.addEventListener('click', ()=> {
+      showSettings();
+      // Switch to Media Library tab
+      document.querySelectorAll('.settings-tab').forEach(t => t.classList.remove('active'));
+      document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+      document.querySelector('[data-tab="media"]')?.classList.add('active');
+      document.getElementById('mediaTab')?.classList.add('active');
+    });
+  }
+  
+  // Empty state click - open settings with media library tab
+  if (emptyState) {
+    emptyState.addEventListener('click', ()=> {
+      showSettings();
+      // Switch to Media Library tab
+      document.querySelectorAll('.settings-tab').forEach(t => t.classList.remove('active'));
+      document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+      document.querySelector('[data-tab="media"]')?.classList.add('active');
+      document.getElementById('mediaTab')?.classList.add('active');
+    });
+  }
+  
   modalClose.addEventListener('click', ()=> { modalOverlay.classList.remove('show'); markOnboarded(); });
   modalOverlay.addEventListener('click', (e)=>{ if (e.target===modalOverlay) { modalOverlay.classList.remove('show'); markOnboarded(); } });
 
