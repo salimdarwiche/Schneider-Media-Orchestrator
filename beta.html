@@ -896,6 +896,10 @@
               <button class="icon-btn" id="lockAgendaBtn" title="Lock Agenda" aria-label="Lock/Unlock Agenda">
                 <svg viewBox="0 0 24 24" aria-hidden="true"><use href="#unlock"></use></svg>
               </button>
+              <!-- Settings button -->
+              <button class="icon-btn" id="settingsBtn" title="Settings" aria-label="Settings">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><use href="#settings"></use></svg>
+              </button>
             </span>
           </div>
           <div class="gmt-clock">
@@ -972,10 +976,7 @@
       </div>
 
       <div class="menu-footer">
-        <!-- Settings button - always visible -->
-        <button class="icon-btn" id="settingsBtn" title="Settings" aria-label="Settings">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><use href="#settings"></use></svg>
-        </button>
+        <!-- Footer left empty - settings button moved to agenda section -->
       </div>
     </div>
 
@@ -2435,20 +2436,30 @@
       });
       row.addEventListener('dragend', ()=>{
         row.classList.remove('dragging');
-        // Capture current time pairs by index
-        const timesByIndex = agendaSlots.map(s=> ({ start:s.start, end:s.end }));
         // Build new order by DOM
         const newOrder = [...agendaRows.querySelectorAll('.agenda-row')].map(n => agendaSlots.find(s=>s.id===n.dataset.id)).filter(Boolean);
         if (newOrder.length === agendaSlots.length){
-          // Assign times by index: position defines time (slot moved to #2 takes old #2 times)
-          newOrder.forEach((s,i)=>{
-            s.start = timesByIndex[i]?.start || s.start;
-            s.end   = timesByIndex[i]?.end   || s.end;
-            ensureEndAfterStart(s);
-          });
+          // Keep each slot's duration when reordering
+          // Only update times: first slot keeps its start, subsequent slots chain
+          if (newOrder.length > 0 && newOrder[0].start) {
+            for (let i = 1; i < newOrder.length; i++) {
+              const prevSlot = newOrder[i - 1];
+              const currSlot = newOrder[i];
+              // Calculate duration of current slot
+              const currStart = parseHHMM(currSlot.start);
+              const currEnd = parseHHMM(currSlot.end);
+              const duration = currEnd != null && currStart != null ? currEnd - currStart : 15;
+              // Chain: current slot starts when previous ends
+              currSlot.start = prevSlot.end;
+              // Keep same duration
+              const newStartMins = parseHHMM(currSlot.start);
+              if (newStartMins != null) {
+                currSlot.end = formatHHMM(newStartMins + duration);
+              }
+              ensureEndAfterStart(currSlot);
+            }
+          }
           agendaSlots = newOrder;
-          // After reassigning, rechain from index 1 to ensure continuity if desired (keep exact assigned schedule)
-          // We will NOT override slot[1] time; chaining starts from the slot after the one you edit at runtime.
         }
         renderAgendaRows();
         renderAgendaPanel();
@@ -2600,7 +2611,12 @@
           typeSpan.textContent = 'LINK';
           typeSpan.style.background = '#f97316';
           nameSpan.textContent = it.data.name;
-          openHandler = ()=> window.open(it.data.url, '_blank');
+          // Ensure URL has protocol for opening
+          let url = it.data.url;
+          if (url && !url.startsWith('http://') && !url.startsWith('https://')) {
+            url = 'https://' + url;
+          }
+          openHandler = ()=> window.open(url, '_blank');
         } else if (it.type==='photo'){
           typeSpan.textContent = 'PHOTO';
           typeSpan.style.background = '#a855f7';
@@ -3435,8 +3451,12 @@
       `;
       form.querySelector('.add-btn').addEventListener('click', ()=>{
         const name = form.querySelector('.name-input').value.trim();
-        const url = form.querySelector('.url-input').value.trim();
+        let url = form.querySelector('.url-input').value.trim();
         if (!name || !url) return alert('Please enter both name and URL');
+        // Fix URL: add https:// if it starts with www. or has no protocol
+        if (url.startsWith('www.') || (!url.startsWith('http://') && !url.startsWith('https://'))) {
+          url = 'https://' + url.replace(/^https?:\/\//, '');
+        }
         if (!slot.items) slot.items = [];
         slot.items.push({id:makeId(), type:'link', data:{name, url}});
         form.remove();
