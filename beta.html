@@ -86,6 +86,19 @@
   .nav-back-btn.show { opacity:1; pointer-events:auto; }
   .nav-back-btn:hover { transform:scale(1.05); box-shadow:0 6px 16px rgba(0,0,0,0.3); }
   .nav-back-btn svg { width:24px; height:24px; }
+  
+  /* Floating fullscreen button (near back button) */
+  .floating-fullscreen-btn {
+    position:fixed; top:20px; right:80px; z-index:150;
+    background:var(--se-life-green); color:var(--se-white);
+    border:2px solid var(--se-white); border-radius:9999px;
+    width:48px; height:48px; display:flex; align-items:center; justify-content:center;
+    cursor:pointer; box-shadow:0 4px 12px rgba(0,0,0,0.25);
+    transition:all .15s;
+  }
+  .floating-fullscreen-btn:hover { transform:scale(1.05); box-shadow:0 6px 16px rgba(0,0,0,0.3); }
+  .floating-fullscreen-btn svg { width:24px; height:24px; }
+  
   .menu-toggle-btn.hidden-position.left { left:20px; }
   .menu-toggle-btn.hidden-position.right { right:20px; }
   .menu-toggle-btn.hidden-position.top { top:20px; }
@@ -357,8 +370,23 @@
     border-radius:10px;
     padding:10px;
     background:var(--surface);
+    transition:all 0.3s ease;
   }
   .agenda-slot.active { border-color: var(--agenda-accent); box-shadow:0 4px 8px rgba(61,205,88,0.12); }
+  .agenda-slot.completed {
+    background:rgba(61,205,88,0.08);
+    opacity:0.7;
+  }
+  .agenda-slot.completed .slot-title,
+  .agenda-slot.completed .slot-time,
+  .agenda-slot.completed .slot-subtitle {
+    opacity:0.6;
+  }
+  .slot-checkbox {
+    width:18px; height:18px; cursor:pointer;
+    accent-color:var(--se-life-green);
+    flex-shrink:0;
+  }
   .slot-header { display:flex; align-items:center; justify-content:space-between; gap:8px; flex-wrap:wrap; }
   .slot-title { font-weight:800; color:var(--text); }
   /* FEATURE 5: Subtitle display */
@@ -396,35 +424,74 @@
   .slot-item .si-type.type-link { background:#f97316; }
   .slot-item .si-type.type-photo { background:#a855f7; }
   
-  .custom-media-add {
-    margin-top:8px; display:flex; gap:8px; align-items:flex-start; position:relative;
+  /* Quick actions container (+ button and dropdown) */
+  .quick-actions-container {
+    margin-top:8px; display:flex; gap:6px; align-items:flex-start; position:relative;
   }
-  .custom-media-add .add-custom-btn {
+  .quick-actions-container .add-custom-btn,
+  .quick-actions-container .quick-assign-btn {
     width:28px; height:28px; padding:0; border-radius:50%;
     background:var(--se-life-green); color:var(--se-white);
     border:none; cursor:pointer; display:flex; align-items:center; justify-content:center;
-    transition:all .15s;
+    transition:all .15s; flex-shrink:0;
   }
-  .custom-media-add .add-custom-btn:hover {
+  .quick-actions-container .add-custom-btn:hover,
+  .quick-actions-container .quick-assign-btn:hover {
     background:var(--se-dark-gray); transform:scale(1.1);
   }
-  .custom-media-add .custom-media-menu {
-    position:absolute; top:32px; left:0; z-index:300;
+  .quick-actions-container .custom-media-menu {
+    position:absolute; top:32px; left:0; z-index:1000;
     background:var(--se-white); border:1.5px solid var(--border);
     border-radius:8px; box-shadow:0 4px 12px rgba(0,0,0,0.15);
     display:none; flex-direction:column; gap:0; min-width:140px;
   }
-  .custom-media-add .custom-media-menu button {
+  .quick-actions-container .custom-media-menu button {
     padding:10px 14px; border:none; background:transparent;
     text-align:left; font-size:13px; font-weight:600; cursor:pointer;
     color:var(--text); transition:background .15s;
     border-bottom:1px solid var(--border);
   }
-  .custom-media-add .custom-media-menu button:last-child {
+  .quick-actions-container .custom-media-menu button:last-child {
     border-bottom:none;
   }
-  .custom-media-add .custom-media-menu button:hover {
+  .quick-actions-container .custom-media-menu button:hover {
     background:var(--surface-alt);
+  }
+  
+  /* Quick assign dropdown menu */
+  .quick-actions-container .quick-assign-menu {
+    position:absolute; top:32px; left:36px; z-index:1000;
+    background:var(--se-white); border:1.5px solid var(--border);
+    border-radius:8px; box-shadow:0 4px 12px rgba(0,0,0,0.15);
+    display:none; min-width:200px; max-width:300px;
+    max-height:400px; overflow-y:auto;
+  }
+  .quick-assign-section {
+    padding:8px 0;
+  }
+  .quick-assign-section:not(:last-child) {
+    border-bottom:1px solid var(--border);
+  }
+  .quick-assign-label {
+    padding:6px 12px; font-size:11px; font-weight:800;
+    color:var(--text-muted); text-transform:uppercase;
+  }
+  .quick-assign-item {
+    width:100%; padding:8px 12px; border:none; background:transparent;
+    text-align:left; font-size:13px; font-weight:600; cursor:pointer;
+    color:var(--text); transition:background .15s;
+  }
+  .quick-assign-item:hover {
+    background:var(--surface-alt);
+  }
+  .quick-assign-empty {
+    padding:8px 12px; font-size:12px; color:var(--text-muted);
+    font-style:italic;
+  }
+  
+  /* Legacy styles for custom media forms */
+  .custom-media-add {
+    margin-top:8px; display:flex; gap:8px; align-items:flex-start; position:relative;
   }
   .custom-media-add select {
     padding:6px 10px; border-radius:6px; border:1.5px solid var(--border);
@@ -522,9 +589,41 @@
   
   /* Print styles */
   @media print {
-    .agenda-display-overlay { background:white; }
+    .agenda-display-overlay { background:white !important; }
     .agenda-display-close, .agenda-display-actions { display:none !important; }
-    .agenda-display-content { box-shadow:none; max-width:100%; padding:20px; }
+    .agenda-display-content { 
+      box-shadow:none; max-width:100%; padding:20px;
+      max-height:none; overflow:visible;
+    }
+    .agenda-display-slot {
+      page-break-inside:avoid; background:white !important;
+      border-left:3px solid var(--se-life-green) !important;
+    }
+    .agenda-display-item {
+      background:white !important; border-color:#ddd !important;
+    }
+    .agenda-display-item-badge {
+      background:var(--se-life-green) !important;
+      color:white !important;
+      -webkit-print-color-adjust:exact;
+      print-color-adjust:exact;
+    }
+    .agenda-display-header {
+      border-bottom-color:var(--se-life-green) !important;
+    }
+    /* Fit to single page */
+    body, html { height:auto; }
+    .agenda-display-content { font-size:12px; padding:15px; }
+    .agenda-display-logo img { max-width:200px; margin-bottom:15px; }
+    .agenda-display-header h2 { font-size:24px; margin-bottom:6px; }
+    .agenda-display-header .timezone { font-size:12px; }
+    .agenda-display-slot { margin-bottom:15px; padding:12px; }
+    .agenda-display-slot-title { font-size:16px; }
+    .agenda-display-slot-subtitle { font-size:13px; }
+    .agenda-display-slot-time { font-size:12px; margin-bottom:8px; }
+    .agenda-display-item { padding:6px 10px; gap:8px; }
+    .agenda-display-item-badge { padding:2px 6px; font-size:10px; }
+    .agenda-display-item-name { font-size:12px; }
   }
 
   .agenda-display-close {
@@ -776,9 +875,6 @@
               <button class="icon-btn" id="loopModeBtn" title="Loop mode: Single video" aria-label="Toggle loop mode">
                 <svg viewBox="0 0 24 24" aria-hidden="true"><use href="#repeat-1"></use></svg>
               </button>
-              <button class="icon-btn fullscreen-btn" id="fullscreenBtn" title="Enter Fullscreen" aria-label="Toggle fullscreen">
-                <svg viewBox="0 0 24 24" aria-hidden="true"><use href="#maximize"></use></svg>
-              </button>
             </span>
           </div>
 
@@ -838,6 +934,11 @@
       <!-- Back navigation button (overlaid, opposite to menu toggle) -->
       <button class="nav-back-btn" id="navBackBtn" title="Switch Media" aria-label="Switch to other media type">
         <svg viewBox="0 0 24 24" aria-hidden="true"><use href="#chevron-left"></use></svg>
+      </button>
+      
+      <!-- Floating fullscreen button (near back button) -->
+      <button class="floating-fullscreen-btn" id="floatingFullscreenBtn" title="Toggle Fullscreen" aria-label="Toggle fullscreen">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><use href="#maximize"></use></svg>
       </button>
 
       <div class="video-container" id="videoContainer" style="display:none">
@@ -1137,6 +1238,8 @@
 
   const loopModeBtn = document.getElementById('loopModeBtn');
   const fullscreenBtns = Array.from(document.querySelectorAll('.fullscreen-btn'));
+  const floatingFullscreenBtn = document.getElementById('floatingFullscreenBtn');
+  if (floatingFullscreenBtn) fullscreenBtns.push(floatingFullscreenBtn);
 
   const settingsBtn = document.getElementById('settingsBtn');
   const modalOverlay = document.getElementById('modalOverlay');
@@ -2352,9 +2455,28 @@
       const sEnd = parseHHMM(slot.end);
       const active = (sStart!=null && sEnd!=null && nowMins>=sStart && nowMins<=sEnd);
 
-      const card = document.createElement('div'); card.className='agenda-slot' + (active?' active':''); card.dataset.id = slot.id;
+      const card = document.createElement('div'); 
+      card.className='agenda-slot' + (active?' active':'');
+      if (slot.completed) card.classList.add('completed');
+      card.dataset.id = slot.id;
 
       const header = document.createElement('div'); header.className='slot-header';
+      
+      // FEATURE: Checkbox to mark slot as completed
+      const checkbox = document.createElement('input');
+      checkbox.type = 'checkbox';
+      checkbox.className = 'slot-checkbox';
+      checkbox.checked = slot.completed || false;
+      checkbox.addEventListener('change', (e)=>{
+        slot.completed = e.target.checked;
+        if (slot.completed) {
+          card.classList.add('completed');
+        } else {
+          card.classList.remove('completed');
+        }
+        saveState();
+      });
+      
       const titleWrap = document.createElement('div'); titleWrap.style.display='flex'; titleWrap.style.flexDirection='column'; titleWrap.style.width='100%';
       const title = document.createElement('div'); title.className='slot-title'; title.textContent = slot.title || '(Untitled)';
       titleWrap.appendChild(title);
@@ -2367,7 +2489,7 @@
       if (active){ const badge=document.createElement('span'); badge.className='slot-badge'; badge.textContent='NOW'; right.appendChild(badge); }
       const time = document.createElement('div'); time.className='slot-time'; time.textContent = (slot.start||'--:--') + ' – ' + (slot.end||'--:--');
       right.appendChild(time);
-      header.appendChild(titleWrap); header.appendChild(right);
+      header.appendChild(checkbox); header.appendChild(titleWrap); header.appendChild(right);
       card.appendChild(header);
 
       // Progress
@@ -2476,10 +2598,10 @@
 
       card.appendChild(itemsWrap);
       
-      // FEATURE: Add custom media button (small + icon)
-      const addCustomDiv = document.createElement('div');
-      addCustomDiv.className = 'custom-media-add';
-      addCustomDiv.innerHTML = `
+      // FEATURE: Quick action buttons container
+      const quickActionsDiv = document.createElement('div');
+      quickActionsDiv.className = 'quick-actions-container';
+      quickActionsDiv.innerHTML = `
         <button class="add-custom-btn" title="Add Custom Media">
           <svg viewBox="0 0 24 24" width="16" height="16">
             <path fill="currentColor" d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/>
@@ -2490,31 +2612,113 @@
           <button data-type="link">Link/URL</button>
           <button data-type="photo">Photo</button>
         </div>
+        
+        <button class="quick-assign-btn" title="Quick Assign Media">
+          <svg viewBox="0 0 24 24" width="16" height="16">
+            <path fill="currentColor" d="M7 10l5 5 5-5z"/>
+          </svg>
+        </button>
+        <div class="quick-assign-menu" style="display:none">
+          <div class="quick-assign-section">
+            <div class="quick-assign-label">Videos</div>
+            <div class="quick-assign-items" data-type="video"></div>
+          </div>
+          <div class="quick-assign-section">
+            <div class="quick-assign-label">Presentations</div>
+            <div class="quick-assign-items" data-type="pdf"></div>
+          </div>
+        </div>
       `;
       
-      const addBtn = addCustomDiv.querySelector('.add-custom-btn');
-      const menu = addCustomDiv.querySelector('.custom-media-menu');
+      const addBtn = quickActionsDiv.querySelector('.add-custom-btn');
+      const customMenu = quickActionsDiv.querySelector('.custom-media-menu');
+      const assignBtn = quickActionsDiv.querySelector('.quick-assign-btn');
+      const assignMenu = quickActionsDiv.querySelector('.quick-assign-menu');
       
+      // Custom media menu handler
       addBtn.addEventListener('click', (e)=>{
         e.stopPropagation();
-        menu.style.display = menu.style.display === 'none' ? 'flex' : 'none';
+        assignMenu.style.display = 'none'; // Close other menu
+        customMenu.style.display = customMenu.style.display === 'none' ? 'flex' : 'none';
       });
       
-      addCustomDiv.querySelectorAll('.custom-media-menu button').forEach(btn => {
+      quickActionsDiv.querySelectorAll('.custom-media-menu button').forEach(btn => {
         btn.addEventListener('click', (e)=>{
+          e.stopPropagation();
           const type = btn.dataset.type;
-          menu.style.display = 'none';
+          customMenu.style.display = 'none';
           showCustomMediaForm(card, slot, type);
         });
       });
       
-      // Close menu when clicking outside
+      // Quick assign menu handler
+      assignBtn.addEventListener('click', (e)=>{
+        e.stopPropagation();
+        customMenu.style.display = 'none'; // Close other menu
+        
+        // Populate menus with current media
+        const videoContainer = assignMenu.querySelector('[data-type="video"]');
+        const pdfContainer = assignMenu.querySelector('[data-type="pdf"]');
+        
+        videoContainer.innerHTML = '';
+        pdfContainer.innerHTML = '';
+        
+        // Add videos
+        videoFiles.forEach(v => {
+          const btn = document.createElement('button');
+          btn.className = 'quick-assign-item';
+          btn.textContent = displayName(v);
+          btn.addEventListener('click', (e)=>{
+            e.stopPropagation();
+            if (!slot.items) slot.items = [];
+            const exists = slot.items.some(it=> it.id===v._id && it.type==='video');
+            if (!exists) {
+              slot.items.push({id:v._id, type:'video'});
+              renderAgendaPanel(); saveState();
+            }
+            assignMenu.style.display = 'none';
+          });
+          videoContainer.appendChild(btn);
+        });
+        
+        if (videoFiles.length === 0) {
+          videoContainer.innerHTML = '<div class="quick-assign-empty">No videos</div>';
+        }
+        
+        // Add presentations
+        presentationFiles.forEach(p => {
+          const btn = document.createElement('button');
+          btn.className = 'quick-assign-item';
+          btn.textContent = displayName(p);
+          btn.addEventListener('click', (e)=>{
+            e.stopPropagation();
+            if (!slot.items) slot.items = [];
+            const exists = slot.items.some(it=> it.id===p._id && it.type==='pdf');
+            if (!exists) {
+              slot.items.push({id:p._id, type:'pdf'});
+              renderAgendaPanel(); saveState();
+            }
+            assignMenu.style.display = 'none';
+          });
+          pdfContainer.appendChild(btn);
+        });
+        
+        if (presentationFiles.length === 0) {
+          pdfContainer.innerHTML = '<div class="quick-assign-empty">No presentations</div>';
+        }
+        
+        assignMenu.style.display = assignMenu.style.display === 'none' ? 'block' : 'none';
+      });
+      
+      // Close menus when clicking outside
       document.addEventListener('click', (e)=>{
-        if (!addCustomDiv.contains(e.target)){
-          menu.style.display = 'none';
+        if (!quickActionsDiv.contains(e.target)){
+          customMenu.style.display = 'none';
+          assignMenu.style.display = 'none';
         }
       });
-      card.appendChild(addCustomDiv);
+      
+      card.appendChild(quickActionsDiv);
       agendaPanel.appendChild(card);
     });
   }
