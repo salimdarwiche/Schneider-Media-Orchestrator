@@ -3436,9 +3436,49 @@
         const content = form.querySelector('.text-input').value.trim();
         if (!content) return alert('Please enter some text');
         if (!slot.items) slot.items = [];
-        slot.items.push({id:makeId(), type:'text', data:{content}});
+        const newItem = {id:makeId(), type:'text', data:{content}};
+        slot.items.push(newItem);
         form.remove();
-        renderAgendaPanel(); saveState();
+        // Don't call renderAgendaPanel() to avoid re-creating everything
+        // Instead, manually add the item to the DOM
+        const itemsWrap = card.querySelector('.slot-items');
+        if (itemsWrap) {
+          const itemRow = document.createElement('div');
+          itemRow.className = 'slot-item';
+          
+          const nameSpan = document.createElement('span');
+          nameSpan.className = 'si-name';
+          nameSpan.textContent = content.substring(0, 50) + (content.length > 50 ? '...' : '');
+          
+          const typeSpan = document.createElement('span');
+          typeSpan.className = 'si-type';
+          typeSpan.textContent = 'TEXT';
+          typeSpan.style.background = '#3b82f6';
+          
+          const btnX = document.createElement('button');
+          btnX.className = 'si-x';
+          btnX.title = 'Remove';
+          btnX.textContent = '×';
+          btnX.addEventListener('click', (e)=>{
+            e.stopPropagation();
+            const idx = slot.items.findIndex(it => it.id === newItem.id);
+            if (idx >= 0) {
+              slot.items.splice(idx, 1);
+              itemRow.remove();
+              saveState();
+            }
+          });
+          
+          itemRow.appendChild(nameSpan);
+          itemRow.appendChild(typeSpan);
+          itemRow.appendChild(btnX);
+          itemRow.addEventListener('click', ()=> {
+            alert(`Text: ${content}`);
+          });
+          
+          itemsWrap.appendChild(itemRow);
+        }
+        saveState();
       });
     } else if (type === 'link'){
       form.innerHTML = `
@@ -3458,9 +3498,54 @@
           url = 'https://' + url.replace(/^https?:\/\//, '');
         }
         if (!slot.items) slot.items = [];
-        slot.items.push({id:makeId(), type:'link', data:{name, url}});
+        const newItem = {id:makeId(), type:'link', data:{name, url}};
+        slot.items.push(newItem);
         form.remove();
-        renderAgendaPanel(); saveState();
+        // Don't call renderAgendaPanel() to avoid re-creating everything
+        // Instead, manually add the item to the DOM
+        const itemsWrap = card.querySelector('.slot-items');
+        if (itemsWrap) {
+          const itemRow = document.createElement('div');
+          itemRow.className = 'slot-item';
+          
+          const nameSpan = document.createElement('span');
+          nameSpan.className = 'si-name';
+          nameSpan.textContent = name;
+          
+          const typeSpan = document.createElement('span');
+          typeSpan.className = 'si-type';
+          typeSpan.textContent = 'LINK';
+          typeSpan.style.background = '#f97316';
+          
+          const btnX = document.createElement('button');
+          btnX.className = 'si-x';
+          btnX.title = 'Remove';
+          btnX.textContent = '×';
+          btnX.addEventListener('click', (e)=>{
+            e.stopPropagation();
+            const idx = slot.items.findIndex(it => it.id === newItem.id);
+            if (idx >= 0) {
+              slot.items.splice(idx, 1);
+              itemRow.remove();
+              saveState();
+            }
+          });
+          
+          itemRow.appendChild(nameSpan);
+          itemRow.appendChild(typeSpan);
+          itemRow.appendChild(btnX);
+          itemRow.addEventListener('click', ()=> {
+            // Ensure URL has protocol for opening
+            let openUrl = url;
+            if (openUrl && !openUrl.startsWith('http://') && !openUrl.startsWith('https://')) {
+              openUrl = 'https://' + openUrl;
+            }
+            window.open(openUrl, '_blank');
+          });
+          
+          itemsWrap.appendChild(itemRow);
+        }
+        saveState();
       });
     } else if (type === 'photo'){
       form.innerHTML = `
