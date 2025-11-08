@@ -907,10 +907,6 @@
               <button class="icon-btn" id="lockAgendaBtn" title="Lock Agenda" aria-label="Lock/Unlock Agenda">
                 <svg viewBox="0 0 24 24" aria-hidden="true"><use href="#unlock"></use></svg>
               </button>
-              <!-- Settings button -->
-              <button class="icon-btn" id="settingsBtn" title="Settings" aria-label="Settings">
-                <svg viewBox="0 0 24 24" aria-hidden="true"><use href="#settings"></use></svg>
-              </button>
             </span>
           </div>
           <div class="gmt-clock">
@@ -1309,7 +1305,6 @@
   
   const floatingSettingsBtn = document.getElementById('floatingSettingsBtn');
 
-  const settingsBtn = document.getElementById('settingsBtn');
   const modalOverlay = document.getElementById('modalOverlay');
   const modalClose = document.getElementById('modalClose');
 
@@ -2982,7 +2977,6 @@
   }
 
   // Events
-  settingsBtn.addEventListener('click', showSettings);
   
   // Floating settings button (for presentation mode)
   if (floatingSettingsBtn) {
