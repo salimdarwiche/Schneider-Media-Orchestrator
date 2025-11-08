@@ -1576,9 +1576,13 @@
     return parseInt(m[1],10)*60 + parseInt(m[2],10);
   };
   const fmtHHMM = (mins)=>{
+    // Handle negative and large values, wrapping at 24 hours
+    mins = ((mins % 1440) + 1440) % 1440; // 1440 = 24 * 60
     const h = Math.floor(mins/60)%24, m = mins%60;
     return String(h).padStart(2,'0') + ':' + String(m).padStart(2,'0');
   };
+  // Alias for consistency
+  const formatHHMM = fmtHHMM;
   function roundDownTo5(mins){
     return mins - (mins % 5);
   }
@@ -2406,7 +2410,10 @@
       const startMins = parseHHMM(slot.start);
       const endMins = parseHHMM(slot.end);
       if (startMins !== null && endMins !== null) {
-        duration.value = endMins - startMins;
+        // Handle midnight crossing (e.g., 23:00 to 01:00 = 120 minutes)
+        let diff = endMins - startMins;
+        if (diff < 0) diff += 1440; // Add 24 hours in minutes
+        duration.value = diff;
       }
       duration.placeholder='mins';
       
@@ -2427,7 +2434,9 @@
           const s = parseHHMM(slot.start);
           const e = parseHHMM(slot.end);
           if (s !== null && e !== null) {
-            duration.value = e - s;
+            let diff = e - s;
+            if (diff < 0) diff += 1440; // Handle midnight crossing
+            duration.value = diff;
           }
         }
       });
@@ -2500,7 +2509,11 @@
               // Calculate duration of current slot
               const currStart = parseHHMM(currSlot.start);
               const currEnd = parseHHMM(currSlot.end);
-              const duration = currEnd != null && currStart != null ? currEnd - currStart : 15;
+              let duration = 15; // default
+              if (currEnd != null && currStart != null) {
+                duration = currEnd - currStart;
+                if (duration < 0) duration += 1440; // Handle midnight crossing
+              }
               // Chain: current slot starts when previous ends
               currSlot.start = prevSlot.end;
               // Keep same duration
