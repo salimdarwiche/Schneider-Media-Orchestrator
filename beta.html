@@ -149,13 +149,31 @@
   .compact-dropdown { width:100%; max-width:300px; padding:10px 12px; border:1.5px solid var(--border); border-radius:10px; background:var(--se-white); font-weight:600; color:var(--text); cursor:pointer; font-size:14px; }
   .compact-dropdown:focus { outline:2px solid var(--focus); outline-offset:2px; }
 
-  /* NEW: Multi-select toolbar */
+  /* NEW: Multi-select toolbar (inside menu) */
   .multi-select-toolbar { 
     position:sticky; top:0; z-index:200;
     padding:12px; background:var(--surface-alt); border-radius:10px; margin-top:12px; 
     box-shadow: 0 4px 8px rgba(0,0,0,0.1);
   }
   .multi-select-toolbar .compact-dropdown { max-width:100%; }
+  
+  /* NEW: Floating assign toolbar (outside menu, always visible) */
+  .floating-assign-toolbar {
+    position:fixed; z-index:500;
+    padding:16px 20px; background:rgba(255,255,255,0.98);
+    border-radius:12px; box-shadow:0 8px 24px rgba(0,0,0,0.2);
+    backdrop-filter:blur(10px); border:2px solid var(--se-life-green);
+    transition:all 0.2s ease; opacity:0; pointer-events:none;
+  }
+  .floating-assign-toolbar.show {
+    opacity:1; pointer-events:auto;
+  }
+  .floating-assign-toolbar .compact-dropdown {
+    padding:8px 12px; border-radius:8px; font-size:14px;
+  }
+  .floating-assign-toolbar .icon-btn {
+    padding:8px; border-radius:8px;
+  }
 
   .file-item-name { flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
   .menu-panel.top .file-item .file-item-name, .menu-panel.bottom .file-item .file-item-name { white-space:normal; overflow:visible; }
@@ -379,7 +397,34 @@
   .slot-item .si-type.type-photo { background:#a855f7; }
   
   .custom-media-add {
-    margin-top:8px; display:flex; gap:8px; align-items:center;
+    margin-top:8px; display:flex; gap:8px; align-items:flex-start; position:relative;
+  }
+  .custom-media-add .add-custom-btn {
+    width:28px; height:28px; padding:0; border-radius:50%;
+    background:var(--se-life-green); color:var(--se-white);
+    border:none; cursor:pointer; display:flex; align-items:center; justify-content:center;
+    transition:all .15s;
+  }
+  .custom-media-add .add-custom-btn:hover {
+    background:var(--se-dark-gray); transform:scale(1.1);
+  }
+  .custom-media-add .custom-media-menu {
+    position:absolute; top:32px; left:0; z-index:300;
+    background:var(--se-white); border:1.5px solid var(--border);
+    border-radius:8px; box-shadow:0 4px 12px rgba(0,0,0,0.15);
+    display:none; flex-direction:column; gap:0; min-width:140px;
+  }
+  .custom-media-add .custom-media-menu button {
+    padding:10px 14px; border:none; background:transparent;
+    text-align:left; font-size:13px; font-weight:600; cursor:pointer;
+    color:var(--text); transition:background .15s;
+    border-bottom:1px solid var(--border);
+  }
+  .custom-media-add .custom-media-menu button:last-child {
+    border-bottom:none;
+  }
+  .custom-media-add .custom-media-menu button:hover {
+    background:var(--surface-alt);
   }
   .custom-media-add select {
     padding:6px 10px; border-radius:6px; border:1.5px solid var(--border);
@@ -999,6 +1044,22 @@
   <!-- Toast container -->
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
 
+  <!-- NEW FEATURE: Floating Assignment Toolbar (outside menu, always visible) -->
+  <div class="floating-assign-toolbar" id="floatingAssignToolbar" style="display:none">
+    <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+      <span id="floatingToolbarLabel" style="font-size:14px;font-weight:700;color:var(--text)">0 items selected</span>
+      <select id="floatingSlotDropdown" class="compact-dropdown" style="flex:1;min-width:180px">
+        <option value="">Select slot...</option>
+      </select>
+      <button class="icon-btn" id="floatingAssignBtn" title="Assign to slot">
+        <svg viewBox="0 0 24 24"><path fill="currentColor" d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
+      </button>
+      <button class="icon-btn" id="floatingClearBtn" title="Clear selection">
+        <svg viewBox="0 0 24 24"><use href="#plus" style="transform:rotate(45deg)"></use></svg>
+      </button>
+    </div>
+  </div>
+
   <!-- NEW FEATURE: Full-screen Agenda Display Overlay -->
   <div class="agenda-display-overlay" id="agendaDisplayOverlay">
     <div class="agenda-display-content">
@@ -1182,8 +1243,17 @@
   function showFullAgenda(){
     if (!agendaDisplayBody) return;
     
-    // Render the full-screen agenda
-    let html = '<div class="agenda-display-header">';
+    // Render the full-screen agenda with logo and action buttons
+    let html = '<div class="agenda-display-logo">';
+    html += '<img src="https://www.se.com/ww/en/assets/564/media/17048/SE-logo.svg" alt="Schneider Electric" />';
+    html += '</div>';
+    
+    html += '<div class="agenda-display-actions">';
+    html += '<button id="printAgendaBtn"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M18 3H6v4h12V3zm1 5H5a2 2 0 0 0-2 2v6h3v4h12v-4h3v-6a2 2 0 0 0-2-2zm-1 9H6v-3h12v3z"/></svg>Print</button>';
+    html += '<button id="exportPdfBtn"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zm4 18H6V4h7v5h5v11z"/></svg>Export PDF</button>';
+    html += '</div>';
+    
+    html += '<div class="agenda-display-header">';
     html += '<h2>Meeting Agenda</h2>';
     html += `<div class="timezone">${zoneShortLabel(timeZone)} Time Zone</div>`;
     html += '</div>';
@@ -1206,15 +1276,33 @@
           html += '<div class="agenda-display-items">';
           slot.items.forEach(item => {
             let itemName = '(Unknown)';
+            let badgeText = '';
+            let badgeColor = 'var(--se-life-green)';
+            
             if (item.type === 'video'){
               const meta = videoFiles.find(v => v._id === item.id);
               if (meta) itemName = displayName(meta);
+              badgeText = 'VIDEO';
             } else if (item.type === 'pdf'){
               const meta = presentationFiles.find(p => p._id === item.id);
               if (meta) itemName = displayName(meta);
+              badgeText = 'PDF';
+            } else if (item.type === 'text'){
+              itemName = item.data.content.substring(0, 50) + (item.data.content.length > 50 ? '...' : '');
+              badgeText = 'TEXT';
+              badgeColor = '#3b82f6';
+            } else if (item.type === 'link'){
+              itemName = item.data.name;
+              badgeText = '🔗 LINK';
+              badgeColor = '#f97316';
+            } else if (item.type === 'photo'){
+              itemName = item.data.name;
+              badgeText = 'PHOTO';
+              badgeColor = '#a855f7';
             }
+            
             html += '<div class="agenda-display-item">';
-            html += `<span class="agenda-display-item-badge">${item.type === 'video' ? 'VIDEO' : 'PDF'}</span>`;
+            html += `<span class="agenda-display-item-badge" style="background:${badgeColor}">${badgeText}</span>`;
             html += `<span class="agenda-display-item-name">${itemName}</span>`;
             html += '</div>';
           });
@@ -1226,6 +1314,15 @@
     
     agendaDisplayBody.innerHTML = html;
     agendaDisplayOverlay.classList.add('show');
+    
+    // Attach event listeners for print and export buttons
+    const printBtn = document.getElementById('printAgendaBtn');
+    const exportBtn = document.getElementById('exportPdfBtn');
+    if (printBtn) printBtn.addEventListener('click', ()=> window.print());
+    if (exportBtn) exportBtn.addEventListener('click', ()=> {
+      window.print();
+      // Note: Browser's print dialog allows saving as PDF
+    });
   }
 
   function hideFullAgenda(){
@@ -2379,23 +2476,43 @@
 
       card.appendChild(itemsWrap);
       
-      // FEATURE: Add custom media button
+      // FEATURE: Add custom media button (small + icon)
       const addCustomDiv = document.createElement('div');
       addCustomDiv.className = 'custom-media-add';
       addCustomDiv.innerHTML = `
-        <select class="media-type-select">
-          <option value="">+ Add Custom Media...</option>
-          <option value="text">Free Text</option>
-          <option value="link">Link/URL</option>
-          <option value="photo">Photo</option>
-        </select>
+        <button class="add-custom-btn" title="Add Custom Media">
+          <svg viewBox="0 0 24 24" width="16" height="16">
+            <path fill="currentColor" d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/>
+          </svg>
+        </button>
+        <div class="custom-media-menu" style="display:none">
+          <button data-type="text">Free Text</button>
+          <button data-type="link">Link/URL</button>
+          <button data-type="photo">Photo</button>
+        </div>
       `;
-      const typeSelect = addCustomDiv.querySelector('.media-type-select');
-      typeSelect.addEventListener('change', (e)=>{
-        const type = e.target.value;
-        if (!type) return;
-        e.target.value = '';
-        showCustomMediaForm(card, slot, type);
+      
+      const addBtn = addCustomDiv.querySelector('.add-custom-btn');
+      const menu = addCustomDiv.querySelector('.custom-media-menu');
+      
+      addBtn.addEventListener('click', (e)=>{
+        e.stopPropagation();
+        menu.style.display = menu.style.display === 'none' ? 'flex' : 'none';
+      });
+      
+      addCustomDiv.querySelectorAll('.custom-media-menu button').forEach(btn => {
+        btn.addEventListener('click', (e)=>{
+          const type = btn.dataset.type;
+          menu.style.display = 'none';
+          showCustomMediaForm(card, slot, type);
+        });
+      });
+      
+      // Close menu when clicking outside
+      document.addEventListener('click', (e)=>{
+        if (!addCustomDiv.contains(e.target)){
+          menu.style.display = 'none';
+        }
       });
       card.appendChild(addCustomDiv);
       agendaPanel.appendChild(card);
