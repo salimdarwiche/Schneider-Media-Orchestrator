@@ -870,6 +870,10 @@
               <button class="icon-btn" id="buildAgendaBtn" title="Build Agenda" aria-label="Build Agenda">
                 <svg viewBox="0 0 24 24" aria-hidden="true"><use href="#calendar"></use></svg>
               </button>
+              <!-- Settings button moved here from footer -->
+              <button class="icon-btn" id="settingsBtn" title="Settings" aria-label="Settings">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><use href="#settings"></use></svg>
+              </button>
             </span>
           </div>
           <div class="gmt-clock">
@@ -946,9 +950,7 @@
       </div>
 
       <div class="menu-footer">
-        <button class="icon-btn" id="settingsBtn" title="Settings" aria-label="Settings">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><use href="#settings"></use></svg>
-        </button>
+        <!-- Settings button moved to agenda section -->
         <button class="icon-btn fullscreen-btn" id="fullscreenBtnFooter" title="Enter Fullscreen" aria-label="Toggle fullscreen">
           <svg viewBox="0 0 24 24" aria-hidden="true"><use href="#maximize"></use></svg>
         </button>
@@ -1373,7 +1375,7 @@
     
     // Render the full-screen agenda with logo and action buttons
     let html = '<div class="agenda-display-logo">';
-    html += '<img src="https://www.se.com/ww/en/assets/564/media/17048/SE-logo.svg" alt="Schneider Electric" />';
+    html += '<img src="https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/690c69865326fb0651506b4f/72916fdb4_logo.png" alt="Schneider Electric" />';
     html += '</div>';
     
     html += '<div class="agenda-display-actions">';
@@ -3286,7 +3288,14 @@
 
     const onboarded = (localStorage.getItem(ONBOARDED_KEY) === '1');
     if (!onboarded){
-      setTimeout(showSettings, 0);
+      setTimeout(()=>{
+        showSettings();
+        // Switch to Media Library tab on first launch
+        document.querySelectorAll('.settings-tab').forEach(t => t.classList.remove('active'));
+        document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+        document.querySelector('[data-tab="media"]')?.classList.add('active');
+        document.getElementById('mediaTab')?.classList.add('active');
+      }, 0);
     }
   })();
 
@@ -3350,7 +3359,46 @@
         const url = URL.createObjectURL(file);
         slot.items.push({id:makeId(), type:'photo', data:{name:file.name, file, url}});
         form.remove();
-        renderAgendaPanel(); saveState();
+        // Don't call renderAgendaPanel() to avoid re-creating everything
+        // Instead, manually add the item to the DOM
+        const itemsWrap = card.querySelector('.slot-items');
+        if (itemsWrap) {
+          const itemRow = document.createElement('div');
+          itemRow.className = 'slot-item';
+          
+          const nameSpan = document.createElement('span');
+          nameSpan.className = 'si-name';
+          nameSpan.textContent = file.name;
+          
+          const typeSpan = document.createElement('span');
+          typeSpan.className = 'si-type';
+          typeSpan.textContent = 'PHOTO';
+          typeSpan.style.background = '#a855f7';
+          
+          const btnX = document.createElement('button');
+          btnX.className = 'si-x';
+          btnX.title = 'Remove';
+          btnX.textContent = '×';
+          btnX.addEventListener('click', (e)=>{
+            e.stopPropagation();
+            const idx = slot.items.findIndex(it => it.type==='photo' && it.data.name===file.name);
+            if (idx >= 0) {
+              slot.items.splice(idx, 1);
+              itemRow.remove();
+              saveState();
+            }
+          });
+          
+          itemRow.appendChild(nameSpan);
+          itemRow.appendChild(typeSpan);
+          itemRow.appendChild(btnX);
+          itemRow.addEventListener('click', ()=> {
+            if (url) window.open(url, '_blank');
+          });
+          
+          itemsWrap.appendChild(itemRow);
+        }
+        saveState();
       });
     }
     
