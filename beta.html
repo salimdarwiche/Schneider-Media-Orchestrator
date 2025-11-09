@@ -576,6 +576,12 @@
     font-size:16px; margin-left:4px;
   }
 
+  /* Highlight currently displayed video/PDF */
+  .media-item.active-media {
+    background: rgba(61, 205, 88, 0.15);
+    border-left: 3px solid var(--se-life-green);
+    padding-left: 9px;
+  }
 
   .toast { position:fixed; top:16px; left:50%; transform:translateX(-50%) translateY(-16px); background:var(--se-life-green); color:var(--se-white); padding:10px 14px; border-radius:10px; box-shadow:0 10px 25px rgba(0,0,0,.15); opacity:0; pointer-events:none; transition:opacity .25s, transform .25s; z-index:3000; font-weight:700; }
   .toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
