@@ -875,6 +875,20 @@
               </select>
             </div>
 
+            <!-- Export/Import Agenda buttons -->
+            <div class="inline-control" style="gap:8px;margin-bottom:12px">
+              <button class="file-picker" id="exportAgendaBtn" title="Export Agenda to JSON" style="display:inline-flex;align-items:center;gap:8px">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><use href="#download"></use></svg>
+                Export Agenda
+              </button>
+              <button class="file-picker" id="importAgendaBtn" title="Import Agenda from JSON" style="display:inline-flex;align-items:center;gap:8px">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><use href="#upload"></use></svg>
+                Import Agenda
+              </button>
+            </div>
+            <input id="agendaImportInput" type="file" accept=".json,application/json" style="display:none" aria-hidden="true">
+            <div class="helper-text" style="margin-bottom:12px">Export saves agenda with all settings and media references. Import restores everything and maps media files by name.</div>
+
             <div class="agenda-builder" id="agendaBuilder">
               <!-- header row -->
               <div class="agenda-row" style="font-weight:800;color:var(--text-muted);grid-template-columns:40px 1fr 140px 140px 100px 40px">
@@ -1096,6 +1110,9 @@
   const addSlot15Btn = document.getElementById('addSlot15Btn');
   const addSlot30Btn = document.getElementById('addSlot30Btn');
   const addSlot60Btn = document.getElementById('addSlot60Btn');
+  const exportAgendaBtn = document.getElementById('exportAgendaBtn');
+  const importAgendaBtn = document.getElementById('importAgendaBtn');
+  const agendaImportInput = document.getElementById('agendaImportInput');
 
   // Agenda (menu)
   const agendaSection = document.getElementById('agendaSection');
@@ -1360,6 +1377,200 @@
     (s.videos||[]).forEach(v=> map[v.name]=v);
     (s.presentations||[]).forEach(p=> map[p.name]=Object.assign(map[p.name]||{}, p));
     return map;
+  }
+
+  // Export Agenda to JSON
+  function exportAgenda(){
+    try{
+      const exportData = {
+        version: '1.0',
+        exportDate: new Date().toISOString(),
+        appSettings: {
+          menuPos,
+          appMode,
+          loopMode,
+          loopModeType,
+          sortModeVideos,
+          sortModePresentations,
+          timeZone
+        },
+        videos: videoFiles.map(m => ({
+          name: m.file.name,
+          _customName: m._customName || null,
+          _id: m._id,
+          _addedAt: m._addedAt || Date.now()
+        })),
+        presentations: presentationFiles.map(p => ({
+          name: p.file.name,
+          _customName: p._customName || null,
+          _currentPage: p._currentPage || 1,
+          _id: p._id,
+          _addedAt: p._addedAt || Date.now()
+        })),
+        agendaSlots: agendaSlots.map(slot => ({
+          id: slot.id,
+          title: slot.title || '',
+          subtitle: slot.subtitle || '',
+          start: slot.start,
+          end: slot.end,
+          items: (slot.items || []).map(item => {
+            // Get the media file name for this item
+            let mediaName = null;
+            let _customName = null;
+            if (item.type === 'video'){
+              const meta = videoFiles.find(v => v._id === item.id);
+              if (meta){
+                mediaName = meta.file.name;
+                _customName = meta._customName;
+              }
+            } else if (item.type === 'pdf'){
+              const meta = presentationFiles.find(p => p._id === item.id);
+              if (meta){
+                mediaName = meta.file.name;
+                _customName = meta._customName;
+              }
+            }
+            
+            return {
+              id: item.id,
+              type: item.type,
+              mediaName: mediaName,
+              _customName: _customName
+            };
+          })
+        }))
+      };
+
+      const dataStr = JSON.stringify(exportData, null, 2);
+      const dataBlob = new Blob([dataStr], {type: 'application/json'});
+      const url = URL.createObjectURL(dataBlob);
+      
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `schneider-agenda-${new Date().toISOString().split('T')[0]}.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      
+      showToast('Agenda exported successfully');
+    }catch(e){
+      console.error('Export failed:', e);
+      showToast('Export failed: ' + e.message);
+    }
+  }
+
+  // Import Agenda from JSON
+  function importAgenda(jsonFile){
+    const reader = new FileReader();
+    reader.onload = function(e){
+      try{
+        const importData = JSON.parse(e.target.result);
+        
+        if (!importData.version || !importData.agendaSlots){
+          throw new Error('Invalid agenda file format');
+        }
+
+        // Restore app settings
+        if (importData.appSettings){
+          const s = importData.appSettings;
+          if (s.appMode) {
+            setAppMode(s.appMode);
+          }
+          if (s.menuPos && appMode !== 'meeting') {
+            setMenuPosition(s.menuPos);
+          }
+          if (s.loopMode !== undefined) loopMode = s.loopMode;
+          if (s.loopModeType) loopModeType = s.loopModeType;
+          if (s.sortModeVideos) sortModeVideos = s.sortModeVideos;
+          if (s.sortModePresentations) sortModePresentations = s.sortModePresentations;
+          if (s.timeZone) {
+            timeZone = s.timeZone;
+            if (timeZoneSelect) timeZoneSelect.value = timeZone;
+          }
+          updateLoopUI();
+          updateTZClock();
+        }
+
+        // Create a mapping of existing media files by name
+        const videoMap = {};
+        videoFiles.forEach(v => {
+          videoMap[v.file.name] = v;
+        });
+        const presentationMap = {};
+        presentationFiles.forEach(p => {
+          presentationMap[p.file.name] = p;
+        });
+
+        // Restore agenda slots and map media items
+        agendaSlots = importData.agendaSlots.map(slot => ({
+          id: slot.id || makeId(),
+          title: slot.title || '',
+          subtitle: slot.subtitle || '',
+          start: slot.start,
+          end: slot.end,
+          items: (slot.items || []).map(item => {
+            const mappedItem = {
+              id: makeId(), // Generate new ID
+              type: item.type
+            };
+            
+            // Try to map the media item back to loaded files by name
+            if (item.mediaName){
+              if (item.type === 'video' && videoMap[item.mediaName]){
+                // Use the _id from the currently loaded video file
+                mappedItem.id = videoMap[item.mediaName]._id;
+              } else if (item.type === 'pdf' && presentationMap[item.mediaName]){
+                // Use the _id from the currently loaded presentation file
+                mappedItem.id = presentationMap[item.mediaName]._id;
+              }
+            }
+            
+            return mappedItem;
+          })
+        }));
+
+        // Update video metadata from import
+        if (importData.videos && Array.isArray(importData.videos)){
+          importData.videos.forEach(importVideo => {
+            const existing = videoMap[importVideo.name];
+            if (existing && importVideo._customName){
+              existing._customName = importVideo._customName;
+            }
+          });
+        }
+
+        // Update presentation metadata from import
+        if (importData.presentations && Array.isArray(importData.presentations)){
+          importData.presentations.forEach(importPres => {
+            const existing = presentationMap[importPres.name];
+            if (existing){
+              if (importPres._customName) existing._customName = importPres._customName;
+              if (importPres._currentPage) existing._currentPage = importPres._currentPage;
+            }
+          });
+        }
+
+        // Refresh all UI elements
+        renderAgendaRows();
+        renderAgendaPanel();
+        renderVideoList();
+        renderPresentationList();
+        renderModalVideoList();
+        renderModalPresentationList();
+        populateCompactSelects();
+        saveState();
+        
+        showToast('Agenda imported successfully');
+      }catch(e){
+        console.error('Import failed:', e);
+        showToast('Import failed: ' + e.message);
+      }
+    };
+    reader.onerror = function(){
+      showToast('Failed to read file');
+    };
+    reader.readAsText(jsonFile);
   }
 
   // Layout / font scaling
@@ -2444,6 +2655,26 @@
   addSlot15Btn.addEventListener('click', ()=> addAgendaSlotWithDuration(15));
   addSlot30Btn.addEventListener('click', ()=> addAgendaSlotWithDuration(30));
   addSlot60Btn.addEventListener('click', ()=> addAgendaSlotWithDuration(60));
+
+  // Export/Import Agenda buttons
+  if (exportAgendaBtn) {
+    exportAgendaBtn.addEventListener('click', exportAgenda);
+  }
+  if (importAgendaBtn) {
+    importAgendaBtn.addEventListener('click', ()=> {
+      agendaImportInput.click();
+    });
+  }
+  if (agendaImportInput) {
+    agendaImportInput.addEventListener('change', (e)=> {
+      const file = e.target.files[0];
+      if (file) {
+        importAgenda(file);
+      }
+      // Reset input so same file can be imported again
+      e.target.value = '';
+    });
+  }
 
   // Sort events (modal only)
   if (videoSortSelectModal) videoSortSelectModal.addEventListener('change', e=> { sortModeVideos = e.target.value; applySortVideos(); renderVideoList(); renderModalVideoList(); saveState(); });
