@@ -257,6 +257,16 @@
   /* PDF canvas wrapper and sizing - maintain aspect ratio through JS rendering */
   .pdf-canvas-wrapper { flex:1; display:flex; align-items:center; justify-content:center; background:var(--se-black); width:100%; overflow:hidden; position:relative; cursor:pointer; }
   #pdfCanvas { background:var(--se-white); display:block; cursor:pointer; }
+  
+  /* PDF annotation overlay container */
+  .pdf-annotation-layer { position:absolute; left:0; top:0; pointer-events:none; }
+  .pdf-annotation-layer a { pointer-events:auto; cursor:pointer; border:2px solid transparent; transition:border-color 0.2s, background 0.2s; }
+  .pdf-annotation-layer a:hover { border-color:var(--se-life-green); background:rgba(61,205,88,0.1); }
+  
+  /* PDF video annotation overlay */
+  .pdf-video-annotation { pointer-events:auto; cursor:pointer; background:rgba(0,0,0,0.7); display:flex; align-items:center; justify-content:center; border:2px solid var(--se-white); transition:all 0.2s; }
+  .pdf-video-annotation:hover { background:rgba(61,205,88,0.9); border-color:var(--se-life-green); transform:scale(1.02); }
+  .pdf-video-annotation svg { width:48px; height:48px; color:var(--se-white); }
 
   /* Modals */
   .modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.6); display:none; align-items:center; justify-content:center; z-index:1000; }
@@ -802,6 +812,8 @@
       <div class="presentation-container" id="presentationContainer">
         <div class="pdf-canvas-wrapper">
           <canvas id="pdfCanvas"></canvas>
+          <!-- Annotation layer for clickable links and videos -->
+          <div class="pdf-annotation-layer" id="pdfAnnotationLayer"></div>
           <!-- Modern compact controls overlaid at bottom -->
           <div class="presentation-controls">
             <button id="prevPageBtn" title="Previous page">← Prev</button>
@@ -1132,6 +1144,7 @@
   // PDF
   const pdfCanvas = document.getElementById('pdfCanvas');
   const pdfCtx = pdfCanvas.getContext('2d');
+  const pdfAnnotationLayer = document.getElementById('pdfAnnotationLayer');
   const prevPageBtn = document.getElementById('prevPageBtn');
   const nextPageBtn = document.getElementById('nextPageBtn');
   const pageInfo = document.getElementById('pageInfo');
@@ -1874,14 +1887,126 @@
       pdfCanvas.style.width = (vp.width / deviceScale) + 'px';
       pdfCanvas.style.height = (vp.height / deviceScale) + 'px';
 
+      // Render the page
       return page.render({ canvasContext: pdfCanvas.getContext('2d'), viewport: vp }).promise
         .then(()=> { 
           pageInfo.textContent = `Page ${pageNum} of ${pdfDoc.numPages}`;
           // Update button states
           prevPageBtn.disabled = (pageNum <= 1);
           nextPageBtn.disabled = (pageNum >= pdfDoc.numPages);
+          
+          // NEW: Extract and render annotations (links, videos)
+          return page.getAnnotations();
+        })
+        .then(annotations => {
+          renderPdfAnnotations(annotations, page, vp, deviceScale);
         });
     }).catch(err=> console.error('renderPdfPage error', err));
+  }
+  
+  // NEW: Render clickable annotations (links and embedded videos)
+  function renderPdfAnnotations(annotations, page, viewport, deviceScale) {
+    // Clear existing annotations
+    if (pdfAnnotationLayer) {
+      pdfAnnotationLayer.innerHTML = '';
+      
+      // Position and size the annotation layer to match the canvas
+      const canvasRect = pdfCanvas.getBoundingClientRect();
+      const wrapperRect = pdfCanvas.parentElement.getBoundingClientRect();
+      
+      // Calculate offset to center the annotation layer over the canvas
+      const offsetX = canvasRect.left - wrapperRect.left;
+      const offsetY = canvasRect.top - wrapperRect.top;
+      
+      pdfAnnotationLayer.style.left = offsetX + 'px';
+      pdfAnnotationLayer.style.top = offsetY + 'px';
+      pdfAnnotationLayer.style.width = pdfCanvas.style.width;
+      pdfAnnotationLayer.style.height = pdfCanvas.style.height;
+      
+      // Process each annotation
+      annotations.forEach(annotation => {
+        // Handle Link annotations (most common for URLs)
+        if (annotation.subtype === 'Link' && annotation.url) {
+          const rect = annotation.rect;
+          // rect is [x1, y1, x2, y2] in PDF coordinate space
+          
+          // Transform coordinates from PDF space to canvas space
+          const [x1, y1, x2, y2] = viewport.convertToViewportRectangle(rect);
+          
+          // Account for device pixel ratio
+          const displayScale = 1 / deviceScale;
+          const left = Math.min(x1, x2) * displayScale;
+          const top = Math.min(y1, y2) * displayScale;
+          const width = Math.abs(x2 - x1) * displayScale;
+          const height = Math.abs(y2 - y1) * displayScale;
+          
+          // Create clickable link element
+          const link = document.createElement('a');
+          link.href = annotation.url;
+          link.target = '_blank';
+          link.rel = 'noopener noreferrer';
+          link.style.position = 'absolute';
+          link.style.left = left + 'px';
+          link.style.top = top + 'px';
+          link.style.width = width + 'px';
+          link.style.height = height + 'px';
+          link.title = annotation.url;
+          
+          // Prevent click from triggering page navigation
+          link.addEventListener('click', (e) => {
+            e.stopPropagation();
+          });
+          
+          pdfAnnotationLayer.appendChild(link);
+        }
+        
+        // Handle Screen annotations (for embedded videos/multimedia)
+        else if (annotation.subtype === 'Screen' || annotation.subtype === 'RichMedia') {
+          const rect = annotation.rect;
+          const [x1, y1, x2, y2] = viewport.convertToViewportRectangle(rect);
+          
+          const displayScale = 1 / deviceScale;
+          const left = Math.min(x1, x2) * displayScale;
+          const top = Math.min(y1, y2) * displayScale;
+          const width = Math.abs(x2 - x1) * displayScale;
+          const height = Math.abs(y2 - y1) * displayScale;
+          
+          // Create video placeholder/button
+          const videoBtn = document.createElement('div');
+          videoBtn.className = 'pdf-video-annotation';
+          videoBtn.style.position = 'absolute';
+          videoBtn.style.left = left + 'px';
+          videoBtn.style.top = top + 'px';
+          videoBtn.style.width = width + 'px';
+          videoBtn.style.height = height + 'px';
+          videoBtn.title = 'Embedded Media';
+          
+          // Add play icon
+          videoBtn.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><use href="#play"></use></svg>';
+          
+          // Try to extract media URL if available
+          let mediaUrl = null;
+          if (annotation.url) {
+            mediaUrl = annotation.url;
+          } else if (annotation.file && annotation.file.filename) {
+            // Some PDFs reference external files
+            mediaUrl = annotation.file.filename;
+          }
+          
+          videoBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            if (mediaUrl) {
+              // Try to open/play the media
+              window.open(mediaUrl, '_blank', 'noopener,noreferrer');
+            } else {
+              showToast('Embedded media format not supported');
+            }
+          });
+          
+          pdfAnnotationLayer.appendChild(videoBtn);
+        }
+      });
+    }
   }
 
   function removePresentation(index){
@@ -2313,29 +2438,80 @@
 
         const nameSpan = document.createElement('span'); nameSpan.className='si-name';
         const typeSpan = document.createElement('span'); typeSpan.className='si-type';
-        typeSpan.textContent = (it.type==='video') ? 'Video' : 'PDF';
 
-        // Resolve name from libraries
+        // Resolve name and handler from type
         let openHandler = null;
+        
         if (it.type==='video'){
+          typeSpan.textContent = 'Video';
           const meta = videoFiles.find(v=> v._id===it.id);
           nameSpan.textContent = meta ? (meta._customName || baseName(meta.file.name)) : '(missing video)';
           openHandler = ()=> {
             const vi = videoFiles.findIndex(v=> v._id===it.id);
             if (vi>=0) playVideo(vi);
           };
-        } else {
+        } else if (it.type==='pdf'){
+          typeSpan.textContent = 'PDF';
           const meta = presentationFiles.find(p=> p._id===it.id);
           nameSpan.textContent = meta ? (meta._customName || baseName(meta.file.name)) : '(missing PDF)';
           openHandler = ()=> {
             const pi = presentationFiles.findIndex(p=> p._id===it.id);
             if (pi>=0) loadPresentation(pi);
           };
+        } else if (it.type==='text'){
+          typeSpan.textContent = 'Text';
+          typeSpan.classList.add('type-text');
+          nameSpan.textContent = (it.data && it.data.content) ? it.data.content.substring(0, 50) + (it.data.content.length > 50 ? '...' : '') : '(empty text)';
+          openHandler = ()=> {
+            if (it.data && it.data.content) {
+              alert(it.data.content); // Simple display - could be enhanced with a modal
+            }
+          };
+        } else if (it.type==='link'){
+          typeSpan.textContent = 'Link';
+          typeSpan.classList.add('type-link');
+          nameSpan.textContent = (it.data && it.data.name) || '(unnamed link)';
+          openHandler = ()=> {
+            if (it.data && it.data.url) {
+              window.open(it.data.url, '_blank', 'noopener,noreferrer');
+            }
+          };
+          // Add link icon
+          const linkIcon = document.createElement('a');
+          linkIcon.className = 'link-icon';
+          linkIcon.textContent = '🔗';
+          linkIcon.href = (it.data && it.data.url) || '#';
+          linkIcon.target = '_blank';
+          linkIcon.rel = 'noopener noreferrer';
+          linkIcon.addEventListener('click', (e)=> e.stopPropagation());
+          itemRow.appendChild(linkIcon);
+        } else if (it.type==='photo'){
+          typeSpan.textContent = 'Photo';
+          typeSpan.classList.add('type-photo');
+          nameSpan.textContent = (it.data && it.data.name) || '(unnamed photo)';
+          openHandler = ()=> {
+            if (it.data && it.data.url) {
+              const img = new Image();
+              img.src = it.data.url;
+              const win = window.open('', '_blank');
+              if (win) {
+                win.document.write(`<html><head><title>${it.data.name || 'Photo'}</title><style>body{margin:0;display:flex;align-items:center;justify-content:center;background:#000;min-height:100vh;}img{max-width:100%;max-height:100vh;object-fit:contain;}</style></head><body><img src="${it.data.url}" alt="${it.data.name || 'Photo'}"/></body></html>`);
+              }
+            }
+          };
+          // Add thumbnail
+          if (it.data && it.data.url) {
+            const thumb = document.createElement('img');
+            thumb.className = 'photo-thumbnail';
+            thumb.src = it.data.url;
+            thumb.alt = it.data.name || 'Photo';
+            itemRow.insertBefore(thumb, nameSpan);
+          }
         }
 
         // Open on row/name click
         itemRow.addEventListener('click', (e)=>{
-          if (e.target && e.target.classList && e.target.classList.contains('si-x')) return;
+          if (e.target && e.target.classList && (e.target.classList.contains('si-x') || e.target.classList.contains('link-icon'))) return;
           if (openHandler) openHandler();
         });
         nameSpan.addEventListener('click', (e)=>{ e.stopPropagation(); if (openHandler) openHandler(); });
@@ -2595,6 +2771,15 @@
     // Only handle keys when PDF is active
     if (activeView !== 'presentation' || !pdfDoc) return;
     
+    // NEW REQUIREMENT: Don't handle Backspace - let users edit text without accidentally navigating
+    // Skip keyboard shortcuts if user is in an input field (for text editing)
+    const activeElement = document.activeElement;
+    const isEditing = activeElement && (
+      activeElement.tagName === 'INPUT' || 
+      activeElement.tagName === 'TEXTAREA' || 
+      activeElement.isContentEditable
+    );
+    
     let handled = false;
     
     if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'PageDown'){
@@ -2607,8 +2792,8 @@
         saveState();
       }
       handled = true;
-    } else if (e.key === 'ArrowLeft' || e.key === 'Backspace' || e.key === 'PageUp'){
-      // Previous page
+    } else if (e.key === 'ArrowLeft' || e.key === 'PageUp'){
+      // Previous page (removed Backspace - users need it for text editing)
       if (currentPage > 1){
         currentPage--;
         renderPdfPage(currentPage);
@@ -2635,7 +2820,8 @@
       handled = true;
     }
     
-    if (handled){
+    // Only prevent default if not editing text
+    if (handled && !isEditing){
       e.preventDefault();
     }
   });
@@ -2880,7 +3066,7 @@
       });
     } else if (type === 'link'){
       form.innerHTML = `
-        <input type="text" placeholder="Link name..." class="name-input" />
+        <textarea placeholder="Link name or question (e.g., 'Want to learn more about this topic?')..." class="name-input" rows="2"></textarea>
         <input type="url" placeholder="https://..." class="url-input" />
         <div class="custom-media-form-actions">
           <button class="add-btn">Add Link</button>
