@@ -3307,6 +3307,7 @@
   const floatingClearBtn = document.getElementById('floatingClearBtn');
   
   function updateFloatingToolbarPosition(){
+    if (!floatingToolbar) return;
     if (menuPos === 'left'){
       floatingToolbar.style.left = '370px';
       floatingToolbar.style.top = '80px';
@@ -3331,6 +3332,7 @@
   }
   
   function updateFloatingToolbar(){
+    if (!floatingToolbar || !floatingToolbarLabel) return;
     const count = multiSelectedItems.size;
     if (count > 0 && appMode === 'meeting'){
       floatingToolbarLabel.textContent = count + ' selected';
@@ -3343,6 +3345,7 @@
   }
   
   function populateFloatingSlotDropdown(){
+    if (!floatingSlotDropdown) return;
     floatingSlotDropdown.innerHTML = '<option value="">Select slot...</option>';
     agendaSlots.forEach((s,i)=>{
       const opt = document.createElement('option');
@@ -3375,8 +3378,8 @@
     updateFloatingToolbar();
   }
   
-  floatingAssignBtn.addEventListener('click', assignSelectedToFloatingSlot);
-  floatingClearBtn.addEventListener('click', clearFloatingSelection);
+  if (floatingAssignBtn) floatingAssignBtn.addEventListener('click', assignSelectedToFloatingSlot);
+  if (floatingClearBtn) floatingClearBtn.addEventListener('click', clearFloatingSelection);
 
   // Expose for debug
   window.__SMO = { setLoopModeType, toggleLoopModeType, setAppMode };
