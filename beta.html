@@ -3229,8 +3229,8 @@
     updateFloatingToolbar();
   }
   
-  floatingAssignBtn.addEventListener('click', assignSelectedToFloatingSlot);
-  floatingClearBtn.addEventListener('click', clearFloatingSelection);
+  floatingAssignBtn?.addEventListener('click', assignSelectedToFloatingSlot);
+  floatingClearBtn?.addEventListener('click', clearFloatingSelection);
 
   // Expose for debug
   window.__SMO = { setLoopModeType, toggleLoopModeType, setAppMode };
