@@ -2960,11 +2960,12 @@
     appMode = (mode==='meeting') ? 'meeting' : 'presentation';
     if (appMode==='meeting'){
       if (menuPos!=='left'){ setMenuPosition('left'); }
+      // Render agenda when switching to meeting mode
+      renderAgendaPanel();
     }
     // Clear multi-select when switching modes
     multiSelectedItems.clear();
     refreshModeControls();
-    renderAgendaPanel();
     renderVideoList();
     renderPresentationList();
     updateMultiSelectUI();
@@ -3178,9 +3179,11 @@
 
   // Agenda in Menu (Meeting)
   function renderAgendaPanel(){
-    // Always render agenda based on agendaSlots from settings
-    // The agenda panel visibility is controlled by the appMode, not the content
-    if (appMode!=='meeting'){ agendaPanel.innerHTML=''; return; }
+    // Only render if in meeting mode - do NOT clear when in other modes
+    // This prevents agenda from disappearing when switching modes
+    if (appMode!=='meeting'){ 
+      return; // Just return without clearing
+    }
     
     agendaPanel.innerHTML = '';
     const nowMins = getNowTZMinutes();
