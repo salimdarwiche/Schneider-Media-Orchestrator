@@ -306,6 +306,41 @@
     color:var(--se-white); font-weight:600; font-size:11px;
     padding:0 6px; white-space:nowrap; opacity:0.85;
   }
+  .presentation-controls .page-info:hover {
+    opacity:1; text-decoration:underline;
+  }
+  
+  /* Page dropdown */
+  #pageDropdown {
+    scrollbar-width:thin; scrollbar-color:var(--se-life-green) #f0f0f0;
+  }
+  #pageDropdown::-webkit-scrollbar {
+    width:8px;
+  }
+  #pageDropdown::-webkit-scrollbar-track {
+    background:#f0f0f0;
+  }
+  #pageDropdown::-webkit-scrollbar-thumb {
+    background:var(--se-life-green); border-radius:4px;
+  }
+  .page-dropdown-item {
+    padding:10px 14px; border-bottom:1px solid #e0e0e0;
+    cursor:pointer; transition:background 0.2s;
+    display:flex; align-items:center; gap:10px;
+  }
+  .page-dropdown-item:hover {
+    background:rgba(61,205,88,0.1);
+  }
+  .page-dropdown-item.active {
+    background:rgba(61,205,88,0.2); font-weight:700;
+  }
+  .page-dropdown-num {
+    font-weight:700; color:var(--se-life-green);
+    min-width:40px; text-align:right;
+  }
+  .page-dropdown-title {
+    flex:1; font-size:13px; color:var(--se-dark-gray);
+  }
   
   /* PDF canvas wrapper and sizing - maintain aspect ratio through JS rendering */
   .pdf-canvas-wrapper { flex:1; display:flex; align-items:center; justify-content:center; background:var(--se-black); width:100%; overflow:hidden; position:relative; cursor:pointer; }
@@ -1139,8 +1174,12 @@
           <!-- Modern compact controls overlaid at bottom -->
           <div class="presentation-controls">
             <button id="prevPageBtn" title="Previous page">← Prev</button>
-            <span class="page-info" id="pageInfo">Page</span>
+            <span class="page-info" id="pageInfo" style="cursor:pointer" title="Click to select page">Page</span>
             <button id="nextPageBtn" title="Next page">Next →</button>
+            <!-- Page dropdown menu -->
+            <div id="pageDropdown" style="display:none;position:absolute;bottom:100%;left:50%;transform:translateX(-50%);background:white;border:2px solid var(--se-life-green);border-radius:8px;box-shadow:0 4px 12px rgba(0,0,0,0.3);max-height:400px;overflow-y:auto;min-width:250px;z-index:100">
+              <div id="pageDropdownList"></div>
+            </div>
           </div>
         </div>
       </div>
@@ -1193,7 +1232,7 @@
               <svg viewBox="0 0 24 24" aria-hidden="true"><use href="#list"></use></svg>
               <span>Meeting Agenda</span>
               <button id="exportAgendaBtn" type="button" style="margin-left:auto;padding:6px 12px;background:var(--se-life-green);color:white;border:none;border-radius:6px;cursor:pointer;font-weight:600;font-size:13px" title="Export agenda to JSON">Export JSON</button>
-              <button id="importAgendaBtn" type="button" style="padding:6px 12px;background:var(--se-deep-blue);color:white;border:none;border-radius:6px;cursor:pointer;font-weight:600;font-size:13px" title="Import agenda from JSON">Import JSON</button>
+              <button id="importAgendaBtn" type="button" style="padding:6px 12px;background:#0066cc;color:white;border:none;border-radius:6px;cursor:pointer;font-weight:600;font-size:13px" title="Import agenda from JSON">Import JSON</button>
               <input type="file" id="importAgendaFile" accept=".json" style="display:none">
             </div>
 
@@ -3095,7 +3134,10 @@
 
   // Agenda in Menu (Meeting)
   function renderAgendaPanel(){
+    // Always render agenda based on agendaSlots from settings
+    // The agenda panel visibility is controlled by the appMode, not the content
     if (appMode!=='meeting'){ agendaPanel.innerHTML=''; return; }
+    
     agendaPanel.innerHTML = '';
     const nowMins = getNowTZMinutes();
 
@@ -3784,6 +3826,93 @@
   // PDF controls
   prevPageBtn.addEventListener('click', ()=>{ if (pdfDoc && currentPage>1){ currentPage--; renderPdfPage(currentPage); const meta=presentationFiles[presentationIndex]; if(meta) meta._currentPage=currentPage; saveState(); }});
   nextPageBtn.addEventListener('click', ()=>{ if (pdfDoc && currentPage<pdfDoc.numPages){ currentPage++; renderPdfPage(currentPage); const meta=presentationFiles[presentationIndex]; if(meta) meta._currentPage=currentPage; saveState(); }});
+
+  // Page dropdown functionality
+  const pageDropdown = document.getElementById('pageDropdown');
+  const pageDropdownList = document.getElementById('pageDropdownList');
+  let pageDropdownOpen = false;
+  
+  async function buildPageDropdown() {
+    if (!pdfDoc) return;
+    
+    pageDropdownList.innerHTML = '';
+    
+    for (let i = 1; i <= pdfDoc.numPages; i++) {
+      const item = document.createElement('div');
+      item.className = 'page-dropdown-item' + (i === currentPage ? ' active' : '');
+      
+      const numSpan = document.createElement('span');
+      numSpan.className = 'page-dropdown-num';
+      numSpan.textContent = `${i}`;
+      
+      const titleSpan = document.createElement('span');
+      titleSpan.className = 'page-dropdown-title';
+      
+      // Try to get page title from text content
+      try {
+        const page = await pdfDoc.getPage(i);
+        const textContent = await page.getTextContent();
+        
+        // Get first few text items to use as title
+        let title = '';
+        for (let j = 0; j < Math.min(3, textContent.items.length); j++) {
+          const text = textContent.items[j].str.trim();
+          if (text.length > 0) {
+            title += (title ? ' ' : '') + text;
+            if (title.length > 50) break;
+          }
+        }
+        
+        titleSpan.textContent = title.substring(0, 60) + (title.length > 60 ? '...' : '') || 'No title';
+      } catch (e) {
+        titleSpan.textContent = 'No title';
+      }
+      
+      item.appendChild(numSpan);
+      item.appendChild(titleSpan);
+      
+      item.addEventListener('click', () => {
+        currentPage = i;
+        renderPdfPage(currentPage);
+        const meta = presentationFiles[presentationIndex];
+        if (meta) meta._currentPage = currentPage;
+        saveState();
+        closePageDropdown();
+      });
+      
+      pageDropdownList.appendChild(item);
+    }
+  }
+  
+  function openPageDropdown() {
+    if (!pdfDoc) return;
+    buildPageDropdown();
+    pageDropdown.style.display = 'block';
+    pageDropdownOpen = true;
+  }
+  
+  function closePageDropdown() {
+    pageDropdown.style.display = 'none';
+    pageDropdownOpen = false;
+  }
+  
+  if (pageInfo) {
+    pageInfo.addEventListener('click', (e) => {
+      e.stopPropagation();
+      if (pageDropdownOpen) {
+        closePageDropdown();
+      } else {
+        openPageDropdown();
+      }
+    });
+  }
+  
+  // Close dropdown when clicking outside
+  document.addEventListener('click', (e) => {
+    if (pageDropdownOpen && !pageDropdown.contains(e.target) && e.target !== pageInfo) {
+      closePageDropdown();
+    }
+  });
 
   // NEW FEATURE: PDF Click Navigation - click anywhere on canvas to advance
   if (pdfCanvas){
