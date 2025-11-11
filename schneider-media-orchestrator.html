@@ -3179,12 +3179,8 @@
 
   // Agenda in Menu (Meeting)
   function renderAgendaPanel(){
-    // Only render if in meeting mode - do NOT clear when in other modes
-    // This prevents agenda from disappearing when switching modes
-    if (appMode!=='meeting'){ 
-      return; // Just return without clearing
-    }
-    
+    // Always render agenda panel so it stays up-to-date
+    // Visibility is controlled by agendaSection display style in refreshModeControls()
     agendaPanel.innerHTML = '';
     const nowMins = getNowTZMinutes();
 
