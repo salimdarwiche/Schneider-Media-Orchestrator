@@ -374,6 +374,40 @@
   .pdf-video-overlay .play-icon svg {
     width:30px; height:30px; fill:var(--se-life-green); margin-left:4px;
   }
+  
+  /* In-App Link/iframe Viewer */
+  .link-viewer-overlay {
+    position:fixed; inset:0; background:rgba(0,0,0,0.95); display:none; align-items:center; justify-content:center; z-index:10000;
+    backdrop-filter:blur(4px); animation:fadeIn 0.3s;
+  }
+  .link-viewer-overlay.show { display:flex; }
+  .link-viewer-container {
+    position:relative; width:95%; height:95%; display:flex; flex-direction:column;
+    background:white; border-radius:12px; overflow:hidden;
+    box-shadow:0 20px 60px rgba(0,0,0,0.5);
+  }
+  .link-viewer-header {
+    display:flex; align-items:center; gap:12px; padding:12px 16px;
+    background:var(--se-life-green); color:white; flex-shrink:0;
+  }
+  .link-viewer-url {
+    flex:1; font-size:14px; font-weight:600; overflow:hidden;
+    text-overflow:ellipsis; white-space:nowrap;
+  }
+  .link-viewer-controls {
+    display:flex; gap:8px;
+  }
+  .link-viewer-controls button {
+    padding:6px 12px; border-radius:6px; border:1px solid rgba(255,255,255,0.3);
+    background:rgba(255,255,255,0.1); color:white; cursor:pointer;
+    font-size:13px; font-weight:600; transition:all 0.2s;
+  }
+  .link-viewer-controls button:hover {
+    background:rgba(255,255,255,0.2);
+  }
+  .link-viewer-iframe {
+    flex:1; width:100%; border:none; background:white;
+  }
   .modal-header { position:relative; padding:16px 20px; background:var(--se-white); border-bottom:1px solid var(--border); display:flex; align-items:center; gap:16px; }
   .modal-header::before{ content:""; position:absolute; left:0; right:0; top:0; height:4px; background:var(--se-life-green); }
   .modal-title { display:flex; align-items:center; gap:10px; font-weight:800; color:var(--se-life-green); flex-shrink:0; }
@@ -1158,6 +1192,9 @@
             <div class="section-title" style="margin-top:14px;display:flex;align-items:center;gap:10px">
               <svg viewBox="0 0 24 24" aria-hidden="true"><use href="#list"></use></svg>
               <span>Meeting Agenda</span>
+              <button id="exportAgendaBtn" type="button" style="margin-left:auto;padding:6px 12px;background:var(--se-life-green);color:white;border:none;border-radius:6px;cursor:pointer;font-weight:600;font-size:13px" title="Export agenda to JSON">Export JSON</button>
+              <button id="importAgendaBtn" type="button" style="padding:6px 12px;background:var(--se-deep-blue);color:white;border:none;border-radius:6px;cursor:pointer;font-weight:600;font-size:13px" title="Import agenda from JSON">Import JSON</button>
+              <input type="file" id="importAgendaFile" accept=".json" style="display:none">
             </div>
 
             <!-- New: Time Zone selector -->
@@ -1335,6 +1372,20 @@
       <img id="imageViewerImg" class="image-viewer-img" alt="Image viewer">
     </div>
     <div class="image-viewer-zoom-info" id="imageZoomInfo">100%</div>
+  </div>
+
+  <!-- In-App Link/iframe Viewer -->
+  <div class="link-viewer-overlay" id="linkViewerOverlay">
+    <div class="link-viewer-container">
+      <div class="link-viewer-header">
+        <div class="link-viewer-url" id="linkViewerUrl">Loading...</div>
+        <div class="link-viewer-controls">
+          <button id="linkViewerOpenExternal" title="Open in New Tab">Open in New Tab</button>
+          <button id="linkViewerClose" title="Close">×</button>
+        </div>
+      </div>
+      <iframe id="linkViewerIframe" class="link-viewer-iframe" sandbox="allow-scripts allow-same-origin allow-forms allow-popups"></iframe>
+    </div>
   </div>
 
 <script>
@@ -1719,7 +1770,50 @@
     if (e.key === 'Escape' && imageViewerOverlay && imageViewerOverlay.classList.contains('show')) {
       hideImageViewer();
     }
+    if (e.key === 'Escape' && linkViewerOverlay && linkViewerOverlay.classList.contains('show')) {
+      hideLinkViewer();
+    }
   });
+
+  // In-App Link/iframe Viewer functionality
+  const linkViewerOverlay = document.getElementById('linkViewerOverlay');
+  const linkViewerIframe = document.getElementById('linkViewerIframe');
+  const linkViewerUrl = document.getElementById('linkViewerUrl');
+  const linkViewerClose = document.getElementById('linkViewerClose');
+  const linkViewerOpenExternal = document.getElementById('linkViewerOpenExternal');
+  
+  let currentLinkUrl = '';
+  
+  function showLinkInIframe(url) {
+    currentLinkUrl = url;
+    linkViewerUrl.textContent = url;
+    linkViewerIframe.src = url;
+    linkViewerOverlay.classList.add('show');
+  }
+  
+  function hideLinkViewer() {
+    linkViewerOverlay.classList.remove('show');
+    linkViewerIframe.src = '';
+    currentLinkUrl = '';
+  }
+  
+  if (linkViewerClose) {
+    linkViewerClose.addEventListener('click', hideLinkViewer);
+  }
+  
+  if (linkViewerOpenExternal) {
+    linkViewerOpenExternal.addEventListener('click', () => {
+      if (currentLinkUrl) {
+        window.open(currentLinkUrl, '_blank', 'noopener,noreferrer');
+      }
+    });
+  }
+  
+  if (linkViewerOverlay) {
+    linkViewerOverlay.addEventListener('click', (e) => {
+      if (e.target === linkViewerOverlay) hideLinkViewer();
+    });
+  }
 
   // Helpers
   let _idCounter = 1;
@@ -1853,6 +1947,152 @@
     (s.videos||[]).forEach(v=> map[v.name]=v);
     (s.presentations||[]).forEach(p=> map[p.name]=Object.assign(map[p.name]||{}, p));
     return map;
+  }
+
+  // Export/Import Agenda as JSON
+  function exportAgendaToJSON() {
+    try {
+      const exportData = {
+        version: '1.0',
+        exportDate: new Date().toISOString(),
+        appMode,
+        timeZone,
+        agendaSlots: agendaSlots.map(slot => ({
+          id: slot.id,
+          title: slot.title,
+          subtitle: slot.subtitle,
+          start: slot.start,
+          end: slot.end,
+          items: (slot.items || []).map(item => {
+            if (item.type === 'video' || item.type === 'pdf') {
+              // For videos and PDFs, store reference info
+              const meta = item.type === 'video' 
+                ? videoFiles.find(v => v._id === item.id)
+                : presentationFiles.find(p => p._id === item.id);
+              return {
+                type: item.type,
+                id: item.id,
+                fileName: meta ? meta.file.name : null,
+                customName: meta ? meta._customName : null
+              };
+            } else {
+              // For text, link, photo - store full data
+              return {
+                type: item.type,
+                id: item.id,
+                data: item.data
+              };
+            }
+          })
+        })),
+        videos: videoFiles.map(m => ({
+          name: m.file.name,
+          _customName: m._customName || null,
+          _id: m._id,
+          _duration: m._duration || null
+        })),
+        presentations: presentationFiles.map(p => ({
+          name: p.file.name,
+          _customName: p._customName || null,
+          _id: p._id
+        }))
+      };
+      
+      const jsonStr = JSON.stringify(exportData, null, 2);
+      const blob = new Blob([jsonStr], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `agenda-export-${new Date().toISOString().split('T')[0]}.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      showToast('Agenda exported successfully!');
+    } catch (e) {
+      console.error('Export error:', e);
+      alert('Failed to export agenda: ' + e.message);
+    }
+  }
+  
+  function importAgendaFromJSON(jsonData) {
+    try {
+      const data = JSON.parse(jsonData);
+      
+      if (!data.version || !data.agendaSlots) {
+        throw new Error('Invalid agenda file format');
+      }
+      
+      // Switch to meeting mode if not already
+      if (appMode !== 'meeting') {
+        appMode = 'meeting';
+        updateAppMode();
+      }
+      
+      // Set time zone
+      if (data.timeZone) {
+        timeZone = data.timeZone;
+        const tzSelect = document.getElementById('timeZoneSelect');
+        if (tzSelect) tzSelect.value = timeZone;
+      }
+      
+      // Import agenda slots and map media
+      agendaSlots = data.agendaSlots.map(slot => {
+        const newSlot = {
+          id: slot.id || makeId(),
+          title: slot.title,
+          subtitle: slot.subtitle,
+          start: slot.start,
+          end: slot.end,
+          items: []
+        };
+        
+        // Map items
+        if (slot.items) {
+          slot.items.forEach(item => {
+            if (item.type === 'video') {
+              // Try to find matching video by fileName
+              const match = videoFiles.find(v => v.file.name === item.fileName);
+              if (match) {
+                newSlot.items.push({
+                  type: 'video',
+                  id: match._id
+                });
+              }
+            } else if (item.type === 'pdf') {
+              // Try to find matching PDF by fileName
+              const match = presentationFiles.find(p => p.file.name === item.fileName);
+              if (match) {
+                newSlot.items.push({
+                  type: 'pdf',
+                  id: match._id
+                });
+              }
+            } else {
+              // For text, link, photo - restore full data
+              newSlot.items.push({
+                type: item.type,
+                id: item.id || makeId(),
+                data: item.data
+              });
+            }
+          });
+        }
+        
+        return newSlot;
+      });
+      
+      renderAgendaPanel();
+      saveState();
+      showToast('Agenda imported successfully!');
+      
+      // Close modal if open
+      if (modalOverlay) modalOverlay.classList.remove('show');
+      
+    } catch (e) {
+      console.error('Import error:', e);
+      alert('Failed to import agenda: ' + e.message);
+    }
   }
 
   // Layout / font scaling
@@ -2388,6 +2628,13 @@
     
     // Get annotations from the page
     page.getAnnotations().then(annotations => {
+      // Get canvas position relative to wrapper
+      const wrapper = pdfCanvas.parentElement;
+      const wrapperRect = wrapper.getBoundingClientRect();
+      const canvasRect = pdfCanvas.getBoundingClientRect();
+      const offsetX = canvasRect.left - wrapperRect.left;
+      const offsetY = canvasRect.top - wrapperRect.top;
+      
       annotations.forEach(annotation => {
         if (!annotation.rect || annotation.rect.length !== 4) return;
         
@@ -2395,9 +2642,9 @@
         const rect = viewport.convertToViewportRectangle(annotation.rect);
         const [x1, y1, x2, y2] = rect;
         
-        // Calculate position and size (account for deviceScale)
-        const left = Math.min(x1, x2) / deviceScale;
-        const top = Math.min(y1, y2) / deviceScale;
+        // Calculate position and size (account for deviceScale and canvas offset)
+        const left = Math.min(x1, x2) / deviceScale + offsetX;
+        const top = Math.min(y1, y2) / deviceScale + offsetY;
         const width = Math.abs(x2 - x1) / deviceScale;
         const height = Math.abs(y2 - y1) / deviceScale;
         
@@ -2415,10 +2662,10 @@
           overlay.addEventListener('click', (e) => {
             e.preventDefault();
             e.stopPropagation();
-            window.open(annotation.url, '_blank', 'noopener,noreferrer');
+            showLinkInIframe(annotation.url);
           });
           
-          pdfCanvas.parentElement.appendChild(overlay);
+          wrapper.appendChild(overlay);
         } else if (annotation.subtype === 'Screen' || annotation.subtype === 'RichMedia') {
           // Create video overlay
           const overlay = document.createElement('div');
@@ -2441,13 +2688,13 @@
             e.stopPropagation();
             // Try to extract video URL from annotation
             if (annotation.url) {
-              window.open(annotation.url, '_blank', 'noopener,noreferrer');
+              showLinkInIframe(annotation.url);
             } else {
               showToast('Video playback not supported');
             }
           });
           
-          pdfCanvas.parentElement.appendChild(overlay);
+          wrapper.appendChild(overlay);
         }
       });
     }).catch(err => {
@@ -2958,7 +3205,7 @@
           if (url && !url.startsWith('http://') && !url.startsWith('https://')) {
             url = 'https://' + url;
           }
-          openHandler = ()=> window.open(url, '_blank', 'noopener,noreferrer');
+          openHandler = ()=> showLinkInIframe(url);
         } else if (it.type==='photo'){
           typeSpan.textContent = 'PHOTO';
           typeSpan.style.background = '#a855f7';
@@ -3371,6 +3618,40 @@
   addSlot15Btn.addEventListener('click', ()=> addAgendaSlotWithDuration(15));
   addSlot30Btn.addEventListener('click', ()=> addAgendaSlotWithDuration(30));
   addSlot60Btn.addEventListener('click', ()=> addAgendaSlotWithDuration(60));
+
+  // Export/Import Agenda buttons
+  const exportAgendaBtn = document.getElementById('exportAgendaBtn');
+  const importAgendaBtn = document.getElementById('importAgendaBtn');
+  const importAgendaFile = document.getElementById('importAgendaFile');
+  
+  if (exportAgendaBtn) {
+    exportAgendaBtn.addEventListener('click', exportAgendaToJSON);
+  }
+  
+  if (importAgendaBtn) {
+    importAgendaBtn.addEventListener('click', () => {
+      if (importAgendaFile) importAgendaFile.click();
+    });
+  }
+  
+  if (importAgendaFile) {
+    importAgendaFile.addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = (event) => {
+          importAgendaFromJSON(event.target.result);
+          // Reset file input
+          importAgendaFile.value = '';
+        };
+        reader.onerror = () => {
+          alert('Failed to read file');
+          importAgendaFile.value = '';
+        };
+        reader.readAsText(file);
+      }
+    });
+  }
 
   // Sort events (modal only)
   if (videoSortSelectModal) videoSortSelectModal.addEventListener('change', e=> { sortModeVideos = e.target.value; applySortVideos(); renderVideoList(); renderModalVideoList(); saveState(); });
@@ -3936,7 +4217,7 @@
             if (openUrl && !openUrl.startsWith('http://') && !openUrl.startsWith('https://')) {
               openUrl = 'https://' + openUrl;
             }
-            window.open(openUrl, '_blank', 'noopener,noreferrer');
+            showLinkInIframe(openUrl);
           });
           
           itemsWrap.appendChild(itemRow);
