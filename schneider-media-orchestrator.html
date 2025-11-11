@@ -1423,7 +1423,7 @@
           <button id="linkViewerClose" title="Close">×</button>
         </div>
       </div>
-      <iframe id="linkViewerIframe" class="link-viewer-iframe" sandbox="allow-scripts allow-same-origin allow-forms allow-popups"></iframe>
+      <iframe id="linkViewerIframe" class="link-viewer-iframe" sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox allow-top-navigation-by-user-activation allow-modals allow-storage-access-by-user-activation" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
     </div>
   </div>
 
@@ -1828,11 +1828,34 @@
     linkViewerUrl.textContent = url;
     linkViewerIframe.src = url;
     linkViewerOverlay.classList.add('show');
+    
+    // Add error handler for sites that block iframe embedding
+    const iframeLoadTimeout = setTimeout(() => {
+      // If iframe doesn't load in 5 seconds, might be blocked
+      if (linkViewerIframe.src === url) {
+        console.warn('Site may be blocking iframe embedding');
+      }
+    }, 5000);
+    
+    linkViewerIframe.onload = () => {
+      clearTimeout(iframeLoadTimeout);
+    };
+    
+    linkViewerIframe.onerror = () => {
+      clearTimeout(iframeLoadTimeout);
+      showToast('Site blocked iframe - opening in new tab');
+      setTimeout(() => {
+        window.open(url, '_blank', 'noopener,noreferrer');
+        hideLinkViewer();
+      }, 1000);
+    };
   }
   
   function hideLinkViewer() {
     linkViewerOverlay.classList.remove('show');
     linkViewerIframe.src = '';
+    linkViewerIframe.onload = null;
+    linkViewerIframe.onerror = null;
     currentLinkUrl = '';
   }
   
