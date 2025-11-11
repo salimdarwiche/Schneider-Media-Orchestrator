@@ -306,6 +306,41 @@
     color:var(--se-white); font-weight:600; font-size:11px;
     padding:0 6px; white-space:nowrap; opacity:0.85;
   }
+  .presentation-controls .page-info:hover {
+    opacity:1; text-decoration:underline;
+  }
+  
+  /* Page dropdown */
+  #pageDropdown {
+    scrollbar-width:thin; scrollbar-color:var(--se-life-green) #f0f0f0;
+  }
+  #pageDropdown::-webkit-scrollbar {
+    width:8px;
+  }
+  #pageDropdown::-webkit-scrollbar-track {
+    background:#f0f0f0;
+  }
+  #pageDropdown::-webkit-scrollbar-thumb {
+    background:var(--se-life-green); border-radius:4px;
+  }
+  .page-dropdown-item {
+    padding:10px 14px; border-bottom:1px solid #e0e0e0;
+    cursor:pointer; transition:background 0.2s;
+    display:flex; align-items:center; gap:10px;
+  }
+  .page-dropdown-item:hover {
+    background:rgba(61,205,88,0.1);
+  }
+  .page-dropdown-item.active {
+    background:rgba(61,205,88,0.2); font-weight:700;
+  }
+  .page-dropdown-num {
+    font-weight:700; color:var(--se-life-green);
+    min-width:40px; text-align:right;
+  }
+  .page-dropdown-title {
+    flex:1; font-size:13px; color:var(--se-dark-gray);
+  }
   
   /* PDF canvas wrapper and sizing - maintain aspect ratio through JS rendering */
   .pdf-canvas-wrapper { flex:1; display:flex; align-items:center; justify-content:center; background:var(--se-black); width:100%; overflow:hidden; position:relative; cursor:pointer; }
@@ -315,6 +350,99 @@
   .modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.6); display:none; align-items:center; justify-content:center; z-index:1000; }
   .modal-overlay.show { display:flex; }
   .modal-dialog { width:min(1020px,92vw); max-height:90vh; background:var(--se-white); border-radius:16px; overflow:hidden; display:flex; flex-direction:column; box-shadow:0 30px 60px rgba(0,0,0,0.3); }
+  
+  /* In-App Image Viewer */
+  .image-viewer-overlay {
+    position:fixed; inset:0; background:rgba(0,0,0,0.95); display:none; align-items:center; justify-content:center; z-index:10000;
+    backdrop-filter:blur(4px); animation:fadeIn 0.3s;
+  }
+  .image-viewer-overlay.show { display:flex; }
+  .image-viewer-container {
+    position:relative; width:100%; height:100%; display:flex; align-items:center; justify-content:center;
+    overflow:hidden; cursor:grab;
+  }
+  .image-viewer-container.panning { cursor:grabbing; }
+  .image-viewer-img {
+    max-width:100%; max-height:100%; object-fit:contain;
+    transition:transform 0.2s ease-out; user-select:none; pointer-events:none;
+  }
+  .image-viewer-controls {
+    position:absolute; top:20px; right:20px; display:flex; gap:10px; z-index:10001;
+  }
+  .image-viewer-controls button {
+    width:48px; height:48px; border-radius:50%;
+    background:rgba(255,255,255,0.2); backdrop-filter:blur(10px);
+    border:2px solid rgba(255,255,255,0.3); color:white;
+    cursor:pointer; transition:all 0.2s; font-size:20px; font-weight:700;
+  }
+  .image-viewer-controls button:hover {
+    background:rgba(255,255,255,0.3); transform:scale(1.1);
+  }
+  .image-viewer-zoom-info {
+    position:absolute; bottom:20px; left:50%; transform:translateX(-50%);
+    background:rgba(0,0,0,0.7); color:white; padding:8px 16px;
+    border-radius:20px; font-size:14px; font-weight:600;
+    backdrop-filter:blur(10px);
+  }
+  
+  /* PDF Link & Video Overlays */
+  .pdf-link-overlay {
+    position:absolute; background:rgba(61,205,88,0.1); border:2px solid transparent;
+    cursor:pointer; transition:all 0.2s; z-index:50;
+  }
+  .pdf-link-overlay:hover {
+    background:rgba(61,205,88,0.3); border-color:var(--se-life-green);
+    box-shadow:0 0 10px rgba(61,205,88,0.5);
+  }
+  .pdf-video-overlay {
+    position:absolute; background:rgba(0,0,0,0.3); border:2px solid rgba(255,255,255,0.5);
+    cursor:pointer; transition:all 0.2s; z-index:50; display:flex; align-items:center; justify-content:center;
+  }
+  .pdf-video-overlay:hover {
+    background:rgba(0,0,0,0.5); border-color:white;
+  }
+  .pdf-video-overlay .play-icon {
+    width:60px; height:60px; background:rgba(255,255,255,0.9); border-radius:50%;
+    display:flex; align-items:center; justify-content:center;
+    box-shadow:0 4px 12px rgba(0,0,0,0.4);
+  }
+  .pdf-video-overlay .play-icon svg {
+    width:30px; height:30px; fill:var(--se-life-green); margin-left:4px;
+  }
+  
+  /* In-App Link/iframe Viewer */
+  .link-viewer-overlay {
+    position:fixed; inset:0; background:rgba(0,0,0,0.95); display:none; align-items:center; justify-content:center; z-index:10000;
+    backdrop-filter:blur(4px); animation:fadeIn 0.3s;
+  }
+  .link-viewer-overlay.show { display:flex; }
+  .link-viewer-container {
+    position:relative; width:95%; height:95%; display:flex; flex-direction:column;
+    background:white; border-radius:12px; overflow:hidden;
+    box-shadow:0 20px 60px rgba(0,0,0,0.5);
+  }
+  .link-viewer-header {
+    display:flex; align-items:center; gap:12px; padding:12px 16px;
+    background:var(--se-life-green); color:white; flex-shrink:0;
+  }
+  .link-viewer-url {
+    flex:1; font-size:14px; font-weight:600; overflow:hidden;
+    text-overflow:ellipsis; white-space:nowrap;
+  }
+  .link-viewer-controls {
+    display:flex; gap:8px;
+  }
+  .link-viewer-controls button {
+    padding:6px 12px; border-radius:6px; border:1px solid rgba(255,255,255,0.3);
+    background:rgba(255,255,255,0.1); color:white; cursor:pointer;
+    font-size:13px; font-weight:600; transition:all 0.2s;
+  }
+  .link-viewer-controls button:hover {
+    background:rgba(255,255,255,0.2);
+  }
+  .link-viewer-iframe {
+    flex:1; width:100%; border:none; background:white;
+  }
   .modal-header { position:relative; padding:16px 20px; background:var(--se-white); border-bottom:1px solid var(--border); display:flex; align-items:center; gap:16px; }
   .modal-header::before{ content:""; position:absolute; left:0; right:0; top:0; height:4px; background:var(--se-life-green); }
   .modal-title { display:flex; align-items:center; gap:10px; font-weight:800; color:var(--se-life-green); flex-shrink:0; }
@@ -1046,8 +1174,12 @@
           <!-- Modern compact controls overlaid at bottom -->
           <div class="presentation-controls">
             <button id="prevPageBtn" title="Previous page">← Prev</button>
-            <span class="page-info" id="pageInfo">Page</span>
+            <span class="page-info" id="pageInfo" style="cursor:pointer" title="Click to select page">Page</span>
             <button id="nextPageBtn" title="Next page">Next →</button>
+            <!-- Page dropdown menu -->
+            <div id="pageDropdown" style="display:none;position:absolute;bottom:100%;left:50%;transform:translateX(-50%);background:white;border:2px solid var(--se-life-green);border-radius:8px;box-shadow:0 4px 12px rgba(0,0,0,0.3);max-height:400px;overflow-y:auto;min-width:250px;z-index:100">
+              <div id="pageDropdownList"></div>
+            </div>
           </div>
         </div>
       </div>
@@ -1099,6 +1231,10 @@
             <div class="section-title" style="margin-top:14px;display:flex;align-items:center;gap:10px">
               <svg viewBox="0 0 24 24" aria-hidden="true"><use href="#list"></use></svg>
               <span>Meeting Agenda</span>
+              <button id="exportAgendaBtn" type="button" style="margin-left:auto;padding:6px 12px;background:var(--se-life-green);color:white;border:none;border-radius:6px;cursor:pointer;font-weight:600;font-size:13px" title="Export agenda to JSON">Export JSON</button>
+              <button id="importAgendaBtn" type="button" style="padding:6px 12px;background:#0066cc;color:white;border:none;border-radius:6px;cursor:pointer;font-weight:600;font-size:13px" title="Import agenda from JSON">Import JSON</button>
+              <button id="clearAgendaBtn" type="button" style="padding:6px 12px;background:#dc3545;color:white;border:none;border-radius:6px;cursor:pointer;font-weight:600;font-size:13px" title="Clear all agenda items">Clear All Items</button>
+              <input type="file" id="importAgendaFile" accept=".json" style="display:none">
             </div>
 
             <!-- New: Time Zone selector -->
@@ -1211,6 +1347,11 @@
                 <svg viewBox="0 0 24 24" aria-hidden="true"><use href="#plus"></use></svg>
                 Add Presentations (.pdf)
               </button>
+              <!-- NEW: Clear All Presentations button -->
+              <button class="file-picker danger" id="presentationClearBtn" title="Clear All Presentations" style="display:inline-flex;align-items:center;gap:8px">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><use href="#trash"></use></svg>
+                Clear All
+              </button>
               <label for="presSortSelectModal" class="helper-text" style="margin:0;display:inline-flex;align-items:center;gap:6px">
                 <svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true"><use href="#list"></use></svg>
                 Sort
@@ -1228,6 +1369,27 @@
             <input id="presentationInputAdd" type="file" accept=".pdf" multiple style="display:none" aria-hidden="true">
             <div class="mini-list" id="modalPresentationList"></div>
             <div class="helper-text">Click name to rename, drag to reorder</div>
+          </div>
+
+          <!-- Photos -->
+          <div class="modal-section">
+            <div class="section-title" style="display:flex;align-items:center;gap:10px">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><use href="#image"></use></svg>
+              <span>Photos</span>
+            </div>
+            <div class="inline-control">
+              <button class="file-picker" id="photoAddBtn" title="Add Photos" style="display:inline-flex;align-items:center;gap:8px">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><use href="#plus"></use></svg>
+                Add Photos
+              </button>
+              <!-- NEW: Clear All Photos button -->
+              <button class="file-picker danger" id="photoClearBtn" title="Clear All Photos" style="display:inline-flex;align-items:center;gap:8px">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><use href="#trash"></use></svg>
+                Clear All
+              </button>
+            </div>
+            <input id="photoInputAdd" type="file" accept="image/*" multiple style="display:none" aria-hidden="true">
+            <div class="helper-text">Photos can be added to agenda slots. Click a photo thumbnail in the agenda to view in full screen with zoom.</div>
           </div>
           </div>
           <!-- End Media Library Tab -->
@@ -1261,6 +1423,34 @@
     <div class="agenda-display-content">
       <button class="agenda-display-close" id="agendaDisplayClose" aria-label="Close">×</button>
       <div id="agendaDisplayBody"></div>
+    </div>
+  </div>
+
+  <!-- In-App Image Viewer -->
+  <div class="image-viewer-overlay" id="imageViewerOverlay">
+    <div class="image-viewer-controls">
+      <button id="imageZoomOut" title="Zoom Out (-)">−</button>
+      <button id="imageZoomIn" title="Zoom In (+)">+</button>
+      <button id="imageZoomReset" title="Reset Zoom">⟲</button>
+      <button id="imageViewerClose" title="Close (ESC)">×</button>
+    </div>
+    <div class="image-viewer-container" id="imageViewerContainer">
+      <img id="imageViewerImg" class="image-viewer-img" alt="Image viewer">
+    </div>
+    <div class="image-viewer-zoom-info" id="imageZoomInfo">100%</div>
+  </div>
+
+  <!-- In-App Link/iframe Viewer -->
+  <div class="link-viewer-overlay" id="linkViewerOverlay">
+    <div class="link-viewer-container">
+      <div class="link-viewer-header">
+        <div class="link-viewer-url" id="linkViewerUrl">Loading...</div>
+        <div class="link-viewer-controls">
+          <button id="linkViewerOpenExternal" title="Open in New Tab">Open in New Tab</button>
+          <button id="linkViewerClose" title="Close">×</button>
+        </div>
+      </div>
+      <iframe id="linkViewerIframe" class="link-viewer-iframe" sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox allow-top-navigation-by-user-activation allow-modals allow-storage-access-by-user-activation" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
     </div>
   </div>
 
@@ -1528,6 +1718,206 @@
     if (agendaDisplayOverlay) agendaDisplayOverlay.classList.remove('show');
   }
 
+  // In-App Image Viewer functionality
+  const imageViewerOverlay = document.getElementById('imageViewerOverlay');
+  const imageViewerContainer = document.getElementById('imageViewerContainer');
+  const imageViewerImg = document.getElementById('imageViewerImg');
+  const imageZoomIn = document.getElementById('imageZoomIn');
+  const imageZoomOut = document.getElementById('imageZoomOut');
+  const imageZoomReset = document.getElementById('imageZoomReset');
+  const imageViewerClose = document.getElementById('imageViewerClose');
+  const imageZoomInfo = document.getElementById('imageZoomInfo');
+  
+  let imageViewerState = {
+    zoom: 1,
+    minZoom: 0.5,
+    maxZoom: 5,
+    panX: 0,
+    panY: 0,
+    isDragging: false,
+    startX: 0,
+    startY: 0
+  };
+  
+  function showImageViewer(imageUrl) {
+    imageViewerImg.src = imageUrl;
+    imageViewerOverlay.classList.add('show');
+    resetImageViewer();
+  }
+  
+  function hideImageViewer() {
+    imageViewerOverlay.classList.remove('show');
+    resetImageViewer();
+  }
+  
+  function resetImageViewer() {
+    imageViewerState.zoom = 1;
+    imageViewerState.panX = 0;
+    imageViewerState.panY = 0;
+    imageViewerState.isDragging = false;
+    updateImageTransform();
+  }
+  
+  function updateImageTransform() {
+    const { zoom, panX, panY } = imageViewerState;
+    imageViewerImg.style.transform = `scale(${zoom}) translate(${panX}px, ${panY}px)`;
+    imageZoomInfo.textContent = Math.round(zoom * 100) + '%';
+  }
+  
+  function zoomImage(delta) {
+    const newZoom = Math.max(imageViewerState.minZoom, Math.min(imageViewerState.maxZoom, imageViewerState.zoom + delta));
+    imageViewerState.zoom = newZoom;
+    updateImageTransform();
+  }
+  
+  // Image viewer event listeners
+  if (imageZoomIn) {
+    imageZoomIn.addEventListener('click', () => zoomImage(0.25));
+  }
+  if (imageZoomOut) {
+    imageZoomOut.addEventListener('click', () => zoomImage(-0.25));
+  }
+  if (imageZoomReset) {
+    imageZoomReset.addEventListener('click', () => {
+      imageViewerState.zoom = 1;
+      imageViewerState.panX = 0;
+      imageViewerState.panY = 0;
+      updateImageTransform();
+    });
+  }
+  if (imageViewerClose) {
+    imageViewerClose.addEventListener('click', hideImageViewer);
+  }
+  if (imageViewerOverlay) {
+    imageViewerOverlay.addEventListener('click', (e) => {
+      if (e.target === imageViewerOverlay) hideImageViewer();
+    });
+  }
+  
+  // Mouse wheel zoom
+  if (imageViewerContainer) {
+    imageViewerContainer.addEventListener('wheel', (e) => {
+      e.preventDefault();
+      const delta = e.deltaY > 0 ? -0.1 : 0.1;
+      zoomImage(delta);
+    }, { passive: false });
+    
+    // Pan functionality
+    imageViewerContainer.addEventListener('mousedown', (e) => {
+      if (imageViewerState.zoom <= 1) return;
+      imageViewerState.isDragging = true;
+      imageViewerState.startX = e.clientX - imageViewerState.panX;
+      imageViewerState.startY = e.clientY - imageViewerState.panY;
+      imageViewerContainer.classList.add('panning');
+    });
+    
+    imageViewerContainer.addEventListener('mousemove', (e) => {
+      if (!imageViewerState.isDragging) return;
+      imageViewerState.panX = e.clientX - imageViewerState.startX;
+      imageViewerState.panY = e.clientY - imageViewerState.startY;
+      updateImageTransform();
+    });
+    
+    imageViewerContainer.addEventListener('mouseup', () => {
+      imageViewerState.isDragging = false;
+      imageViewerContainer.classList.remove('panning');
+    });
+    
+    imageViewerContainer.addEventListener('mouseleave', () => {
+      if (imageViewerState.isDragging) {
+        imageViewerState.isDragging = false;
+        imageViewerContainer.classList.remove('panning');
+      }
+    });
+  }
+  
+  // ESC key to close image viewer
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && imageViewerOverlay && imageViewerOverlay.classList.contains('show')) {
+      hideImageViewer();
+    }
+    if (e.key === 'Escape' && linkViewerOverlay && linkViewerOverlay.classList.contains('show')) {
+      hideLinkViewer();
+    }
+  });
+
+  // In-App Link/iframe Viewer functionality
+  const linkViewerOverlay = document.getElementById('linkViewerOverlay');
+  const linkViewerIframe = document.getElementById('linkViewerIframe');
+  const linkViewerUrl = document.getElementById('linkViewerUrl');
+  const linkViewerClose = document.getElementById('linkViewerClose');
+  const linkViewerOpenExternal = document.getElementById('linkViewerOpenExternal');
+  
+  let currentLinkUrl = '';
+  
+  function showLinkInIframe(url) {
+    // Ensure URL has protocol
+    let fullUrl = url;
+    if (!url.startsWith('http://') && !url.startsWith('https://')) {
+      fullUrl = 'https://' + url;
+    }
+    
+    currentLinkUrl = fullUrl;
+    linkViewerUrl.textContent = fullUrl;
+    
+    // Note: Many sites (like Google) block iframe embedding with X-Frame-Options
+    // Show a message in the iframe header
+    const iframeNote = document.createElement('div');
+    iframeNote.style.cssText = 'padding:8px;background:#fff3cd;color:#856404;font-size:12px;text-align:center;border-bottom:1px solid #ffeaa7';
+    iframeNote.textContent = 'If the site doesn\'t load, it may block iframe embedding. Use "Open in New Tab" button.';
+    
+    linkViewerIframe.src = fullUrl;
+    linkViewerOverlay.classList.add('show');
+    
+    // Add error handler for sites that block iframe embedding
+    const iframeLoadTimeout = setTimeout(() => {
+      // If iframe doesn't load in 3 seconds, might be blocked
+      if (linkViewerIframe.src === fullUrl) {
+        console.warn('Site may be blocking iframe embedding:', fullUrl);
+        showToast('Site may block iframe - use "Open in New Tab" if not loading');
+      }
+    }, 3000);
+    
+    linkViewerIframe.onload = () => {
+      clearTimeout(iframeLoadTimeout);
+    };
+    
+    linkViewerIframe.onerror = () => {
+      clearTimeout(iframeLoadTimeout);
+      showToast('Cannot load site in iframe - opening in new tab');
+      setTimeout(() => {
+        window.open(fullUrl, '_blank', 'noopener,noreferrer');
+        hideLinkViewer();
+      }, 1000);
+    };
+  }
+  
+  function hideLinkViewer() {
+    linkViewerOverlay.classList.remove('show');
+    linkViewerIframe.src = '';
+    linkViewerIframe.onload = null;
+    linkViewerIframe.onerror = null;
+    currentLinkUrl = '';
+  }
+  
+  if (linkViewerClose) {
+    linkViewerClose.addEventListener('click', hideLinkViewer);
+  }
+  
+  if (linkViewerOpenExternal) {
+    linkViewerOpenExternal.addEventListener('click', () => {
+      if (currentLinkUrl) {
+        window.open(currentLinkUrl, '_blank', 'noopener,noreferrer');
+      }
+    });
+  }
+  
+  if (linkViewerOverlay) {
+    linkViewerOverlay.addEventListener('click', (e) => {
+      if (e.target === linkViewerOverlay) hideLinkViewer();
+    });
+  }
+
   // Helpers
   let _idCounter = 1;
   const makeId = () => 'f_' + Date.now().toString(36) + '_' + (_idCounter++);
@@ -1660,6 +2050,159 @@
     (s.videos||[]).forEach(v=> map[v.name]=v);
     (s.presentations||[]).forEach(p=> map[p.name]=Object.assign(map[p.name]||{}, p));
     return map;
+  }
+
+  // Export/Import Agenda as JSON
+  function exportAgendaToJSON() {
+    try {
+      const exportData = {
+        version: '1.0',
+        exportDate: new Date().toISOString(),
+        appMode,
+        timeZone,
+        agendaSlots: agendaSlots.map(slot => ({
+          id: slot.id,
+          title: slot.title,
+          subtitle: slot.subtitle,
+          start: slot.start,
+          end: slot.end,
+          items: (slot.items || []).map(item => {
+            if (item.type === 'video' || item.type === 'pdf') {
+              // For videos and PDFs, store reference info
+              const meta = item.type === 'video' 
+                ? videoFiles.find(v => v._id === item.id)
+                : presentationFiles.find(p => p._id === item.id);
+              return {
+                type: item.type,
+                id: item.id,
+                fileName: meta ? meta.file.name : null,
+                customName: meta ? meta._customName : null
+              };
+            } else {
+              // For text, link, photo - store full data
+              return {
+                type: item.type,
+                id: item.id,
+                data: item.data
+              };
+            }
+          })
+        })),
+        videos: videoFiles.map(m => ({
+          name: m.file.name,
+          _customName: m._customName || null,
+          _id: m._id,
+          _duration: m._duration || null
+        })),
+        presentations: presentationFiles.map(p => ({
+          name: p.file.name,
+          _customName: p._customName || null,
+          _id: p._id
+        }))
+      };
+      
+      const jsonStr = JSON.stringify(exportData, null, 2);
+      const blob = new Blob([jsonStr], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `agenda-export-${new Date().toISOString().split('T')[0]}.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      showToast('Agenda exported successfully!');
+    } catch (e) {
+      console.error('Export error:', e);
+      alert('Failed to export agenda: ' + e.message);
+    }
+  }
+  
+  function importAgendaFromJSON(jsonData) {
+    try {
+      const data = JSON.parse(jsonData);
+      
+      if (!data.version || !data.agendaSlots) {
+        throw new Error('Invalid agenda file format');
+      }
+      
+      // Switch to meeting mode if not already
+      if (appMode !== 'meeting') {
+        appMode = 'meeting';
+        // Update mode UI
+        document.querySelectorAll('input[name="appModeRadio"]').forEach(r => {
+          r.checked = (r.value === 'meeting');
+        });
+      }
+      
+      // Set time zone
+      if (data.timeZone) {
+        timeZone = data.timeZone;
+        const tzSelect = document.getElementById('timeZoneSelect');
+        if (tzSelect) tzSelect.value = timeZone;
+      }
+      
+      // Import agenda slots and map media
+      agendaSlots = data.agendaSlots.map(slot => {
+        const newSlot = {
+          id: slot.id || makeId(),
+          title: slot.title,
+          subtitle: slot.subtitle,
+          start: slot.start,
+          end: slot.end,
+          items: []
+        };
+        
+        // Map items
+        if (slot.items) {
+          slot.items.forEach(item => {
+            if (item.type === 'video') {
+              // Try to find matching video by fileName
+              const match = videoFiles.find(v => v.file.name === item.fileName);
+              if (match) {
+                newSlot.items.push({
+                  type: 'video',
+                  id: match._id
+                });
+              }
+            } else if (item.type === 'pdf') {
+              // Try to find matching PDF by fileName
+              const match = presentationFiles.find(p => p.file.name === item.fileName);
+              if (match) {
+                newSlot.items.push({
+                  type: 'pdf',
+                  id: match._id
+                });
+              }
+            } else {
+              // For text, link, photo - restore full data
+              newSlot.items.push({
+                type: item.type,
+                id: item.id || makeId(),
+                data: item.data
+              });
+            }
+          });
+        }
+        
+        return newSlot;
+      });
+      
+      // Defer rendering to avoid DOM conflicts
+      setTimeout(() => {
+        renderAgendaRows();
+        renderAgendaPanel();
+        saveState();
+        showToast('Agenda imported successfully!');
+        
+        // Close modal if open
+        if (modalOverlay) modalOverlay.classList.remove('show');
+      }, 100);
+      
+    } catch (e) {
+      console.error('Import error:', e);
+      alert('Failed to import agenda: ' + e.message);
+    }
   }
 
   // Layout / font scaling
@@ -2180,8 +2723,93 @@
           // Update button states
           prevPageBtn.disabled = (pageNum <= 1);
           nextPageBtn.disabled = (pageNum >= pdfDoc.numPages);
+          
+          // PDF Link & Video Interactivity: Add overlays for annotations
+          addPdfAnnotationOverlays(page, vp, deviceScale);
         });
     }).catch(err=> console.error('renderPdfPage error', err));
+  }
+  
+  // Add clickable overlays for PDF links and videos
+  function addPdfAnnotationOverlays(page, viewport, deviceScale) {
+    // Remove existing overlays
+    const existingOverlays = document.querySelectorAll('.pdf-link-overlay, .pdf-video-overlay');
+    existingOverlays.forEach(el => el.remove());
+    
+    // Get annotations from the page
+    page.getAnnotations().then(annotations => {
+      // Get canvas position relative to wrapper
+      const wrapper = pdfCanvas.parentElement;
+      const wrapperRect = wrapper.getBoundingClientRect();
+      const canvasRect = pdfCanvas.getBoundingClientRect();
+      const offsetX = canvasRect.left - wrapperRect.left;
+      const offsetY = canvasRect.top - wrapperRect.top;
+      
+      annotations.forEach(annotation => {
+        if (!annotation.rect || annotation.rect.length !== 4) return;
+        
+        // Transform annotation rectangle to viewport coordinates
+        const rect = viewport.convertToViewportRectangle(annotation.rect);
+        const [x1, y1, x2, y2] = rect;
+        
+        // Calculate position and size (account for deviceScale and canvas offset)
+        const left = Math.min(x1, x2) / deviceScale + offsetX;
+        const top = Math.min(y1, y2) / deviceScale + offsetY;
+        const width = Math.abs(x2 - x1) / deviceScale;
+        const height = Math.abs(y2 - y1) / deviceScale;
+        
+        // Check annotation type
+        if (annotation.subtype === 'Link' && annotation.url) {
+          // Create link overlay
+          const overlay = document.createElement('div');
+          overlay.className = 'pdf-link-overlay';
+          overlay.style.left = left + 'px';
+          overlay.style.top = top + 'px';
+          overlay.style.width = width + 'px';
+          overlay.style.height = height + 'px';
+          overlay.title = annotation.url;
+          
+          overlay.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            showLinkInIframe(annotation.url);
+          });
+          
+          wrapper.appendChild(overlay);
+        } else if (annotation.subtype === 'Screen' || annotation.subtype === 'RichMedia') {
+          // Create video overlay
+          const overlay = document.createElement('div');
+          overlay.className = 'pdf-video-overlay';
+          overlay.style.left = left + 'px';
+          overlay.style.top = top + 'px';
+          overlay.style.width = width + 'px';
+          overlay.style.height = height + 'px';
+          overlay.title = 'Embedded video';
+          
+          // Add play icon
+          overlay.innerHTML = `
+            <div class="play-icon">
+              <svg viewBox="0 0 24 24"><use href="#play"></use></svg>
+            </div>
+          `;
+          
+          overlay.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            // Try to extract video URL from annotation
+            if (annotation.url) {
+              showLinkInIframe(annotation.url);
+            } else {
+              showToast('Video playback not supported');
+            }
+          });
+          
+          wrapper.appendChild(overlay);
+        }
+      });
+    }).catch(err => {
+      console.warn('Failed to get PDF annotations:', err);
+    });
   }
 
   function removePresentation(index){
@@ -2330,6 +2958,7 @@
 
   // Mode handling
   function refreshModeControls(){
+    console.log('[refreshModeControls] Current mode:', appMode);
     if (modePresentation) modePresentation.checked = (appMode==='presentation');
     if (modeMeeting) modeMeeting.checked = (appMode==='meeting');
     const disablePositions = (appMode==='meeting');
@@ -2342,6 +2971,7 @@
       ? 'Menu position is fixed to Left in Meeting mode.'
       : 'Use these buttons to change menu position.';
     agendaSection.style.display = (appMode==='meeting') ? 'block' : 'none';
+    console.log('[refreshModeControls] Agenda section display:', agendaSection.style.display);
     // Update floating mode toggle button
     const floatingModeToggleBtn = document.getElementById('floatingModeToggleBtn');
     if (floatingModeToggleBtn) {
@@ -2356,18 +2986,27 @@
     }
   }
   function setAppMode(mode){
+    console.log('[setAppMode] Switching mode from', appMode, 'to', mode);
+    const oldMode = appMode;
     appMode = (mode==='meeting') ? 'meeting' : 'presentation';
     if (appMode==='meeting'){
       if (menuPos!=='left'){ setMenuPosition('left'); }
     }
     // Clear multi-select when switching modes
     multiSelectedItems.clear();
+    // Update UI controls first
     refreshModeControls();
-    renderAgendaPanel();
+    // Always render agenda panel AFTER refreshModeControls to ensure it's up-to-date
+    // Use setTimeout to ensure DOM is ready and prevent race conditions
+    setTimeout(() => {
+      renderAgendaPanel();
+      console.log('[setAppMode] Agenda rendered - mode:', appMode, '- slots:', agendaSlots.length);
+    }, 10);
     renderVideoList();
     renderPresentationList();
     updateMultiSelectUI();
     saveState();
+    console.log('[setAppMode] Mode switched from', oldMode, 'to', appMode);
   }
 
   // Agenda in Settings
@@ -2577,11 +3216,18 @@
 
   // Agenda in Menu (Meeting)
   function renderAgendaPanel(){
-    if (appMode!=='meeting'){ agendaPanel.innerHTML=''; return; }
+    // Always render agenda panel so it stays up-to-date
+    // Visibility is controlled by agendaSection display style in refreshModeControls()
+    console.log('[renderAgendaPanel] Rendering', agendaSlots.length, 'agenda slots');
+    if (!agendaPanel) {
+      console.error('[renderAgendaPanel] ERROR: agendaPanel element not found!');
+      return;
+    }
     agendaPanel.innerHTML = '';
     const nowMins = getNowTZMinutes();
 
-    agendaSlots.forEach((slot)=>{
+    agendaSlots.forEach((slot, slotIndex)=>{
+      console.log('[renderAgendaPanel] Rendering slot', slotIndex, ':', slot.title);
       const sStart = parseHHMM(slot.start);
       const sEnd = parseHHMM(slot.end);
       const active = (sStart!=null && sEnd!=null && nowMins>=sStart && nowMins<=sEnd);
@@ -2641,9 +3287,13 @@
           const exists = slot.items.some(it=> it.id===data.id && it.type===data.kind);
           if (!exists){
             slot.items.push({ id:data.id, type:data.kind });
-            renderAgendaPanel(); saveState();
+            // Defer render to avoid race condition
+            setTimeout(() => {
+              renderAgendaPanel();
+              saveState();
+            }, 50);
           }
-        }catch(err){}
+        }catch(err){console.error('Drop error:', err);}
       });
 
       (slot.items||[]).forEach((it, idx)=>{
@@ -2687,7 +3337,7 @@
           if (url && !url.startsWith('http://') && !url.startsWith('https://')) {
             url = 'https://' + url;
           }
-          openHandler = ()=> window.open(url, '_blank');
+          openHandler = ()=> showLinkInIframe(url);
         } else if (it.type==='photo'){
           typeSpan.textContent = 'PHOTO';
           typeSpan.style.background = '#a855f7';
@@ -2700,7 +3350,7 @@
             itemRow.insertBefore(img, nameSpan);
           }
           openHandler = ()=> {
-            if (it.data.url) window.open(it.data.url, '_blank');
+            if (it.data.url) showImageViewer(it.data.url);
           };
         }
 
@@ -2738,7 +3388,11 @@
           }).filter(Boolean);
           if (newOrder.length === (slot.items||[]).length){
             slot.items = newOrder;
-            renderAgendaPanel(); saveState();
+            // Defer render to avoid DOM conflicts
+            setTimeout(() => {
+              renderAgendaPanel();
+              saveState();
+            }, 50);
           }
         });
 
@@ -2965,7 +3619,18 @@
     updateOverallProgressBar();
   }
   let clockTimer = null;
-  function startClock(){ if (clockTimer) clearInterval(clockTimer); clockTimer = setInterval(updateTZClock, 1000); updateTZClock(); }
+  function startClock(){ 
+    if (clockTimer) clearInterval(clockTimer); 
+    clockTimer = setInterval(updateTZClock, 1000); 
+    updateTZClock(); 
+  }
+  
+  // Ensure clock restarts if stopped
+  setInterval(() => {
+    if (!clockTimer) {
+      startClock();
+    }
+  }, 5000);
 
   // Add overall vertical progress bar to agenda panel
   function addOverallProgressBar(){
@@ -3040,18 +3705,10 @@
   const floatingModeToggleBtn = document.getElementById('floatingModeToggleBtn');
   if (floatingModeToggleBtn) {
     floatingModeToggleBtn.addEventListener('click', ()=> {
+      console.log('[Toggle] Floating mode toggle clicked, current mode:', appMode);
       const newMode = (appMode === 'presentation') ? 'meeting' : 'presentation';
       setAppMode(newMode);
-      // Update button icon and tooltip
-      const icon = floatingModeToggleBtn.querySelector('use');
-      const titleText = floatingModeToggleBtn.getAttribute('title');
-      if (appMode === 'presentation') {
-        icon.setAttribute('href', '#meeting');
-        floatingModeToggleBtn.setAttribute('title', 'Switch to Meeting Mode');
-      } else {
-        icon.setAttribute('href', '#presentation');
-        floatingModeToggleBtn.setAttribute('title', 'Switch to Presentation Mode');
-      }
+      // Icon and tooltip are updated automatically by refreshModeControls() called from setAppMode()
     });
   }
   
@@ -3083,8 +3740,8 @@
   modalOverlay.addEventListener('click', (e)=>{ if (e.target===modalOverlay) { modalOverlay.classList.remove('show'); markOnboarded(); } });
 
   // Mode radios
-  if (modePresentation) modePresentation.addEventListener('change', ()=> setAppMode('presentation'));
-  if (modeMeeting) modeMeeting.addEventListener('change', ()=> setAppMode('meeting'));
+  if (modePresentation) modePresentation.addEventListener('change', ()=> { console.log('[Radio] Presentation mode selected'); setAppMode('presentation'); });
+  if (modeMeeting) modeMeeting.addEventListener('change', ()=> { console.log('[Radio] Meeting mode selected'); setAppMode('meeting'); });
 
   // Time zone change
   if (timeZoneSelect){
@@ -3101,6 +3758,40 @@
   addSlot30Btn.addEventListener('click', ()=> addAgendaSlotWithDuration(30));
   addSlot60Btn.addEventListener('click', ()=> addAgendaSlotWithDuration(60));
 
+  // Export/Import Agenda buttons
+  const exportAgendaBtn = document.getElementById('exportAgendaBtn');
+  const importAgendaBtn = document.getElementById('importAgendaBtn');
+  const importAgendaFile = document.getElementById('importAgendaFile');
+  
+  if (exportAgendaBtn) {
+    exportAgendaBtn.addEventListener('click', exportAgendaToJSON);
+  }
+  
+  if (importAgendaBtn) {
+    importAgendaBtn.addEventListener('click', () => {
+      if (importAgendaFile) importAgendaFile.click();
+    });
+  }
+  
+  if (importAgendaFile) {
+    importAgendaFile.addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = (event) => {
+          importAgendaFromJSON(event.target.result);
+          // Reset file input
+          importAgendaFile.value = '';
+        };
+        reader.onerror = () => {
+          alert('Failed to read file');
+          importAgendaFile.value = '';
+        };
+        reader.readAsText(file);
+      }
+    });
+  }
+
   // Sort events (modal only)
   if (videoSortSelectModal) videoSortSelectModal.addEventListener('change', e=> { sortModeVideos = e.target.value; applySortVideos(); renderVideoList(); renderModalVideoList(); saveState(); });
   if (presSortSelectModal) presSortSelectModal.addEventListener('change', e=> { sortModePresentations = e.target.value; applySortPresentations(); renderPresentationList(); renderModalPresentationList(); saveState(); });
@@ -3108,7 +3799,8 @@
   // Fullscreen events
   if (fullscreenBtns.length){
     fullscreenBtns.forEach(btn=> btn.addEventListener('click', toggleFullscreen));
-    document.addEventListener('keydown', (e)=>{ if (e.key==='f' || e.key==='F') toggleFullscreen(); });
+    // Removed single-key 'f' shortcut - use browser native F11 or button instead
+    // This prevents conflicts when typing in text fields
     ['fullscreenchange','webkitfullscreenchange','msfullscreenchange'].forEach(ev => document.addEventListener(ev, updateFullscreenUI));
   }
 
@@ -3155,6 +3847,99 @@
         updateNavBackBtn();
         saveState();
         showToast('All videos cleared');
+      }
+    });
+  }
+
+  // NEW: Clear All Presentations button
+  const presentationClearBtn = document.getElementById('presentationClearBtn');
+  if (presentationClearBtn) {
+    presentationClearBtn.addEventListener('click', ()=> {
+      if (presentationFiles.length === 0) {
+        showToast('No presentations to clear');
+        return;
+      }
+      if (confirm(`Are you sure you want to remove all ${presentationFiles.length} presentation(s)?`)) {
+        // Close current PDF if viewing
+        if (activeView==='presentation') {
+          if (currentPDFObjectUrl) try{ URL.revokeObjectURL(currentPDFObjectUrl); }catch(_){}
+          pdfContainer.style.display='none';
+          emptyState.style.display='flex';
+          activeView=null;
+        }
+        presentationFiles = [];
+        currentPresentationIndex = -1;
+        renderPresentationList();
+        renderModalPresentationList();
+        populateCompactSelects();
+        updateNavBackBtn();
+        saveState();
+        showToast('All presentations cleared');
+      }
+    });
+  }
+
+  // NEW: Photo file input button
+  const photoAddBtn = document.getElementById('photoAddBtn');
+  const photoInputAdd = document.getElementById('photoInputAdd');
+  if (photoAddBtn && photoInputAdd) {
+    photoAddBtn.addEventListener('click', ()=> {
+      photoInputAdd.click();
+    });
+    photoInputAdd.addEventListener('change', (e)=> {
+      const files = Array.from(e.target.files || []);
+      if (files.length > 0) {
+        showToast(`${files.length} photo(s) ready to be added to agenda slots`);
+      }
+      e.target.value = ''; // Reset input
+    });
+  }
+
+  // NEW: Clear All Photos button
+  const photoClearBtn = document.getElementById('photoClearBtn');
+  if (photoClearBtn) {
+    photoClearBtn.addEventListener('click', ()=> {
+      // Count total photos across all agenda slots
+      let photoCount = 0;
+      agendaSlots.forEach(slot => {
+        if (slot.items) {
+          photoCount += slot.items.filter(item => item.type === 'photo').length;
+        }
+      });
+      
+      if (photoCount === 0) {
+        showToast('No photos to clear');
+        return;
+      }
+      
+      if (confirm(`Are you sure you want to remove all ${photoCount} photo(s) from agenda slots?`)) {
+        agendaSlots.forEach(slot => {
+          if (slot.items) {
+            slot.items = slot.items.filter(item => item.type !== 'photo');
+          }
+        });
+        renderAgendaBuilder();
+        renderAgendaPanel();
+        saveState();
+        showToast('All photos cleared from agenda');
+      }
+    });
+  }
+
+  // NEW: Clear All Agenda Items button
+  const clearAgendaBtn = document.getElementById('clearAgendaBtn');
+  if (clearAgendaBtn) {
+    clearAgendaBtn.addEventListener('click', ()=> {
+      if (agendaSlots.length === 0) {
+        showToast('No agenda items to clear');
+        return;
+      }
+      if (confirm(`Are you sure you want to remove all ${agendaSlots.length} agenda slot(s)? This will delete all titles, subtitles, times, and assigned media.`)) {
+        agendaSlots = [];
+        renderAgendaBuilder();
+        renderAgendaPanel();
+        saveState();
+        showToast('All agenda items cleared');
       }
     });
   }
@@ -3233,6 +4018,93 @@
   prevPageBtn.addEventListener('click', ()=>{ if (pdfDoc && currentPage>1){ currentPage--; renderPdfPage(currentPage); const meta=presentationFiles[presentationIndex]; if(meta) meta._currentPage=currentPage; saveState(); }});
   nextPageBtn.addEventListener('click', ()=>{ if (pdfDoc && currentPage<pdfDoc.numPages){ currentPage++; renderPdfPage(currentPage); const meta=presentationFiles[presentationIndex]; if(meta) meta._currentPage=currentPage; saveState(); }});
 
+  // Page dropdown functionality
+  const pageDropdown = document.getElementById('pageDropdown');
+  const pageDropdownList = document.getElementById('pageDropdownList');
+  let pageDropdownOpen = false;
+  
+  async function buildPageDropdown() {
+    if (!pdfDoc) return;
+    
+    pageDropdownList.innerHTML = '';
+    
+    for (let i = 1; i <= pdfDoc.numPages; i++) {
+      const item = document.createElement('div');
+      item.className = 'page-dropdown-item' + (i === currentPage ? ' active' : '');
+      
+      const numSpan = document.createElement('span');
+      numSpan.className = 'page-dropdown-num';
+      numSpan.textContent = `${i}`;
+      
+      const titleSpan = document.createElement('span');
+      titleSpan.className = 'page-dropdown-title';
+      
+      // Try to get page title from text content
+      try {
+        const page = await pdfDoc.getPage(i);
+        const textContent = await page.getTextContent();
+        
+        // Get first few text items to use as title
+        let title = '';
+        for (let j = 0; j < Math.min(3, textContent.items.length); j++) {
+          const text = textContent.items[j].str.trim();
+          if (text.length > 0) {
+            title += (title ? ' ' : '') + text;
+            if (title.length > 50) break;
+          }
+        }
+        
+        titleSpan.textContent = title.substring(0, 60) + (title.length > 60 ? '...' : '') || 'No title';
+      } catch (e) {
+        titleSpan.textContent = 'No title';
+      }
+      
+      item.appendChild(numSpan);
+      item.appendChild(titleSpan);
+      
+      item.addEventListener('click', () => {
+        currentPage = i;
+        renderPdfPage(currentPage);
+        const meta = presentationFiles[presentationIndex];
+        if (meta) meta._currentPage = currentPage;
+        saveState();
+        closePageDropdown();
+      });
+      
+      pageDropdownList.appendChild(item);
+    }
+  }
+  
+  function openPageDropdown() {
+    if (!pdfDoc) return;
+    buildPageDropdown();
+    pageDropdown.style.display = 'block';
+    pageDropdownOpen = true;
+  }
+  
+  function closePageDropdown() {
+    pageDropdown.style.display = 'none';
+    pageDropdownOpen = false;
+  }
+  
+  if (pageInfo) {
+    pageInfo.addEventListener('click', (e) => {
+      e.stopPropagation();
+      if (pageDropdownOpen) {
+        closePageDropdown();
+      } else {
+        openPageDropdown();
+      }
+    });
+  }
+  
+  // Close dropdown when clicking outside
+  document.addEventListener('click', (e) => {
+    if (pageDropdownOpen && !pageDropdown.contains(e.target) && e.target !== pageInfo) {
+      closePageDropdown();
+    }
+  });
+
   // NEW FEATURE: PDF Click Navigation - click anywhere on canvas to advance
   if (pdfCanvas){
     pdfCanvas.addEventListener('click', ()=>{
@@ -3251,6 +4123,16 @@
     // Only handle keys when PDF is active
     if (activeView !== 'presentation' || !pdfDoc) return;
     
+    // SAFETY: Don't navigate if user is editing text
+    const target = e.target;
+    const isEditable = target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || 
+                      target.isContentEditable || target.closest('[contenteditable]');
+    
+    // Don't handle navigation keys in editable fields
+    if (isEditable && (e.key === 'Backspace' || e.key === ' ' || e.key === 'ArrowLeft' || e.key === 'ArrowRight')) {
+      return; // Allow normal text editing
+    }
+    
     let handled = false;
     
     if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'PageDown'){
@@ -3263,8 +4145,8 @@
         saveState();
       }
       handled = true;
-    } else if (e.key === 'ArrowLeft' || e.key === 'Backspace' || e.key === 'PageUp'){
-      // Previous page
+    } else if (e.key === 'ArrowLeft' || e.key === 'PageUp'){
+      // Previous page (Backspace removed from navigation)
       if (currentPage > 1){
         currentPage--;
         renderPdfPage(currentPage);
@@ -3580,6 +4462,7 @@
               slot.items.splice(idx, 1);
               itemRow.remove();
               saveState();
+              renderAgendaPanel(); // Update agenda panel after deletion
             }
           });
           
@@ -3596,7 +4479,7 @@
       });
     } else if (type === 'link'){
       form.innerHTML = `
-        <input type="text" placeholder="Link name..." class="name-input" />
+        <textarea placeholder="Link name (can be a sentence)..." class="name-input" rows="2"></textarea>
         <input type="url" placeholder="https://..." class="url-input" />
         <div class="custom-media-form-actions">
           <button class="add-btn">Add Link</button>
@@ -3642,6 +4525,7 @@
               slot.items.splice(idx, 1);
               itemRow.remove();
               saveState();
+              renderAgendaPanel(); // Update agenda panel after deletion
             }
           });
           
@@ -3654,7 +4538,7 @@
             if (openUrl && !openUrl.startsWith('http://') && !openUrl.startsWith('https://')) {
               openUrl = 'https://' + openUrl;
             }
-            window.open(openUrl, '_blank');
+            showLinkInIframe(openUrl);
           });
           
           itemsWrap.appendChild(itemRow);
@@ -3663,6 +4547,7 @@
       });
     } else if (type === 'photo'){
       form.innerHTML = `
+        <textarea placeholder="Photo name/description (can be a sentence)..." class="name-input" rows="2"></textarea>
         <input type="file" accept="image/*" class="photo-input" />
         <div class="custom-media-form-actions">
           <button class="add-btn">Add Photo</button>
@@ -3670,12 +4555,14 @@
         </div>
       `;
       form.querySelector('.add-btn').addEventListener('click', ()=>{
+        const name = form.querySelector('.name-input').value.trim();
         const fileInput = form.querySelector('.photo-input');
         const file = fileInput.files[0];
         if (!file) return alert('Please select a photo');
+        const photoName = name || file.name; // Use custom name or filename
         if (!slot.items) slot.items = [];
         const url = URL.createObjectURL(file);
-        slot.items.push({id:makeId(), type:'photo', data:{name:file.name, file, url}});
+        slot.items.push({id:makeId(), type:'photo', data:{name:photoName, file, url}});
         form.remove();
         // Don't call renderAgendaPanel() to avoid re-creating everything
         // Instead, manually add the item to the DOM
@@ -3686,7 +4573,7 @@
           
           const nameSpan = document.createElement('span');
           nameSpan.className = 'si-name';
-          nameSpan.textContent = file.name;
+          nameSpan.textContent = photoName;
           
           const typeSpan = document.createElement('span');
           typeSpan.className = 'si-type';
@@ -3704,6 +4591,7 @@
               slot.items.splice(idx, 1);
               itemRow.remove();
               saveState();
+              renderAgendaPanel(); // Update agenda panel after deletion
             }
           });
           
@@ -3711,7 +4599,7 @@
           itemRow.appendChild(typeSpan);
           itemRow.appendChild(btnX);
           itemRow.addEventListener('click', ()=> {
-            if (url) window.open(url, '_blank');
+            if (url) showImageViewer(url);
           });
           
           itemsWrap.appendChild(itemRow);
