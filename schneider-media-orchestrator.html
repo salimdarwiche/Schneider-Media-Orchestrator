@@ -1824,18 +1824,32 @@
   let currentLinkUrl = '';
   
   function showLinkInIframe(url) {
-    currentLinkUrl = url;
-    linkViewerUrl.textContent = url;
-    linkViewerIframe.src = url;
+    // Ensure URL has protocol
+    let fullUrl = url;
+    if (!url.startsWith('http://') && !url.startsWith('https://')) {
+      fullUrl = 'https://' + url;
+    }
+    
+    currentLinkUrl = fullUrl;
+    linkViewerUrl.textContent = fullUrl;
+    
+    // Note: Many sites (like Google) block iframe embedding with X-Frame-Options
+    // Show a message in the iframe header
+    const iframeNote = document.createElement('div');
+    iframeNote.style.cssText = 'padding:8px;background:#fff3cd;color:#856404;font-size:12px;text-align:center;border-bottom:1px solid #ffeaa7';
+    iframeNote.textContent = 'If the site doesn\'t load, it may block iframe embedding. Use "Open in New Tab" button.';
+    
+    linkViewerIframe.src = fullUrl;
     linkViewerOverlay.classList.add('show');
     
     // Add error handler for sites that block iframe embedding
     const iframeLoadTimeout = setTimeout(() => {
-      // If iframe doesn't load in 5 seconds, might be blocked
-      if (linkViewerIframe.src === url) {
-        console.warn('Site may be blocking iframe embedding');
+      // If iframe doesn't load in 3 seconds, might be blocked
+      if (linkViewerIframe.src === fullUrl) {
+        console.warn('Site may be blocking iframe embedding:', fullUrl);
+        showToast('Site may block iframe - use "Open in New Tab" if not loading');
       }
-    }, 5000);
+    }, 3000);
     
     linkViewerIframe.onload = () => {
       clearTimeout(iframeLoadTimeout);
@@ -1843,9 +1857,9 @@
     
     linkViewerIframe.onerror = () => {
       clearTimeout(iframeLoadTimeout);
-      showToast('Site blocked iframe - opening in new tab');
+      showToast('Cannot load site in iframe - opening in new tab');
       setTimeout(() => {
-        window.open(url, '_blank', 'noopener,noreferrer');
+        window.open(fullUrl, '_blank', 'noopener,noreferrer');
         hideLinkViewer();
       }, 1000);
     };
@@ -2088,7 +2102,10 @@
       // Switch to meeting mode if not already
       if (appMode !== 'meeting') {
         appMode = 'meeting';
-        updateAppMode();
+        // Update mode UI
+        document.querySelectorAll('input[name="appModeRadio"]').forEach(r => {
+          r.checked = (r.value === 'meeting');
+        });
       }
       
       // Set time zone
@@ -2144,12 +2161,16 @@
         return newSlot;
       });
       
-      renderAgendaPanel();
-      saveState();
-      showToast('Agenda imported successfully!');
-      
-      // Close modal if open
-      if (modalOverlay) modalOverlay.classList.remove('show');
+      // Defer rendering to avoid DOM conflicts
+      setTimeout(() => {
+        renderAgendaRows();
+        renderAgendaPanel();
+        saveState();
+        showToast('Agenda imported successfully!');
+        
+        // Close modal if open
+        if (modalOverlay) modalOverlay.classList.remove('show');
+      }, 100);
       
     } catch (e) {
       console.error('Import error:', e);
@@ -3224,9 +3245,13 @@
           const exists = slot.items.some(it=> it.id===data.id && it.type===data.kind);
           if (!exists){
             slot.items.push({ id:data.id, type:data.kind });
-            renderAgendaPanel(); saveState();
+            // Defer render to avoid race condition
+            setTimeout(() => {
+              renderAgendaPanel();
+              saveState();
+            }, 50);
           }
-        }catch(err){}
+        }catch(err){console.error('Drop error:', err);}
       });
 
       (slot.items||[]).forEach((it, idx)=>{
@@ -3321,7 +3346,11 @@
           }).filter(Boolean);
           if (newOrder.length === (slot.items||[]).length){
             slot.items = newOrder;
-            renderAgendaPanel(); saveState();
+            // Defer render to avoid DOM conflicts
+            setTimeout(() => {
+              renderAgendaPanel();
+              saveState();
+            }, 50);
           }
         });
 
@@ -3548,7 +3577,18 @@
     updateOverallProgressBar();
   }
   let clockTimer = null;
-  function startClock(){ if (clockTimer) clearInterval(clockTimer); clockTimer = setInterval(updateTZClock, 1000); updateTZClock(); }
+  function startClock(){ 
+    if (clockTimer) clearInterval(clockTimer); 
+    clockTimer = setInterval(updateTZClock, 1000); 
+    updateTZClock(); 
+  }
+  
+  // Ensure clock restarts if stopped
+  setInterval(() => {
+    if (!clockTimer) {
+      startClock();
+    }
+  }, 5000);
 
   // Add overall vertical progress bar to agenda panel
   function addOverallProgressBar(){
