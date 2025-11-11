@@ -3998,15 +3998,14 @@
     // Only handle keys when PDF is active
     if (activeView !== 'presentation' || !pdfDoc) return;
     
-    // SAFETY: Don't navigate on Backspace if user is editing text
-    if (e.key === 'Backspace') {
-      const target = e.target;
-      const isEditable = target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || 
-                        target.isContentEditable || target.closest('[contenteditable]');
-      if (isEditable) {
-        // Allow normal backspace behavior in text fields
-        return;
-      }
+    // SAFETY: Don't navigate if user is editing text
+    const target = e.target;
+    const isEditable = target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || 
+                      target.isContentEditable || target.closest('[contenteditable]');
+    
+    // Don't handle navigation keys in editable fields
+    if (isEditable && (e.key === 'Backspace' || e.key === ' ' || e.key === 'ArrowLeft' || e.key === 'ArrowRight')) {
+      return; // Allow normal text editing
     }
     
     let handled = false;
