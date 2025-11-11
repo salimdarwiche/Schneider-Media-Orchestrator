@@ -1233,6 +1233,7 @@
               <span>Meeting Agenda</span>
               <button id="exportAgendaBtn" type="button" style="margin-left:auto;padding:6px 12px;background:var(--se-life-green);color:white;border:none;border-radius:6px;cursor:pointer;font-weight:600;font-size:13px" title="Export agenda to JSON">Export JSON</button>
               <button id="importAgendaBtn" type="button" style="padding:6px 12px;background:#0066cc;color:white;border:none;border-radius:6px;cursor:pointer;font-weight:600;font-size:13px" title="Import agenda from JSON">Import JSON</button>
+              <button id="clearAgendaBtn" type="button" style="padding:6px 12px;background:#dc3545;color:white;border:none;border-radius:6px;cursor:pointer;font-weight:600;font-size:13px" title="Clear all agenda items">Clear All Items</button>
               <input type="file" id="importAgendaFile" accept=".json" style="display:none">
             </div>
 
@@ -1346,6 +1347,11 @@
                 <svg viewBox="0 0 24 24" aria-hidden="true"><use href="#plus"></use></svg>
                 Add Presentations (.pdf)
               </button>
+              <!-- NEW: Clear All Presentations button -->
+              <button class="file-picker danger" id="presentationClearBtn" title="Clear All Presentations" style="display:inline-flex;align-items:center;gap:8px">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><use href="#trash"></use></svg>
+                Clear All
+              </button>
               <label for="presSortSelectModal" class="helper-text" style="margin:0;display:inline-flex;align-items:center;gap:6px">
                 <svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true"><use href="#list"></use></svg>
                 Sort
@@ -1363,6 +1369,27 @@
             <input id="presentationInputAdd" type="file" accept=".pdf" multiple style="display:none" aria-hidden="true">
             <div class="mini-list" id="modalPresentationList"></div>
             <div class="helper-text">Click name to rename, drag to reorder</div>
+          </div>
+
+          <!-- Photos -->
+          <div class="modal-section">
+            <div class="section-title" style="display:flex;align-items:center;gap:10px">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><use href="#image"></use></svg>
+              <span>Photos</span>
+            </div>
+            <div class="inline-control">
+              <button class="file-picker" id="photoAddBtn" title="Add Photos" style="display:inline-flex;align-items:center;gap:8px">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><use href="#plus"></use></svg>
+                Add Photos
+              </button>
+              <!-- NEW: Clear All Photos button -->
+              <button class="file-picker danger" id="photoClearBtn" title="Clear All Photos" style="display:inline-flex;align-items:center;gap:8px">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><use href="#trash"></use></svg>
+                Clear All
+              </button>
+            </div>
+            <input id="photoInputAdd" type="file" accept="image/*" multiple style="display:none" aria-hidden="true">
+            <div class="helper-text">Photos can be added to agenda slots. Click a photo thumbnail in the agenda to view in full screen with zoom.</div>
           </div>
           </div>
           <!-- End Media Library Tab -->
@@ -3820,6 +3847,99 @@
         updateNavBackBtn();
         saveState();
         showToast('All videos cleared');
+      }
+    });
+  }
+
+  // NEW: Clear All Presentations button
+  const presentationClearBtn = document.getElementById('presentationClearBtn');
+  if (presentationClearBtn) {
+    presentationClearBtn.addEventListener('click', ()=> {
+      if (presentationFiles.length === 0) {
+        showToast('No presentations to clear');
+        return;
+      }
+      if (confirm(`Are you sure you want to remove all ${presentationFiles.length} presentation(s)?`)) {
+        // Close current PDF if viewing
+        if (activeView==='presentation') {
+          if (currentPDFObjectUrl) try{ URL.revokeObjectURL(currentPDFObjectUrl); }catch(_){}
+          pdfContainer.style.display='none';
+          emptyState.style.display='flex';
+          activeView=null;
+        }
+        presentationFiles = [];
+        currentPresentationIndex = -1;
+        renderPresentationList();
+        renderModalPresentationList();
+        populateCompactSelects();
+        updateNavBackBtn();
+        saveState();
+        showToast('All presentations cleared');
+      }
+    });
+  }
+
+  // NEW: Photo file input button
+  const photoAddBtn = document.getElementById('photoAddBtn');
+  const photoInputAdd = document.getElementById('photoInputAdd');
+  if (photoAddBtn && photoInputAdd) {
+    photoAddBtn.addEventListener('click', ()=> {
+      photoInputAdd.click();
+    });
+    photoInputAdd.addEventListener('change', (e)=> {
+      const files = Array.from(e.target.files || []);
+      if (files.length > 0) {
+        showToast(`${files.length} photo(s) ready to be added to agenda slots`);
+      }
+      e.target.value = ''; // Reset input
+    });
+  }
+
+  // NEW: Clear All Photos button
+  const photoClearBtn = document.getElementById('photoClearBtn');
+  if (photoClearBtn) {
+    photoClearBtn.addEventListener('click', ()=> {
+      // Count total photos across all agenda slots
+      let photoCount = 0;
+      agendaSlots.forEach(slot => {
+        if (slot.items) {
+          photoCount += slot.items.filter(item => item.type === 'photo').length;
+        }
+      });
+      
+      if (photoCount === 0) {
+        showToast('No photos to clear');
+        return;
+      }
+      
+      if (confirm(`Are you sure you want to remove all ${photoCount} photo(s) from agenda slots?`)) {
+        agendaSlots.forEach(slot => {
+          if (slot.items) {
+            slot.items = slot.items.filter(item => item.type !== 'photo');
+          }
+        });
+        renderAgendaBuilder();
+        renderAgendaPanel();
+        saveState();
+        showToast('All photos cleared from agenda');
+      }
+    });
+  }
+
+  // NEW: Clear All Agenda Items button
+  const clearAgendaBtn = document.getElementById('clearAgendaBtn');
+  if (clearAgendaBtn) {
+    clearAgendaBtn.addEventListener('click', ()=> {
+      if (agendaSlots.length === 0) {
+        showToast('No agenda items to clear');
+        return;
+      }
+      if (confirm(`Are you sure you want to remove all ${agendaSlots.length} agenda slot(s)? This will delete all titles, subtitles, times, and assigned media.`)) {
+        agendaSlots = [];
+        renderAgendaBuilder();
+        renderAgendaPanel();
+        saveState();
+        showToast('All agenda items cleared');
       }
     });
   }
