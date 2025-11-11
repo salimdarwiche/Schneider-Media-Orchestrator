@@ -2960,20 +2960,26 @@
   }
   function setAppMode(mode){
     console.log('[setAppMode] Switching mode from', appMode, 'to', mode);
+    const oldMode = appMode;
     appMode = (mode==='meeting') ? 'meeting' : 'presentation';
     if (appMode==='meeting'){
       if (menuPos!=='left'){ setMenuPosition('left'); }
     }
-    // Always render agenda panel to ensure it's up-to-date
-    renderAgendaPanel();
     // Clear multi-select when switching modes
     multiSelectedItems.clear();
+    // Update UI controls first
     refreshModeControls();
+    // Always render agenda panel AFTER refreshModeControls to ensure it's up-to-date
+    // Use setTimeout to ensure DOM is ready and prevent race conditions
+    setTimeout(() => {
+      renderAgendaPanel();
+      console.log('[setAppMode] Agenda rendered - mode:', appMode, '- slots:', agendaSlots.length);
+    }, 10);
     renderVideoList();
     renderPresentationList();
     updateMultiSelectUI();
     saveState();
-    console.log('[setAppMode] Mode switched to', appMode, '- agenda has', agendaSlots.length, 'slots');
+    console.log('[setAppMode] Mode switched from', oldMode, 'to', appMode);
   }
 
   // Agenda in Settings
@@ -3186,6 +3192,10 @@
     // Always render agenda panel so it stays up-to-date
     // Visibility is controlled by agendaSection display style in refreshModeControls()
     console.log('[renderAgendaPanel] Rendering', agendaSlots.length, 'agenda slots');
+    if (!agendaPanel) {
+      console.error('[renderAgendaPanel] ERROR: agendaPanel element not found!');
+      return;
+    }
     agendaPanel.innerHTML = '';
     const nowMins = getNowTZMinutes();
 
@@ -3762,7 +3772,8 @@
   // Fullscreen events
   if (fullscreenBtns.length){
     fullscreenBtns.forEach(btn=> btn.addEventListener('click', toggleFullscreen));
-    document.addEventListener('keydown', (e)=>{ if (e.key==='f' || e.key==='F') toggleFullscreen(); });
+    // Removed single-key 'f' shortcut - use browser native F11 or button instead
+    // This prevents conflicts when typing in text fields
     ['fullscreenchange','webkitfullscreenchange','msfullscreenchange'].forEach(ev => document.addEventListener(ev, updateFullscreenUI));
   }
 
