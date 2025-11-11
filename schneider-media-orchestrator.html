@@ -2931,6 +2931,7 @@
 
   // Mode handling
   function refreshModeControls(){
+    console.log('[refreshModeControls] Current mode:', appMode);
     if (modePresentation) modePresentation.checked = (appMode==='presentation');
     if (modeMeeting) modeMeeting.checked = (appMode==='meeting');
     const disablePositions = (appMode==='meeting');
@@ -2943,6 +2944,7 @@
       ? 'Menu position is fixed to Left in Meeting mode.'
       : 'Use these buttons to change menu position.';
     agendaSection.style.display = (appMode==='meeting') ? 'block' : 'none';
+    console.log('[refreshModeControls] Agenda section display:', agendaSection.style.display);
     // Update floating mode toggle button
     const floatingModeToggleBtn = document.getElementById('floatingModeToggleBtn');
     if (floatingModeToggleBtn) {
@@ -2957,12 +2959,13 @@
     }
   }
   function setAppMode(mode){
+    console.log('[setAppMode] Switching mode from', appMode, 'to', mode);
     appMode = (mode==='meeting') ? 'meeting' : 'presentation';
     if (appMode==='meeting'){
       if (menuPos!=='left'){ setMenuPosition('left'); }
-      // Render agenda when switching to meeting mode
-      renderAgendaPanel();
     }
+    // Always render agenda panel to ensure it's up-to-date
+    renderAgendaPanel();
     // Clear multi-select when switching modes
     multiSelectedItems.clear();
     refreshModeControls();
@@ -2970,6 +2973,7 @@
     renderPresentationList();
     updateMultiSelectUI();
     saveState();
+    console.log('[setAppMode] Mode switched to', appMode, '- agenda has', agendaSlots.length, 'slots');
   }
 
   // Agenda in Settings
@@ -3181,10 +3185,12 @@
   function renderAgendaPanel(){
     // Always render agenda panel so it stays up-to-date
     // Visibility is controlled by agendaSection display style in refreshModeControls()
+    console.log('[renderAgendaPanel] Rendering', agendaSlots.length, 'agenda slots');
     agendaPanel.innerHTML = '';
     const nowMins = getNowTZMinutes();
 
-    agendaSlots.forEach((slot)=>{
+    agendaSlots.forEach((slot, slotIndex)=>{
+      console.log('[renderAgendaPanel] Rendering slot', slotIndex, ':', slot.title);
       const sStart = parseHHMM(slot.start);
       const sEnd = parseHHMM(slot.end);
       const active = (sStart!=null && sEnd!=null && nowMins>=sStart && nowMins<=sEnd);
@@ -3662,6 +3668,7 @@
   const floatingModeToggleBtn = document.getElementById('floatingModeToggleBtn');
   if (floatingModeToggleBtn) {
     floatingModeToggleBtn.addEventListener('click', ()=> {
+      console.log('[Toggle] Floating mode toggle clicked, current mode:', appMode);
       const newMode = (appMode === 'presentation') ? 'meeting' : 'presentation';
       setAppMode(newMode);
       // Icon and tooltip are updated automatically by refreshModeControls() called from setAppMode()
@@ -3696,8 +3703,8 @@
   modalOverlay.addEventListener('click', (e)=>{ if (e.target===modalOverlay) { modalOverlay.classList.remove('show'); markOnboarded(); } });
 
   // Mode radios
-  if (modePresentation) modePresentation.addEventListener('change', ()=> setAppMode('presentation'));
-  if (modeMeeting) modeMeeting.addEventListener('change', ()=> setAppMode('meeting'));
+  if (modePresentation) modePresentation.addEventListener('change', ()=> { console.log('[Radio] Presentation mode selected'); setAppMode('presentation'); });
+  if (modeMeeting) modeMeeting.addEventListener('change', ()=> { console.log('[Radio] Meeting mode selected'); setAppMode('meeting'); });
 
   // Time zone change
   if (timeZoneSelect){
