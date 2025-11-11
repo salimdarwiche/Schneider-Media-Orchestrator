@@ -3668,16 +3668,7 @@
     floatingModeToggleBtn.addEventListener('click', ()=> {
       const newMode = (appMode === 'presentation') ? 'meeting' : 'presentation';
       setAppMode(newMode);
-      // Update button icon and tooltip
-      const icon = floatingModeToggleBtn.querySelector('use');
-      const titleText = floatingModeToggleBtn.getAttribute('title');
-      if (appMode === 'presentation') {
-        icon.setAttribute('href', '#meeting');
-        floatingModeToggleBtn.setAttribute('title', 'Switch to Meeting Mode');
-      } else {
-        icon.setAttribute('href', '#presentation');
-        floatingModeToggleBtn.setAttribute('title', 'Switch to Presentation Mode');
-      }
+      // Icon and tooltip are updated automatically by refreshModeControls() called from setAppMode()
     });
   }
   
