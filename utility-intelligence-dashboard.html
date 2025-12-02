@@ -658,25 +658,8 @@
             // Replace markdown headers
             text = text.replace(/^#+\s*/gm, '');
             
-            // Replace numbered markdown with clean numbers
-            text = text.replace(/^\d+\.\s+/gm, (match) => match);
-            
-            // Remove incomplete sentences at the end (sentences that don't end with proper punctuation)
-            const sentences = text.split(/(?<=[.!?])\s+/);
-            const completeSentences = sentences.filter(s => {
-                const trimmed = s.trim();
-                return trimmed.length > 0 && /[.!?:)]$/.test(trimmed);
-            });
-            
-            if (completeSentences.length > 0) {
-                text = completeSentences.join(' ');
-            }
-            
-            // Remove any trailing incomplete content after the last complete sentence
-            text = text.replace(/[^.!?:)]+$/, '').trim();
-            
             // Ensure bullet points are on new lines for readability
-            text = text.replace(/\s+•\s+/g, '\n• ');
+            text = text.replace(/([.!?:])\s*•\s*/g, '$1\n• ');
             
             // Clean up excessive whitespace
             text = text.replace(/\n{3,}/g, '\n\n');
