@@ -64,8 +64,9 @@
         .validity-dot.green { background: var(--green); }
         .validity-dot.orange { background: var(--orange); }
         .validity-dot.red { background: var(--red); }
-        .source-link { color: var(--accent-color); text-decoration: none; display: inline-block; margin: 2px 0; font-size: 0.8rem; }
-        .source-link:hover { text-decoration: underline; }
+        .source-link { color: #0369a1; text-decoration: none; display: inline-block; margin: 3px 0; font-size: 0.8rem; background: #e0f2fe; padding: 4px 8px; border-radius: 4px; transition: all 0.2s; }
+        .source-link:hover { background: #0369a1; color: white; text-decoration: none; }
+        .source-link i { margin-right: 4px; }
         .year-badge { background: #e0f2fe; color: #0369a1; padding: 2px 8px; border-radius: 4px; font-size: 0.75rem; font-weight: 600; margin-left: 5px; }
         .charts-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 25px; margin-bottom: 25px; }
         .chart-container { background: var(--card-bg); border-radius: 12px; padding: 25px; box-shadow: var(--shadow); border: 1px solid var(--border-color); }
@@ -313,102 +314,102 @@
     </main>
 
     <script>
-        // Predefined questions from user specification
+        // Predefined questions from user specification - ALL questions include {utility} AND {country} for specificity
         const IDENTIFICATION_QUESTIONS = [
-            "What is the full legal name and any alternative names of {utility} in {country}?",
-            "What is the primary operational area and service territory of {utility} in {country}?",
-            "In which city is the headquarters of {utility} located? Provide full address if available.",
-            "What is the total number of connection points for {utility}?",
-            "What is the total number of meters in use by {utility}?",
-            "How many LV (low voltage) customers does {utility} serve?",
-            "What is the total service area (km²) for {utility}?",
-            "What is the population density in the service area of {utility}?",
-            "What are the annual sales or revenue figures for {utility}?",
-            "What percentage of {utility} customers are residential?",
-            "What percentage of {utility} customers are commercial?",
-            "What percentage of {utility} customers are industrial?"
+            "What is the full legal name and any alternative names of {utility} utility company in {country}?",
+            "What is the primary operational area and service territory of {utility} utility company in {country}?",
+            "In which city is the headquarters of {utility} utility company in {country} located? Provide full address if available.",
+            "What is the total number of connection points for {utility} utility company in {country}?",
+            "What is the total number of meters in use by {utility} utility company in {country}?",
+            "How many LV (low voltage) customers does {utility} utility company in {country} serve?",
+            "What is the total service area (km²) for {utility} utility company in {country}?",
+            "What is the population density in the service area of {utility} utility company in {country}?",
+            "What are the annual sales or revenue figures for {utility} utility company in {country}?",
+            "What percentage of {utility} utility company in {country} customers are residential?",
+            "What percentage of {utility} utility company in {country} customers are commercial?",
+            "What percentage of {utility} utility company in {country} customers are industrial?"
         ];
 
         const GRID_QUESTIONS = [
-            "What is the total number of HV/MV substations operated by {utility}?",
-            "What is the total number of MV/LV substations in {utility}'s network?",
-            "What is the total length of grid lines (in km) managed by {utility}?",
-            "How many kilometers of {utility}'s grid lines are underground?",
-            "How many kilometers of {utility}'s grid lines are overhead?",
-            "What are the main voltage levels in {utility}'s distribution grid?",
-            "Are there any special features, technologies, or specificities in {utility}'s grid infrastructure?",
-            "How many renewable energy (DER/DG) connections does {utility} have?",
-            "What is the total number of customer connections served by {utility}?"
+            "What is the total number of HV/MV substations operated by {utility} utility company in {country}?",
+            "What is the total number of MV/LV substations in {utility} utility company's network in {country}?",
+            "What is the total length of grid lines (in km) managed by {utility} utility company in {country}?",
+            "How many kilometers of {utility} utility company's grid lines in {country} are underground?",
+            "How many kilometers of {utility} utility company's grid lines in {country} are overhead?",
+            "What are the main voltage levels in {utility} utility company's distribution grid in {country}?",
+            "Are there any special features, technologies, or specificities in {utility} utility company's grid infrastructure in {country}?",
+            "How many renewable energy (DER/DG) connections does {utility} utility company in {country} have?",
+            "What is the total number of customer connections served by {utility} utility company in {country}?"
         ];
 
         const SYSTEMS_QUESTIONS = [
-            "What GIS (Geographic Information System) is used by {utility}? Include vendor, version, installation/upgrade date, and key features.",
-            "What ADMS (Advanced Distribution Management System) is deployed at {utility}? Include vendor, version, installation/upgrade date, and capabilities.",
-            "What SCADA system does {utility} operate? Include vendor, version, installation/upgrade date, and coverage.",
-            "What MDMS (Meter Data Management System) is implemented at {utility}? Include vendor, version, installation/upgrade date.",
-            "What HES (Head-End System) does {utility} use for smart meter communications? Include vendor and version.",
-            "What AMI (Advanced Metering Infrastructure) has {utility} deployed? Include vendor, rollout status, and meter count.",
-            "What OMS (Outage Management System) is operational at {utility}? Include vendor, version, and integration details.",
-            "What DERMS (Distributed Energy Resource Management System) does {utility} utilize? Include vendor, version, and managed capacity.",
-            "What asset management system is in use at {utility}? Include vendor, version, installation/upgrade date.",
-            "What DMS (Distribution Management System) does {utility} operate? Include vendor and version.",
-            "What ERP system does {utility} use for enterprise operations? Include vendor and modules deployed.",
-            "What CIS (Customer Information System) is implemented at {utility}? Include vendor and version.",
-            "What WMS (Workforce Management System) does {utility} use? Include vendor and deployment status."
+            "What GIS (Geographic Information System) is used by {utility} utility company in {country}? Include vendor, version, installation/upgrade date, and key features.",
+            "What ADMS (Advanced Distribution Management System) is deployed at {utility} utility company in {country}? Include vendor, version, installation/upgrade date, and capabilities.",
+            "What SCADA system does {utility} utility company in {country} operate? Include vendor, version, installation/upgrade date, and coverage.",
+            "What MDMS (Meter Data Management System) is implemented at {utility} utility company in {country}? Include vendor, version, installation/upgrade date.",
+            "What HES (Head-End System) does {utility} utility company in {country} use for smart meter communications? Include vendor and version.",
+            "What AMI (Advanced Metering Infrastructure) has {utility} utility company in {country} deployed? Include vendor, rollout status, and meter count.",
+            "What OMS (Outage Management System) is operational at {utility} utility company in {country}? Include vendor, version, and integration details.",
+            "What DERMS (Distributed Energy Resource Management System) does {utility} utility company in {country} utilize? Include vendor, version, and managed capacity.",
+            "What asset management system is in use at {utility} utility company in {country}? Include vendor, version, installation/upgrade date.",
+            "What DMS (Distribution Management System) does {utility} utility company in {country} operate? Include vendor and version.",
+            "What ERP system does {utility} utility company in {country} use for enterprise operations? Include vendor and modules deployed.",
+            "What CIS (Customer Information System) is implemented at {utility} utility company in {country}? Include vendor and version.",
+            "What WMS (Workforce Management System) does {utility} utility company in {country} use? Include vendor and deployment status."
         ];
 
         const PERFORMANCE_QUESTIONS = [
-            "What is the latest peak load growth rate (%) for {utility}?",
-            "What is the capacity expansion rate (%) for {utility}?",
-            "What are the top three most critical bottleneck nodes or constraint points in {utility}'s grid?",
-            "What are the current technical losses (%) for {utility}'s network?",
-            "What are the current commercial losses (%) for {utility}?",
-            "What is the current smart meter penetration/coverage (%) at {utility}?",
-            "How many DER/renewable integration requests are pending at {utility}?",
-            "What is the current hosting capacity utilization (%) in {utility}'s distribution network?",
-            "What is the upgrade schedule and investment plan for major grid components at {utility}?"
+            "What is the latest peak load growth rate (%) for {utility} utility company in {country}?",
+            "What is the capacity expansion rate (%) for {utility} utility company in {country}?",
+            "What are the top three most critical bottleneck nodes or constraint points in {utility} utility company's grid in {country}?",
+            "What are the current technical losses (%) for {utility} utility company's network in {country}?",
+            "What are the current commercial losses (%) for {utility} utility company in {country}?",
+            "What is the current smart meter penetration/coverage (%) at {utility} utility company in {country}?",
+            "How many DER/renewable integration requests are pending at {utility} utility company in {country}?",
+            "What is the current hosting capacity utilization (%) in {utility} utility company's distribution network in {country}?",
+            "What is the upgrade schedule and investment plan for major grid components at {utility} utility company in {country}?"
         ];
 
         const INVESTMENT_QUESTIONS = [
-            "What is the grid modernization budget allocated for {utility} over the next 3-5 years?",
-            "What budget has {utility} allocated for DER integration and renewable energy infrastructure?",
-            "What is {utility}'s cybersecurity investment budget?",
-            "What is the latest SAIDI (System Average Interruption Duration Index) value for {utility}?",
-            "What is the latest SAIFI (System Average Interruption Frequency Index) value for {utility}?",
-            "What percentage of {utility}'s revenue is at regulatory risk or subject to performance incentives?",
-            "What regulatory incentive programs or performance-based mechanisms apply to {utility} in {country}?"
+            "What is the grid modernization budget allocated for {utility} utility company in {country} over the next 3-5 years?",
+            "What budget has {utility} utility company in {country} allocated for DER integration and renewable energy infrastructure?",
+            "What is {utility} utility company in {country}'s cybersecurity investment budget?",
+            "What is the latest SAIDI (System Average Interruption Duration Index) value for {utility} utility company in {country}?",
+            "What is the latest SAIFI (System Average Interruption Frequency Index) value for {utility} utility company in {country}?",
+            "What percentage of {utility} utility company in {country}'s revenue is at regulatory risk or subject to performance incentives?",
+            "What regulatory incentive programs or performance-based mechanisms apply to {utility} utility company in {country}?"
         ];
 
         const INNOVATION_QUESTIONS = [
-            "What major innovation or R&D projects are currently ongoing at {utility}?",
-            "How many pilot projects for emerging technologies (EV, storage, AI, etc.) are active at {utility}?",
-            "What is the commercialization timeline and roadmap for {utility}'s innovation projects?",
-            "What academic or research collaborations does {utility} maintain? List institutions and focus areas.",
-            "What are the main research and innovation focus areas for {utility}?",
-            "Who are {utility}'s key technology providers, system integrators, and innovation partners?",
-            "What community engagement, social impact, or energy equity programs does {utility} operate?",
-            "What percentage of {utility}'s customers use digital platforms, mobile apps, or online portals?"
+            "What major innovation or R&D projects are currently ongoing at {utility} utility company in {country}?",
+            "How many pilot projects for emerging technologies (EV, storage, AI, etc.) are active at {utility} utility company in {country}?",
+            "What is the commercialization timeline and roadmap for {utility} utility company in {country}'s innovation projects?",
+            "What academic or research collaborations does {utility} utility company in {country} maintain? List institutions and focus areas.",
+            "What are the main research and innovation focus areas for {utility} utility company in {country}?",
+            "Who are {utility} utility company in {country}'s key technology providers, system integrators, and innovation partners?",
+            "What community engagement, social impact, or energy equity programs does {utility} utility company in {country} operate?",
+            "What percentage of {utility} utility company in {country}'s customers use digital platforms, mobile apps, or online portals?"
         ];
 
         const ANALYSIS_QUESTIONS = [
-            "What is {utility}'s SCADA system refresh cycle and modernization roadmap?",
-            "What data analytics and AI/ML capabilities are deployed at {utility}?",
-            "What is the climate resilience assessment or vulnerability index for {utility}'s grid infrastructure?",
-            "What is the current cybersecurity posture and threat surface for {utility}?",
-            "What is {utility}'s market position or ranking compared to peer utilities in {country}?",
-            "How prepared is {utility} for upcoming regulatory changes and energy transition requirements in {country}?"
+            "What is {utility} utility company in {country}'s SCADA system refresh cycle and modernization roadmap?",
+            "What data analytics and AI/ML capabilities are deployed at {utility} utility company in {country}?",
+            "What is the climate resilience assessment or vulnerability index for {utility} utility company's grid infrastructure in {country}?",
+            "What is the current cybersecurity posture and threat surface for {utility} utility company in {country}?",
+            "What is {utility} utility company's market position or ranking compared to peer utilities in {country}?",
+            "How prepared is {utility} utility company for upcoming regulatory changes and energy transition requirements in {country}?"
         ];
 
         const SWOT_QUESTIONS = {
-            strengths: "What are the key strengths and competitive advantages of {utility} in {country}? List specific strengths with supporting evidence and sources.",
-            weaknesses: "What are the main weaknesses, operational vulnerabilities, or areas for improvement at {utility}? List specific weaknesses with evidence.",
-            opportunities: "What growth opportunities, market trends, or strategic initiatives could benefit {utility}? List specific opportunities with context.",
-            threats: "What external threats, competitive pressures, or regulatory risks does {utility} face? List specific threats with evidence."
+            strengths: "What are the key strengths and competitive advantages of {utility} utility company in {country}? List specific strengths with supporting evidence and sources.",
+            weaknesses: "What are the main weaknesses, operational vulnerabilities, or areas for improvement at {utility} utility company in {country}? List specific weaknesses with evidence.",
+            opportunities: "What growth opportunities, market trends, or strategic initiatives could benefit {utility} utility company in {country}? List specific opportunities with context.",
+            threats: "What external threats, competitive pressures, or regulatory risks does {utility} utility company in {country} face? List specific threats with evidence."
         };
 
-        const CHALLENGES_QUESTION = "What are the main strategic and operational challenges currently facing {utility} in {country}? For each challenge, describe what actions are being taken, current implementation status, budget allocated, and anticipated outcomes with timeline.";
-        const NEWS_QUESTION = "What are the most significant news items, announcements, and developments about {utility} from 2020-2026? Include specific dates, headlines, detailed summaries, and verified source links for each news item.";
-        const TENDERS_QUESTION = "What tenders, RFPs, RFIs, or major procurement processes are ongoing, recently awarded, or planned at {utility}? Include detailed system/project descriptions, contract values, key dates, vendor shortlists, and current status.";
+        const CHALLENGES_QUESTION = "What are the main strategic and operational challenges currently facing {utility} utility company in {country}? For each challenge, describe what actions are being taken, current implementation status, budget allocated, and anticipated outcomes with timeline.";
+        const NEWS_QUESTION = "What are the most significant news items, announcements, and developments about {utility} utility company in {country} from 2020-2026? Include specific dates, headlines, detailed summaries, and verified source links for each news item.";
+        const TENDERS_QUESTION = "What tenders, RFPs, RFIs, or major procurement processes are ongoing, recently awarded, or planned at {utility} utility company in {country}? Include detailed system/project descriptions, contract values, key dates, vendor shortlists, and current status.";
 
         // API Configuration
         let PERPLEXITY_API_KEY = sessionStorage.getItem('perplexity_api_key') || '';
@@ -567,13 +568,16 @@
         }
 
         async function askQuestion(question, utility, country) {
-            const systemPrompt = `You are a business intelligence analyst specializing in energy utilities. 
-            Answer questions about ${utility} in ${country} with accurate, up-to-date information from 2024-2025 when available.
-            IMPORTANT: For EVERY piece of information:
-            1. Include the YEAR the data is from (e.g., "2024", "2025", or the specific date)
-            2. Provide source URLs when available
-            3. If data is not available, say "N/A"
-            4. Be specific and cite your sources`;
+            const systemPrompt = `You are a business intelligence analyst specializing in energy utilities.
+            You are researching SPECIFICALLY about "${utility}" utility company operating in "${country}".
+            
+            CRITICAL REQUIREMENTS:
+            1. ONLY provide information that is SPECIFICALLY about "${utility}" in "${country}" - do NOT provide generic industry data or data about other utilities
+            2. Include the YEAR the data is from (e.g., "2024", "2025", or the specific date)
+            3. If you cannot find specific information about "${utility}" in "${country}", clearly state "No specific data found for ${utility} in ${country}"
+            4. Prioritize official company sources, regulatory filings, annual reports, and press releases from "${utility}"
+            5. Each fact must be traceable to a specific source document or webpage about "${utility}"
+            6. Data must be from 2024-2025 when available. If only older data exists, specify the year clearly.`;
 
             const response = await fetch(PERPLEXITY_API_URL, {
                 method: 'POST',
@@ -603,10 +607,30 @@
             const validity = numSources >= 3 ? 'green' : (numSources >= 2 ? 'orange' : 'red');
             validityCounts[validity]++;
 
-            const sources = citations.slice(0, 5).map((c, i) => ({
-                title: `Source ${i + 1}`,
-                url: typeof c === 'string' ? c : (c.url || null)
-            })).filter(s => s.url);
+            // Process sources - extract domain name for better titles and keep only most relevant
+            const sources = citations.slice(0, 3).map((c) => {
+                const url = typeof c === 'string' ? c : (c.url || null);
+                if (!url) return null;
+                try {
+                    const domain = new URL(url).hostname.replace('www.', '');
+                    // Create descriptive title from domain
+                    let title = domain;
+                    if (domain.includes(utility.toLowerCase().replace(/\s+/g, ''))) {
+                        title = `${utility} Official`;
+                    } else if (domain.includes('sec.gov')) {
+                        title = 'SEC Filing';
+                    } else if (domain.includes('reuters') || domain.includes('bloomberg')) {
+                        title = 'News Report';
+                    } else if (domain.includes('gov')) {
+                        title = 'Government Source';
+                    } else {
+                        title = domain.split('.')[0].charAt(0).toUpperCase() + domain.split('.')[0].slice(1);
+                    }
+                    return { title, url };
+                } catch (e) {
+                    return { title: 'Source', url };
+                }
+            }).filter(s => s !== null);
 
             return { question, answer: content, year, validity, numSources, sources };
         }
