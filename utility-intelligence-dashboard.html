@@ -826,79 +826,84 @@
         // Full PDF Export - All sections in one PDF
         async function exportFullPDF() {
             const exportBtn = document.getElementById('exportBtn');
+            if (!dashboardData.utilityName) {
+                alert('Please search for a utility first before exporting.');
+                return;
+            }
+            
             const originalBtnText = exportBtn.innerHTML;
             exportBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Generating PDF...';
             exportBtn.disabled = true;
 
             try {
-                // Create a clean container for PDF export
-                const pdfContainer = document.createElement('div');
-                pdfContainer.id = 'pdfExportContainer';
-                pdfContainer.style.cssText = 'position: absolute; left: -9999px; top: 0; width: 1200px; background: white; padding: 20px;';
-                
-                // Add header
-                const header = document.createElement('div');
-                header.innerHTML = `
-                    <div style="text-align: center; margin-bottom: 30px; padding: 20px; background: linear-gradient(135deg, #1a5f7a, #159895); color: white; border-radius: 10px;">
-                        <h1 style="margin: 0 0 10px 0; font-size: 24px;">Executive Intelligence Dashboard</h1>
-                        <h2 style="margin: 0 0 10px 0; font-size: 20px;">${dashboardData.utilityName} - ${dashboardData.country}</h2>
-                        <p style="margin: 0; font-size: 14px;">Generated: ${new Date().toLocaleString()}</p>
-                    </div>
+                // Build HTML content for PDF
+                let pdfHTML = `
+                    <div style="font-family: Arial, sans-serif; padding: 20px; max-width: 800px; margin: 0 auto;">
+                        <div style="text-align: center; margin-bottom: 30px; padding: 25px; background: linear-gradient(135deg, #1a5f7a, #159895); color: white; border-radius: 12px;">
+                            <h1 style="margin: 0 0 10px 0; font-size: 26px; font-weight: bold;">Executive Intelligence Dashboard</h1>
+                            <h2 style="margin: 0 0 10px 0; font-size: 20px; font-weight: normal;">${dashboardData.utilityName} - ${dashboardData.country}</h2>
+                            <p style="margin: 0; font-size: 13px; opacity: 0.9;">Generated: ${new Date().toLocaleString()}</p>
+                        </div>
                 `;
-                pdfContainer.appendChild(header);
 
-                // Get all tab contents
-                const tabContents = document.querySelectorAll('.tab-content');
-                const tabNames = ['Identification', 'Grid Infrastructure', 'Systems', 'Operational Performance', 
-                                  'Strategic Investment', 'Innovation & Research', 'Critical Analysis', 
-                                  'SWOT Analysis', 'Strategic Challenges', 'Tenders & Procurement', 
-                                  'Latest News', 'Manual Entry', 'Data Validity Index'];
+                // Section names mapping
+                const sections = [
+                    { id: 'identificationTab', name: 'Identification' },
+                    { id: 'gridTab', name: 'Grid Infrastructure' },
+                    { id: 'systemsTab', name: 'Systems' },
+                    { id: 'performanceTab', name: 'Operational Performance' },
+                    { id: 'investmentTab', name: 'Strategic Investment' },
+                    { id: 'innovationTab', name: 'Innovation & Research' },
+                    { id: 'analysisTab', name: 'Critical Analysis' },
+                    { id: 'swotTab', name: 'SWOT Analysis' },
+                    { id: 'challengesTab', name: 'Strategic Challenges' },
+                    { id: 'tendersTab', name: 'Tenders & Procurement' },
+                    { id: 'newsTab', name: 'Latest News' }
+                ];
 
-                tabContents.forEach((tab, index) => {
-                    if (tab.id === 'welcomeTab') return;
-                    
-                    const section = document.createElement('div');
-                    section.style.cssText = 'page-break-before: always; margin-top: 20px;';
-                    
-                    const sectionHeader = document.createElement('h3');
-                    sectionHeader.style.cssText = 'color: #1a5f7a; border-bottom: 2px solid #1a5f7a; padding-bottom: 10px; margin-bottom: 15px;';
-                    sectionHeader.textContent = tabNames[index] || `Section ${index + 1}`;
-                    section.appendChild(sectionHeader);
-                    
-                    const content = tab.cloneNode(true);
-                    content.style.display = 'block';
-                    section.appendChild(content);
-                    pdfContainer.appendChild(section);
+                sections.forEach((section, idx) => {
+                    const tab = document.getElementById(section.id);
+                    if (tab) {
+                        const pageBreak = idx > 0 ? 'page-break-before: always;' : '';
+                        pdfHTML += `
+                            <div style="${pageBreak} margin-top: 25px;">
+                                <h3 style="color: #1a5f7a; font-size: 18px; border-bottom: 3px solid #1a5f7a; padding-bottom: 10px; margin-bottom: 20px;">${section.name}</h3>
+                                ${tab.innerHTML}
+                            </div>
+                        `;
+                    }
                 });
 
-                document.body.appendChild(pdfContainer);
+                pdfHTML += '</div>';
 
-                // Wait for content to render
-                await new Promise(resolve => setTimeout(resolve, 500));
+                // Create temporary container
+                const container = document.createElement('div');
+                container.innerHTML = pdfHTML;
+                container.style.cssText = 'position: fixed; left: 0; top: 0; width: 210mm; background: white; z-index: -1; visibility: hidden;';
+                document.body.appendChild(container);
 
-                const opt = {
-                    margin: [15, 15, 15, 15],
-                    filename: `${dashboardData.utilityName.replace(/[^a-zA-Z0-9]/g, '_')}_Intelligence_Report_${new Date().toISOString().split('T')[0]}.pdf`,
-                    image: { type: 'jpeg', quality: 0.92 },
-                    html2canvas: { 
-                        scale: 2, 
-                        useCORS: true, 
-                        logging: false,
-                        allowTaint: true,
-                        backgroundColor: '#ffffff'
-                    },
-                    jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
-                    pagebreak: { mode: 'css', before: '.page-break-before', avoid: 'tr' }
-                };
+                // Wait for rendering
+                await new Promise(r => setTimeout(r, 300));
 
-                await html2pdf().set(opt).from(pdfContainer).save();
+                // Generate PDF
+                const filename = `${dashboardData.utilityName.replace(/[^a-zA-Z0-9\s]/g, '').replace(/\s+/g, '_')}_Report_${new Date().toISOString().split('T')[0]}.pdf`;
                 
-                // Cleanup
-                document.body.removeChild(pdfContainer);
-                alert('✅ PDF exported successfully! Check your downloads folder.');
+                await html2pdf()
+                    .set({
+                        margin: 10,
+                        filename: filename,
+                        image: { type: 'jpeg', quality: 0.95 },
+                        html2canvas: { scale: 2, useCORS: true, logging: false },
+                        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+                    })
+                    .from(container)
+                    .save();
+
+                document.body.removeChild(container);
+                alert('✅ PDF exported successfully!\n\nFile: ' + filename + '\n\nCheck your Downloads folder.');
             } catch (error) {
-                console.error('PDF export error:', error);
-                alert('❌ Error exporting PDF: ' + error.message + '\n\nTry using a different browser (Chrome recommended).');
+                console.error('PDF Export Error:', error);
+                alert('❌ PDF export failed: ' + error.message + '\n\nPlease try:\n1. Use Chrome or Edge browser\n2. Disable ad blockers\n3. Refresh the page and try again');
             } finally {
                 exportBtn.innerHTML = originalBtnText;
                 exportBtn.disabled = false;
