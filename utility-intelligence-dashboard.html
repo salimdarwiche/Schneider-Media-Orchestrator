@@ -57,6 +57,8 @@
         .data-table td { padding: 10px; border-bottom: 1px solid var(--border-color); vertical-align: top; }
         .data-table tr:hover { background: rgba(26, 95, 122, 0.03); }
         .data-table tr:nth-child(even) { background: #f8fafc; }
+        .answer-cell { line-height: 1.5; font-size: 0.85rem; }
+        .answer-cell br { display: block; margin: 3px 0; }
         .validity-green { display: inline-flex; align-items: center; gap: 5px; color: var(--green); font-weight: 600; }
         .validity-orange { display: inline-flex; align-items: center; gap: 5px; color: var(--orange); font-weight: 600; }
         .validity-red { display: inline-flex; align-items: center; gap: 5px; color: var(--red); font-weight: 600; }
@@ -572,12 +574,18 @@
             You are researching SPECIFICALLY about "${utility}" utility company operating in "${country}".
             
             CRITICAL REQUIREMENTS:
-            1. ONLY provide information that is SPECIFICALLY about "${utility}" in "${country}" - do NOT provide generic industry data or data about other utilities
-            2. Include the YEAR the data is from (e.g., "2024", "2025", or the specific date)
-            3. If you cannot find specific information about "${utility}" in "${country}", clearly state "No specific data found for ${utility} in ${country}"
-            4. Prioritize official company sources, regulatory filings, annual reports, and press releases from "${utility}"
-            5. Each fact must be traceable to a specific source document or webpage about "${utility}"
-            6. Data must be from 2024-2025 when available. If only older data exists, specify the year clearly.`;
+            1. ONLY provide information SPECIFICALLY about "${utility}" in "${country}" - NO generic industry data
+            2. Keep your answer UNDER 120 WORDS maximum
+            3. Use STRUCTURED FORMAT with bullet points (•) or numbered lists (1., 2., 3.)
+            4. Include the YEAR (2024/2025) for each data point
+            5. If no specific data found, state: "No data available for ${utility}"
+            6. Be CONCISE and CLEAR - no partial sentences or incomplete thoughts
+            7. Format example:
+               • Revenue: $X billion (2024)
+               • Customers: X million
+               • Service Area: X km²
+            8. Do NOT use asterisks (*) or markdown formatting - use plain text with bullets (•)
+            9. Each fact must be complete and understandable`;
 
             const response = await fetch(PERPLEXITY_API_URL, {
                 method: 'POST',
@@ -588,7 +596,7 @@
                         { role: 'system', content: systemPrompt },
                         { role: 'user', content: question }
                     ],
-                    max_tokens: 2000,
+                    max_tokens: 500,
                     temperature: 0.1,
                     return_citations: true
                 })
@@ -596,8 +604,11 @@
 
             if (!response.ok) throw new Error(`API error: ${response.status}`);
             const data = await response.json();
-            const content = data.choices?.[0]?.message?.content || 'N/A';
+            let content = data.choices?.[0]?.message?.content || 'N/A';
             const citations = data.citations || [];
+            
+            // Clean up the content - remove incomplete sentences and formatting issues
+            content = cleanupAnswer(content);
             
             // Extract year from content
             const yearMatch = content.match(/\b(202[0-9]|2019)\b/);
@@ -635,6 +646,46 @@
             return { question, answer: content, year, validity, numSources, sources };
         }
 
+        // Clean up answer to remove partial content and formatting issues
+        function cleanupAnswer(text) {
+            if (!text || text === 'N/A') return 'N/A';
+            
+            // Replace markdown asterisks with bullets
+            text = text.replace(/^\*\s+/gm, '• ');
+            text = text.replace(/\*\*/g, '');
+            text = text.replace(/\*/g, '');
+            
+            // Replace markdown headers
+            text = text.replace(/^#+\s*/gm, '');
+            
+            // Replace numbered markdown with clean numbers
+            text = text.replace(/^\d+\.\s+/gm, (match) => match);
+            
+            // Remove incomplete sentences at the end (sentences that don't end with proper punctuation)
+            const sentences = text.split(/(?<=[.!?])\s+/);
+            const completeSentences = sentences.filter(s => {
+                const trimmed = s.trim();
+                return trimmed.length > 0 && /[.!?:)]$/.test(trimmed);
+            });
+            
+            if (completeSentences.length > 0) {
+                text = completeSentences.join(' ');
+            }
+            
+            // Remove any trailing incomplete content after the last complete sentence
+            text = text.replace(/[^.!?:)]+$/, '').trim();
+            
+            // Ensure bullet points are on new lines for readability
+            text = text.replace(/\s+•\s+/g, '\n• ');
+            
+            // Clean up excessive whitespace
+            text = text.replace(/\n{3,}/g, '\n\n');
+            text = text.trim();
+            
+            // If result is empty after cleanup, return N/A
+            return text.length > 0 ? text : 'N/A';
+        }
+
         function renderAllSections() {
             renderTableSection('identificationBody', dashboardData.identification);
             renderTableSection('gridBody', dashboardData.grid);
@@ -657,15 +708,28 @@
                 const validity = getValidityHTML(item.validity);
                 const sources = getSourceLinksHTML(item.sources);
                 const yearBadge = item.year !== 'N/A' ? `<span class="year-badge">${item.year}</span>` : '<span class="year-badge" style="background:#fee2e2;color:#991b1b;">N/A</span>';
+                // Format answer with proper line breaks for bullets
+                const formattedAnswer = formatAnswerHTML(item.answer);
                 return `<tr>
                     <td style="max-width:250px;"><strong>${shortQ.substring(0, 100)}${shortQ.length > 100 ? '...' : ''}</strong></td>
-                    <td style="max-width:400px;">${escapeHtml(item.answer).substring(0, 500)}${item.answer.length > 500 ? '...' : ''}</td>
+                    <td style="max-width:450px;" class="answer-cell">${formattedAnswer}</td>
                     <td>${yearBadge}</td>
                     <td>${validity}</td>
                     <td>${item.numSources}</td>
                     <td>${sources}</td>
                 </tr>`;
             }).join('');
+        }
+
+        function formatAnswerHTML(text) {
+            if (!text || text === 'N/A') return '<span style="color:#94a3b8;">N/A</span>';
+            // Escape HTML first
+            let html = escapeHtml(text);
+            // Convert newlines to <br>
+            html = html.replace(/\n/g, '<br>');
+            // Style bullet points
+            html = html.replace(/•/g, '<span style="color:#0d9488;font-weight:bold;">•</span>');
+            return html;
         }
 
         function getValidityHTML(validity) {
