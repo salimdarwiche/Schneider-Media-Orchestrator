@@ -1,0 +1,676 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no" />
+<title>Merge Drop</title>
+<style>
+  :root {
+    --bg-1: #0f1226;
+    --bg-2: #1a1f3d;
+    --ink: #f4f6ff;
+    --muted: #8a91c9;
+    --accent: #ffd166;
+    --danger: #ff5d7a;
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body {
+    margin: 0; padding: 0; height: 100%;
+    background: radial-gradient(1200px 800px at 50% -10%, #2a2f5e 0%, var(--bg-1) 60%, #06081a 100%);
+    color: var(--ink);
+    font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    overflow: hidden;
+    user-select: none;
+  }
+  #app {
+    position: fixed; inset: 0;
+    display: grid;
+    grid-template-rows: auto 1fr auto;
+    gap: 8px;
+    padding: 12px;
+  }
+  header {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 12px;
+  }
+  .brand { display: flex; align-items: baseline; gap: 8px; }
+  .brand h1 {
+    margin: 0; font-size: 18px; letter-spacing: .12em; text-transform: uppercase;
+    color: var(--ink);
+  }
+  .brand span { color: var(--muted); font-size: 11px; letter-spacing: .15em; }
+  .scores { display: flex; gap: 14px; }
+  .score {
+    background: rgba(255,255,255,.06);
+    border: 1px solid rgba(255,255,255,.08);
+    border-radius: 10px;
+    padding: 6px 10px;
+    text-align: right;
+    min-width: 86px;
+  }
+  .score .label { font-size: 10px; letter-spacing: .18em; color: var(--muted); }
+  .score .value { font-size: 20px; font-weight: 700; font-variant-numeric: tabular-nums; }
+  #stage {
+    position: relative;
+    display: grid;
+    place-items: center;
+    min-height: 0;
+  }
+  #board {
+    display: block;
+    background: linear-gradient(180deg, #11142d 0%, #161a3a 100%);
+    border-radius: 18px;
+    box-shadow:
+      0 30px 80px rgba(0,0,0,.55),
+      inset 0 0 0 1px rgba(255,255,255,.05),
+      inset 0 -40px 60px rgba(0,0,0,.35);
+    touch-action: none;
+  }
+  footer {
+    display: flex; align-items: center; justify-content: space-between; gap: 12px;
+    color: var(--muted); font-size: 12px;
+  }
+  .hint { letter-spacing: .08em; }
+  .btn {
+    appearance: none; border: 0; cursor: pointer;
+    color: #0c1030; background: var(--accent); font-weight: 700;
+    padding: 8px 14px; border-radius: 999px; letter-spacing: .06em;
+    box-shadow: 0 6px 20px rgba(255,209,102,.35);
+  }
+  .btn.secondary {
+    background: rgba(255,255,255,.08); color: var(--ink); box-shadow: none;
+    border: 1px solid rgba(255,255,255,.08);
+  }
+  .overlay {
+    position: absolute; inset: 0;
+    display: none; place-items: center;
+    background: rgba(6,8,26,.65);
+    backdrop-filter: blur(6px);
+    border-radius: 18px;
+    z-index: 10;
+  }
+  .overlay.show { display: grid; }
+  .panel {
+    text-align: center;
+    padding: 22px 28px;
+    background: rgba(20,24,55,.85);
+    border: 1px solid rgba(255,255,255,.08);
+    border-radius: 14px;
+    box-shadow: 0 20px 60px rgba(0,0,0,.5);
+    max-width: 320px;
+  }
+  .panel h2 { margin: 0 0 4px; font-size: 22px; letter-spacing: .04em; }
+  .panel p { margin: 6px 0 14px; color: var(--muted); font-size: 13px; line-height: 1.5; }
+  .panel .big { color: var(--accent); font-size: 32px; font-weight: 800; font-variant-numeric: tabular-nums; }
+  .row { display: flex; gap: 10px; justify-content: center; }
+  .combo {
+    position: absolute;
+    pointer-events: none;
+    font-weight: 800;
+    color: var(--accent);
+    text-shadow: 0 2px 12px rgba(255,209,102,.5);
+    letter-spacing: .04em;
+    transform: translate(-50%, -50%);
+  }
+</style>
+</head>
+<body>
+<div id="app">
+  <header>
+    <div class="brand"><h1>Merge Drop</h1><span>same colors fuse</span></div>
+    <div class="scores">
+      <div class="score"><div class="label">SCORE</div><div class="value" id="score">0</div></div>
+      <div class="score"><div class="label">BEST</div><div class="value" id="best">0</div></div>
+    </div>
+  </header>
+  <div id="stage">
+    <canvas id="board" width="380" height="560"></canvas>
+    <div class="overlay" id="overlay">
+      <div class="panel">
+        <h2 id="overTitle">Game Over</h2>
+        <p id="overSub">A ball crossed the line. Better luck next drop.</p>
+        <div class="big" id="overScore">0</div>
+        <div class="row" style="margin-top:14px">
+          <button class="btn" id="again">Play again</button>
+          <button class="btn secondary" id="mute">Mute</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <footer>
+    <div class="hint">Tap / click / drag to aim · Space to drop · M to mute</div>
+    <button class="btn secondary" id="reset">Reset</button>
+  </footer>
+</div>
+
+<script>
+(() => {
+  const board = document.getElementById('board');
+  const ctx = board.getContext('2d');
+  const scoreEl = document.getElementById('score');
+  const bestEl = document.getElementById('best');
+  const overlay = document.getElementById('overlay');
+  const overTitle = document.getElementById('overTitle');
+  const overSub = document.getElementById('overSub');
+  const overScoreEl = document.getElementById('overScore');
+  const againBtn = document.getElementById('again');
+  const muteBtn = document.getElementById('mute');
+  const resetBtn = document.getElementById('reset');
+  const stage = document.getElementById('stage');
+
+  // Logical board size — we render at this resolution and scale via CSS.
+  const W = 380, H = 560;
+  const WALL = 8;                       // wall thickness
+  const FLOOR_Y = H - WALL;
+  const LEFT_X = WALL;
+  const RIGHT_X = W - WALL;
+  const DROP_Y = 60;                    // y where new ball spawns
+  const DANGER_Y = 96;                  // line above which lingering = game over
+  const DANGER_GRACE = 1.2;             // seconds allowed above the line
+
+  // Resize canvas crisply.
+  function fit() {
+    const dpr = Math.max(1, Math.min(2, window.devicePixelRatio || 1));
+    const stageRect = stage.getBoundingClientRect();
+    // preserve aspect
+    const aspect = W / H;
+    let cssW = Math.min(stageRect.width, 460);
+    let cssH = cssW / aspect;
+    if (cssH > stageRect.height) {
+      cssH = stageRect.height;
+      cssW = cssH * aspect;
+    }
+    board.style.width = cssW + 'px';
+    board.style.height = cssH + 'px';
+    board.width = Math.round(W * dpr);
+    board.height = Math.round(H * dpr);
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  }
+  window.addEventListener('resize', fit);
+
+  // Levels — 11 sizes, each merge bumps level.
+  const LEVELS = [
+    { r: 12, color: '#ff6b6b' },
+    { r: 16, color: '#ff9f43' },
+    { r: 22, color: '#feca57' },
+    { r: 28, color: '#9ee493' },
+    { r: 34, color: '#48dbb0' },
+    { r: 42, color: '#54a0ff' },
+    { r: 50, color: '#5f6bff' },
+    { r: 58, color: '#a55eea' },
+    { r: 68, color: '#ec5cc6' },
+    { r: 80, color: '#ff7eb3' },
+    { r: 96, color: '#ffd166' },
+  ];
+  // Triangular points so big merges are rewarded.
+  function mergePoints(newLevel) { return newLevel * (newLevel + 1) / 2 * 2; }
+
+  // Random next level — only the smallest 5 can spawn.
+  function nextDropLevel() {
+    const r = Math.random();
+    if (r < 0.36) return 0;
+    if (r < 0.66) return 1;
+    if (r < 0.86) return 2;
+    if (r < 0.96) return 3;
+    return 4;
+  }
+
+  // World state
+  let balls = [];
+  let nextId = 1;
+  let pendingLevel = nextDropLevel();
+  let queuedLevel = nextDropLevel();
+  let aimX = W / 2;
+  let canDrop = true;
+  let dropCooldown = 0;
+  let score = 0;
+  let best = +(localStorage.getItem('mergeDropBest') || 0);
+  let dangerTimer = 0;
+  let running = true;
+  let muted = localStorage.getItem('mergeDropMute') === '1';
+  let combos = [];                      // floating combo texts
+  let particles = [];                   // burst on merge
+  let shake = 0;
+  let comboChain = 0;                   // chained merges within a short window
+  let comboTimer = 0;
+
+  bestEl.textContent = best;
+  muteBtn.textContent = muted ? 'Unmute' : 'Mute';
+
+  // ---- Audio (synthesized, no assets) ----
+  let audio;
+  function audioCtx() {
+    if (!audio) audio = new (window.AudioContext || window.webkitAudioContext)();
+    return audio;
+  }
+  function beep(freq, dur = 0.08, type = 'sine', vol = 0.06) {
+    if (muted) return;
+    try {
+      const a = audioCtx();
+      if (a.state === 'suspended') a.resume();
+      const o = a.createOscillator();
+      const g = a.createGain();
+      o.type = type; o.frequency.value = freq;
+      g.gain.value = 0;
+      g.gain.linearRampToValueAtTime(vol, a.currentTime + 0.005);
+      g.gain.exponentialRampToValueAtTime(0.0001, a.currentTime + dur);
+      o.connect(g).connect(a.destination);
+      o.start();
+      o.stop(a.currentTime + dur + 0.02);
+    } catch {}
+  }
+  function mergeSound(level) {
+    const base = 220 + level * 60;
+    beep(base, 0.08, 'triangle', 0.07);
+    setTimeout(() => beep(base * 1.5, 0.09, 'sine', 0.05), 30);
+  }
+  function dropSound() { beep(180, 0.06, 'square', 0.04); }
+
+  // ---- Helpers ----
+  function clamp(v, lo, hi) { return v < lo ? lo : v > hi ? hi : v; }
+
+  function spawnBall(x, y, level, vx = 0, vy = 0) {
+    balls.push({
+      id: nextId++, x, y, vx, vy,
+      level, r: LEVELS[level].r,
+      color: LEVELS[level].color,
+      angle: 0, spin: 0,
+      merging: false, born: performance.now(),
+      pulse: 1.2,
+    });
+  }
+
+  function emitParticles(x, y, color, n = 14) {
+    for (let i = 0; i < n; i++) {
+      const a = Math.random() * Math.PI * 2;
+      const s = 60 + Math.random() * 160;
+      particles.push({
+        x, y, vx: Math.cos(a) * s, vy: Math.sin(a) * s,
+        life: 0.5 + Math.random() * 0.3, age: 0,
+        color, r: 2 + Math.random() * 3,
+      });
+    }
+  }
+
+  function pushCombo(x, y, text, color = '#ffd166') {
+    combos.push({ x, y, text, color, age: 0, life: 0.9 });
+  }
+
+  // ---- Physics ----
+  const GRAV = 1400;                    // px / s^2
+  const REST = 0.18;                    // bounciness
+  const FRICTION = 0.985;                // horizontal damping when touching things
+  const AIR = 0.999;
+
+  function step(dt) {
+    // Integrate
+    for (const b of balls) {
+      b.vy += GRAV * dt;
+      b.vx *= AIR; b.vy *= AIR;
+      b.x += b.vx * dt;
+      b.y += b.vy * dt;
+      b.angle += b.spin * dt;
+      b.spin *= 0.98;
+      if (b.pulse > 1) b.pulse = Math.max(1, b.pulse - dt * 1.5);
+    }
+
+    // Resolve walls and floor
+    for (const b of balls) {
+      if (b.x - b.r < LEFT_X) {
+        b.x = LEFT_X + b.r;
+        if (b.vx < 0) b.vx = -b.vx * REST;
+        b.vy *= FRICTION;
+      }
+      if (b.x + b.r > RIGHT_X) {
+        b.x = RIGHT_X - b.r;
+        if (b.vx > 0) b.vx = -b.vx * REST;
+        b.vy *= FRICTION;
+      }
+      if (b.y + b.r > FLOOR_Y) {
+        b.y = FLOOR_Y - b.r;
+        if (b.vy > 0) {
+          b.spin += b.vx * 0.02;
+          b.vy = -b.vy * REST;
+          if (Math.abs(b.vy) < 30) b.vy = 0;
+        }
+        b.vx *= FRICTION;
+      }
+    }
+
+    // Resolve ball-ball collisions (multiple iterations for stability)
+    const mergesThisStep = [];
+    for (let iter = 0; iter < 6; iter++) {
+      for (let i = 0; i < balls.length; i++) {
+        for (let j = i + 1; j < balls.length; j++) {
+          const a = balls[i], b = balls[j];
+          if (a.merging || b.merging) continue;
+          let dx = b.x - a.x, dy = b.y - a.y;
+          let d2 = dx * dx + dy * dy;
+          const rsum = a.r + b.r;
+          if (d2 < rsum * rsum && d2 > 0.0001) {
+            const d = Math.sqrt(d2);
+            const nx = dx / d, ny = dy / d;
+            const overlap = rsum - d;
+            const ma = a.r * a.r, mb = b.r * b.r;
+            const tot = ma + mb;
+            // Positional correction (split by mass).
+            a.x -= nx * overlap * (mb / tot);
+            a.y -= ny * overlap * (mb / tot);
+            b.x += nx * overlap * (ma / tot);
+            b.y += ny * overlap * (ma / tot);
+
+            // Velocity response.
+            const rvx = b.vx - a.vx, rvy = b.vy - a.vy;
+            const vAlong = rvx * nx + rvy * ny;
+            if (vAlong < 0) {
+              const jimp = -(1 + REST) * vAlong / (1 / ma + 1 / mb);
+              const ix = jimp * nx, iy = jimp * ny;
+              a.vx -= ix / ma; a.vy -= iy / ma;
+              b.vx += ix / mb; b.vy += iy / mb;
+              // a bit of tangential spin transfer
+              a.spin += (-rvx * ny + rvy * nx) * 0.002;
+              b.spin -= (-rvx * ny + rvy * nx) * 0.002;
+            }
+
+            // Merge?
+            if (iter === 0 && a.level === b.level && a.level < LEVELS.length - 1) {
+              a.merging = true; b.merging = true;
+              mergesThisStep.push([a, b]);
+            }
+          }
+        }
+      }
+    }
+
+    // Execute merges
+    if (mergesThisStep.length) {
+      // Track chain combos in a short window.
+      comboTimer = 0.6;
+      for (const [a, b] of mergesThisStep) {
+        const newLevel = a.level + 1;
+        const x = (a.x + b.x) / 2;
+        const y = (a.y + b.y) / 2;
+        const vx = (a.vx + b.vx) / 2;
+        const vy = (a.vy + b.vy) / 2 - 20;
+        balls = balls.filter(x => x !== a && x !== b);
+        spawnBall(x, y, newLevel, vx, vy);
+        emitParticles(x, y, LEVELS[newLevel].color, 16 + newLevel * 2);
+        comboChain++;
+        const gained = mergePoints(newLevel) + Math.max(0, comboChain - 1) * 5;
+        score += gained;
+        if (score > best) { best = score; localStorage.setItem('mergeDropBest', best); }
+        if (comboChain >= 2) pushCombo(x, y, `x${comboChain} +${gained}`, LEVELS[newLevel].color);
+        else pushCombo(x, y, `+${gained}`, LEVELS[newLevel].color);
+        mergeSound(newLevel);
+        shake = Math.min(8, shake + 2 + newLevel * 0.4);
+        if (newLevel === LEVELS.length - 1) {
+          pushCombo(W / 2, H / 2, 'MAX FUSE!', '#ffd166');
+          shake = 14;
+        }
+      }
+    }
+
+    // Decay combo chain timer when no merges happen.
+    if (mergesThisStep.length === 0 && comboTimer > 0) {
+      comboTimer -= dt;
+      if (comboTimer <= 0) comboChain = 0;
+    }
+
+    // Danger check: any ball above the line *and* nearly stationary.
+    let inDanger = false;
+    for (const b of balls) {
+      if (b.y - b.r < DANGER_Y && performance.now() - b.born > 600) {
+        if (Math.abs(b.vy) < 25 && Math.abs(b.vx) < 25) { inDanger = true; break; }
+      }
+    }
+    if (inDanger) {
+      dangerTimer += dt;
+      if (dangerTimer > DANGER_GRACE) gameOver();
+    } else {
+      dangerTimer = Math.max(0, dangerTimer - dt * 1.5);
+    }
+
+    // Particles & combos
+    for (const p of particles) {
+      p.age += dt;
+      p.vy += 600 * dt;
+      p.x += p.vx * dt; p.y += p.vy * dt;
+    }
+    particles = particles.filter(p => p.age < p.life);
+
+    for (const c of combos) { c.age += dt; c.y -= 30 * dt; }
+    combos = combos.filter(c => c.age < c.life);
+
+    if (shake > 0) shake = Math.max(0, shake - dt * 24);
+    if (dropCooldown > 0) {
+      dropCooldown -= dt;
+      if (dropCooldown <= 0) canDrop = true;
+    }
+  }
+
+  // ---- Rendering ----
+  function draw() {
+    // background
+    ctx.clearRect(0, 0, W, H);
+    // playfield card
+    ctx.save();
+    if (shake > 0) {
+      const sx = (Math.random() - 0.5) * shake;
+      const sy = (Math.random() - 0.5) * shake;
+      ctx.translate(sx, sy);
+    }
+    // walls
+    ctx.fillStyle = 'rgba(255,255,255,.05)';
+    ctx.fillRect(0, 0, WALL, H);
+    ctx.fillRect(W - WALL, 0, WALL, H);
+    ctx.fillRect(0, H - WALL, W, WALL);
+
+    // danger line
+    const dangerPulse = 0.45 + 0.35 * Math.min(1, dangerTimer / DANGER_GRACE);
+    ctx.strokeStyle = `rgba(255, 93, 122, ${dangerPulse})`;
+    ctx.setLineDash([6, 6]);
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(LEFT_X, DANGER_Y);
+    ctx.lineTo(RIGHT_X, DANGER_Y);
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    // aim guide (only when can drop and no ball near top)
+    if (canDrop && running) {
+      const r = LEVELS[pendingLevel].r;
+      // aim line
+      ctx.strokeStyle = 'rgba(255,255,255,.18)';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(aimX, DROP_Y + r);
+      ctx.lineTo(aimX, FLOOR_Y - 6);
+      ctx.stroke();
+      // pending ball
+      drawBall(aimX, DROP_Y, r, LEVELS[pendingLevel].color, 0, 1, 0.95);
+    }
+
+    // particles (behind balls)
+    for (const p of particles) {
+      const a = 1 - p.age / p.life;
+      ctx.fillStyle = p.color;
+      ctx.globalAlpha = a;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.r * (0.6 + a * 0.6), 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+
+    // balls
+    for (const b of balls) {
+      drawBall(b.x, b.y, b.r, b.color, b.angle, b.pulse, 1);
+    }
+
+    // combos
+    for (const c of combos) {
+      const a = 1 - c.age / c.life;
+      ctx.globalAlpha = a;
+      ctx.fillStyle = c.color;
+      ctx.font = '700 16px ui-sans-serif, system-ui';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(c.text, c.x, c.y);
+      ctx.globalAlpha = 1;
+    }
+
+    // next preview (top-right corner)
+    ctx.save();
+    ctx.globalAlpha = 0.95;
+    ctx.fillStyle = 'rgba(0,0,0,.25)';
+    ctx.beginPath();
+    roundRect(ctx, W - 80, 8, 72, 44, 10); ctx.fill();
+    ctx.fillStyle = 'rgba(255,255,255,.55)';
+    ctx.font = '600 9px ui-sans-serif, system-ui';
+    ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+    ctx.fillText('NEXT', W - 72, 14);
+    drawBall(W - 30, 30, Math.min(14, LEVELS[queuedLevel].r), LEVELS[queuedLevel].color, 0, 1, 1);
+    ctx.restore();
+
+    ctx.restore();
+  }
+
+  function drawBall(x, y, r, color, angle, pulse, alpha) {
+    ctx.save();
+    ctx.globalAlpha = alpha;
+    ctx.translate(x, y);
+    if (pulse !== 1) ctx.scale(pulse, pulse);
+    // shadow
+    ctx.beginPath();
+    ctx.arc(0, r * 0.15, r * 0.95, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(0,0,0,.22)';
+    ctx.fill();
+    // body gradient
+    const g = ctx.createRadialGradient(-r * 0.35, -r * 0.4, r * 0.1, 0, 0, r);
+    g.addColorStop(0, lighten(color, 0.55));
+    g.addColorStop(0.55, color);
+    g.addColorStop(1, darken(color, 0.35));
+    ctx.beginPath();
+    ctx.arc(0, 0, r, 0, Math.PI * 2);
+    ctx.fillStyle = g;
+    ctx.fill();
+    // rim
+    ctx.lineWidth = Math.max(1, r * 0.04);
+    ctx.strokeStyle = 'rgba(255,255,255,.12)';
+    ctx.stroke();
+    // highlight
+    ctx.beginPath();
+    ctx.ellipse(-r * 0.35, -r * 0.45, r * 0.35, r * 0.18, -0.4, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(255,255,255,.45)';
+    ctx.fill();
+    ctx.restore();
+  }
+
+  function roundRect(c, x, y, w, h, r) {
+    c.beginPath();
+    c.moveTo(x + r, y);
+    c.arcTo(x + w, y, x + w, y + h, r);
+    c.arcTo(x + w, y + h, x, y + h, r);
+    c.arcTo(x, y + h, x, y, r);
+    c.arcTo(x, y, x + w, y, r);
+    c.closePath();
+  }
+
+  function lighten(hex, amt) { return mix(hex, '#ffffff', amt); }
+  function darken(hex, amt) { return mix(hex, '#000000', amt); }
+  function mix(a, b, t) {
+    const pa = parseHex(a), pb = parseHex(b);
+    const r = Math.round(pa[0] + (pb[0] - pa[0]) * t);
+    const g = Math.round(pa[1] + (pb[1] - pa[1]) * t);
+    const bl = Math.round(pa[2] + (pb[2] - pa[2]) * t);
+    return `rgb(${r},${g},${bl})`;
+  }
+  function parseHex(h) {
+    if (h.startsWith('rgb')) {
+      const m = h.match(/\d+/g).map(Number);
+      return [m[0], m[1], m[2]];
+    }
+    const s = h.replace('#', '');
+    return [parseInt(s.slice(0, 2), 16), parseInt(s.slice(2, 4), 16), parseInt(s.slice(4, 6), 16)];
+  }
+
+  // ---- Game loop ----
+  let last = performance.now();
+  function loop(now) {
+    const dt = Math.min(0.033, (now - last) / 1000);
+    last = now;
+    if (running) {
+      // sub-step for stability with stacks of large balls
+      const sub = 3;
+      for (let i = 0; i < sub; i++) step(dt / sub);
+    }
+    draw();
+    scoreEl.textContent = score;
+    bestEl.textContent = best;
+    requestAnimationFrame(loop);
+  }
+
+  // ---- Input ----
+  function getX(ev) {
+    const rect = board.getBoundingClientRect();
+    const clientX = ev.touches ? ev.touches[0].clientX : ev.clientX;
+    const x = (clientX - rect.left) / rect.width * W;
+    return clamp(x, LEFT_X + LEVELS[pendingLevel].r, RIGHT_X - LEVELS[pendingLevel].r);
+  }
+  function move(ev) { aimX = getX(ev); }
+  function drop() {
+    if (!running || !canDrop) return;
+    spawnBall(aimX, DROP_Y, pendingLevel, 0, 0);
+    canDrop = false;
+    dropCooldown = 0.32;
+    pendingLevel = queuedLevel;
+    queuedLevel = nextDropLevel();
+    dropSound();
+  }
+  board.addEventListener('pointermove', move);
+  board.addEventListener('pointerdown', (e) => { move(e); drop(); });
+  board.addEventListener('touchmove', (e) => { e.preventDefault(); move(e); }, { passive: false });
+  window.addEventListener('keydown', (e) => {
+    if (e.code === 'Space') { e.preventDefault(); drop(); }
+    if (e.code === 'ArrowLeft') aimX = clamp(aimX - 12, LEFT_X + LEVELS[pendingLevel].r, RIGHT_X - LEVELS[pendingLevel].r);
+    if (e.code === 'ArrowRight') aimX = clamp(aimX + 12, LEFT_X + LEVELS[pendingLevel].r, RIGHT_X - LEVELS[pendingLevel].r);
+    if (e.code === 'KeyM') toggleMute();
+    if (e.code === 'KeyR') reset();
+  });
+
+  function toggleMute() {
+    muted = !muted;
+    localStorage.setItem('mergeDropMute', muted ? '1' : '0');
+    muteBtn.textContent = muted ? 'Unmute' : 'Mute';
+  }
+  muteBtn.addEventListener('click', toggleMute);
+
+  function reset() {
+    balls = [];
+    score = 0;
+    dangerTimer = 0;
+    comboChain = 0;
+    pendingLevel = nextDropLevel();
+    queuedLevel = nextDropLevel();
+    canDrop = true; dropCooldown = 0;
+    overlay.classList.remove('show');
+    running = true;
+  }
+  resetBtn.addEventListener('click', reset);
+  againBtn.addEventListener('click', reset);
+
+  function gameOver() {
+    running = false;
+    overTitle.textContent = 'Game Over';
+    overSub.textContent = 'A ball settled above the line. Want another go?';
+    overScoreEl.textContent = score;
+    overlay.classList.add('show');
+  }
+
+  // Boot
+  fit();
+  // Run a follow-up fit after layout settles.
+  requestAnimationFrame(() => { fit(); requestAnimationFrame(loop); });
+})();
+</script>
+</body>
+</html>
