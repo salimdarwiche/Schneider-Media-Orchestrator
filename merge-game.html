@@ -52,12 +52,15 @@
   .score .value { font-size: 20px; font-weight: 700; font-variant-numeric: tabular-nums; }
   #stage {
     position: relative;
-    display: grid;
-    place-items: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     min-height: 0;
   }
   #board {
     display: block;
+    width: min(100%, 460px, calc((100vh - 160px) * 380 / 560));
+    aspect-ratio: 380 / 560;
     background: linear-gradient(180deg, #11142d 0%, #161a3a 100%);
     border-radius: 18px;
     box-shadow:
@@ -168,25 +171,21 @@
   const DANGER_Y = 96;                  // line above which lingering = game over
   const DANGER_GRACE = 1.2;             // seconds allowed above the line
 
-  // Resize canvas crisply.
+  // Match the backing buffer to the CSS-sized canvas; CSS handles layout.
   function fit() {
     const dpr = Math.max(1, Math.min(2, window.devicePixelRatio || 1));
-    const stageRect = stage.getBoundingClientRect();
-    // preserve aspect
-    const aspect = W / H;
-    let cssW = Math.min(stageRect.width, 460);
-    let cssH = cssW / aspect;
-    if (cssH > stageRect.height) {
-      cssH = stageRect.height;
-      cssW = cssH * aspect;
-    }
-    board.style.width = cssW + 'px';
-    board.style.height = cssH + 'px';
-    board.width = Math.round(W * dpr);
-    board.height = Math.round(H * dpr);
-    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    const rect = board.getBoundingClientRect();
+    const cssW = rect.width || 380;
+    const cssH = rect.height || (cssW * H / W);
+    board.width = Math.max(1, Math.round(cssW * dpr));
+    board.height = Math.max(1, Math.round(cssH * dpr));
+    // Render in logical W x H units; scale to fit the backing buffer.
+    const sx = board.width / W;
+    const sy = board.height / H;
+    ctx.setTransform(sx, 0, 0, sy, 0, 0);
   }
   window.addEventListener('resize', fit);
+  if (window.ResizeObserver) new ResizeObserver(fit).observe(board);
 
   // Levels — 11 sizes, each merge bumps level.
   const LEVELS = [
