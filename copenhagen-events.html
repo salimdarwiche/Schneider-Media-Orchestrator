@@ -1,0 +1,920 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Copenhagen Events — What's on this week</title>
+<style>
+  :root{
+    --bg:#f6f3ec;
+    --surface:#ffffff;
+    --surface-2:#fbf9f4;
+    --ink:#161616;
+    --ink-2:#3a3a3a;
+    --muted:#6f6a63;
+    --border:#e7e1d4;
+    --border-strong:#cfc7b5;
+    --accent:#c0392b;        /* Nyhavn red */
+    --accent-ink:#8a2a1f;
+    --teal:#2a5b6e;          /* harbor teal */
+    --gold:#b88a2a;
+    --green:#2d8659;
+    --soft:#f2ece0;
+    --shadow:0 1px 2px rgba(20,15,5,.04), 0 8px 24px rgba(20,15,5,.06);
+    --radius:14px;
+    --radius-sm:10px;
+  }
+
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0;background:var(--bg);color:var(--ink);font-family:'Inter',system-ui,-apple-system,'Segoe UI',Roboto,Arial,sans-serif;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
+  a{color:var(--teal);text-decoration:none}
+  a:hover{text-decoration:underline}
+  button{font:inherit;cursor:pointer}
+
+  /* ───────── Header ───────── */
+  .topbar{
+    position:sticky;top:0;z-index:50;
+    background:rgba(246,243,236,.92);
+    backdrop-filter:saturate(140%) blur(8px);
+    -webkit-backdrop-filter:saturate(140%) blur(8px);
+    border-bottom:1px solid var(--border);
+  }
+  .topbar-inner{
+    max-width:1180px;margin:0 auto;padding:14px 22px;
+    display:flex;align-items:center;gap:16px;
+  }
+  .brand{display:flex;align-items:center;gap:12px;min-width:0}
+  .brand-mark{
+    width:38px;height:38px;border-radius:10px;
+    background:linear-gradient(160deg,var(--accent) 0%,var(--accent) 50%,#fff 50%,#fff 100%);
+    border:1px solid var(--border-strong);
+    box-shadow:var(--shadow);
+    flex:0 0 auto;
+  }
+  .brand-text{display:flex;flex-direction:column;min-width:0}
+  .brand-title{font-weight:700;letter-spacing:.2px;font-size:17px;line-height:1.1}
+  .brand-sub{font-size:12px;color:var(--muted);margin-top:2px}
+  .spacer{flex:1}
+  .pill-date{
+    border:1px solid var(--border-strong);background:var(--surface);
+    padding:8px 14px;border-radius:999px;font-size:13px;color:var(--ink-2);
+    display:flex;align-items:center;gap:8px;
+  }
+  .pill-date b{font-weight:600;color:var(--ink)}
+  .btn{
+    border:1px solid var(--border-strong);background:var(--surface);
+    color:var(--ink);padding:9px 14px;border-radius:10px;font-weight:500;font-size:14px;
+    display:inline-flex;align-items:center;gap:8px;transition:transform .08s, background .15s, border-color .15s;
+  }
+  .btn:hover{background:var(--surface-2)}
+  .btn:active{transform:translateY(1px)}
+  .btn-primary{
+    background:var(--accent);color:#fff;border-color:var(--accent);
+    box-shadow:0 6px 16px rgba(192,57,43,.25);
+  }
+  .btn-primary:hover{background:var(--accent-ink);border-color:var(--accent-ink)}
+  .btn-primary[disabled]{opacity:.7;cursor:wait}
+  .btn-ghost{background:transparent;border-color:transparent}
+  .btn-ghost:hover{background:var(--surface-2);border-color:var(--border)}
+  .icon{width:16px;height:16px;flex:0 0 auto}
+  .icon.spin{animation:spin 1s linear infinite}
+  @keyframes spin{to{transform:rotate(360deg)}}
+
+  /* ───────── Tabs ───────── */
+  .tabs{
+    max-width:1180px;margin:0 auto;padding:14px 22px 0;
+    display:flex;gap:6px;flex-wrap:wrap;border-bottom:1px solid var(--border);
+  }
+  .tab{
+    appearance:none;border:0;background:transparent;color:var(--muted);
+    padding:10px 14px;border-radius:10px 10px 0 0;font-size:14px;font-weight:500;
+    border-bottom:2px solid transparent;margin-bottom:-1px;cursor:pointer;
+  }
+  .tab:hover{color:var(--ink)}
+  .tab.active{color:var(--ink);border-bottom-color:var(--accent);background:var(--surface)}
+  .tab .count{
+    display:inline-block;margin-left:6px;font-size:11px;font-weight:600;
+    background:var(--soft);color:var(--ink-2);padding:1px 7px;border-radius:999px;
+  }
+  .tab.active .count{background:#fde9e6;color:var(--accent-ink)}
+
+  /* ───────── Main ───────── */
+  main{max-width:1180px;margin:0 auto;padding:22px;display:flex;flex-direction:column;gap:28px}
+
+  .hero{
+    background:linear-gradient(135deg,#ffffff 0%,#fbf6ec 100%);
+    border:1px solid var(--border);border-radius:var(--radius);
+    padding:20px 22px;display:flex;align-items:flex-start;gap:18px;
+    box-shadow:var(--shadow);
+  }
+  .hero-emoji{font-size:34px;line-height:1}
+  .hero h1{margin:0 0 4px 0;font-size:22px;letter-spacing:.2px}
+  .hero p{margin:0;color:var(--ink-2);font-size:14px;line-height:1.55;max-width:78ch}
+
+  section.day{
+    background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);
+    overflow:hidden;box-shadow:var(--shadow);
+  }
+  .day-head{
+    padding:16px 20px;border-bottom:1px solid var(--border);
+    display:flex;align-items:baseline;gap:14px;flex-wrap:wrap;
+    background:linear-gradient(180deg,#ffffff,#fbf8f1);
+  }
+  .day-head h2{margin:0;font-size:17px;letter-spacing:.2px}
+  .day-head .sub{color:var(--muted);font-size:13px}
+  .day-head .meta{margin-left:auto;display:flex;gap:8px;flex-wrap:wrap}
+
+  .cat-section{padding:14px 20px;border-top:1px dashed var(--border)}
+  .cat-section:first-of-type{border-top:0}
+  .cat-head{
+    display:flex;align-items:center;gap:10px;margin-bottom:10px;
+  }
+  .cat-name{font-size:12px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:var(--ink-2)}
+  .cat-rule{flex:1;height:1px;background:var(--border)}
+
+  .grid{
+    display:grid;gap:12px;
+    grid-template-columns:repeat(auto-fill,minmax(290px,1fr));
+  }
+
+  .card{
+    position:relative;
+    background:var(--surface-2);border:1px solid var(--border);
+    border-radius:var(--radius-sm);padding:14px 14px 14px 16px;
+    display:flex;flex-direction:column;gap:8px;
+    transition:transform .08s, box-shadow .15s, border-color .15s;
+  }
+  .card:hover{box-shadow:0 6px 18px rgba(20,15,5,.06);border-color:var(--border-strong)}
+  .card.must-see{
+    border-color:#f1c4be;background:linear-gradient(180deg,#fff8f6,#fffefb);
+  }
+  .card.must-see::before{
+    content:"★ Must see";
+    position:absolute;top:-9px;left:12px;
+    background:var(--accent);color:#fff;font-size:10px;font-weight:700;letter-spacing:.7px;
+    padding:3px 8px;border-radius:999px;text-transform:uppercase;
+  }
+  .card h3{margin:0;font-size:15.5px;line-height:1.3;font-weight:600;color:var(--ink)}
+  .card .desc{font-size:13px;line-height:1.5;color:var(--ink-2);margin:0}
+  .card .meta-row{
+    display:flex;flex-wrap:wrap;gap:6px 12px;font-size:12.5px;color:var(--muted);
+  }
+  .card .meta-row span{display:inline-flex;align-items:center;gap:5px}
+  .card .badges{display:flex;flex-wrap:wrap;gap:6px;margin-top:2px}
+  .badge{
+    display:inline-flex;align-items:center;gap:5px;
+    font-size:11px;font-weight:600;letter-spacing:.3px;
+    padding:3px 8px;border-radius:999px;border:1px solid;
+  }
+  .badge.cat{background:#f4eee0;color:#7a5e1c;border-color:#e8dcb6}
+  .badge.cat.Festival{background:#fbe6df;color:#8a2a1f;border-color:#f1c4be}
+  .badge.cat.Concert{background:#e6eef3;color:#214a5b;border-color:#bcd2dc}
+  .badge.cat.Frederiksberg{background:#eee6f3;color:#4a275b;border-color:#d2bcdc}
+  .badge.cat.Notable{background:#fff1d6;color:#8a5b00;border-color:#f4d99a}
+  .badge.cat.Family{background:#e6f3ea;color:#1f5b3a;border-color:#bcdcc6}
+  .badge.cat.Art{background:#f3e6ea;color:#6e2a3e;border-color:#dcbcc7}
+  .badge.cat.Food{background:#f3ece6;color:#6e4a2a;border-color:#dcc7bc}
+  .badge.cat.Sports{background:#e6f0f3;color:#214a5b;border-color:#bccddc}
+  .badge.cat.Nightlife{background:#ece6f3;color:#3a2a6e;border-color:#c7bcdc}
+  .badge.cat.Other{background:#eee;color:#444;border-color:#ddd}
+  .badge.free{background:#e1f1e6;color:#1f6b40;border-color:#bcdcc6}
+  .badge.paid{background:#fef2dc;color:#7a5300;border-color:#f1dca0}
+  .card .price{font-weight:600;color:var(--ink);font-size:13px}
+  .card .price.free{color:var(--green)}
+
+  .empty{
+    border:2px dashed var(--border-strong);border-radius:var(--radius);
+    padding:42px 22px;text-align:center;color:var(--muted);background:var(--surface);
+  }
+  .empty h3{margin:0 0 6px 0;color:var(--ink);font-size:16px}
+  .empty p{margin:0;font-size:14px;line-height:1.55;max-width:60ch;margin:0 auto}
+
+  /* ───────── Settings drawer ───────── */
+  .scrim{
+    position:fixed;inset:0;background:rgba(20,15,5,.35);
+    opacity:0;pointer-events:none;transition:opacity .2s;z-index:90;
+  }
+  .scrim.open{opacity:1;pointer-events:auto}
+  .drawer{
+    position:fixed;top:0;right:0;height:100vh;width:min(420px,92vw);
+    background:var(--surface);border-left:1px solid var(--border);
+    transform:translateX(100%);transition:transform .25s cubic-bezier(.4,0,.2,1);
+    z-index:100;display:flex;flex-direction:column;
+  }
+  .drawer.open{transform:translateX(0)}
+  .drawer-head{
+    padding:16px 18px;border-bottom:1px solid var(--border);
+    display:flex;align-items:center;gap:10px;
+  }
+  .drawer-head h2{margin:0;font-size:16px}
+  .drawer-body{padding:16px 18px;overflow:auto;display:flex;flex-direction:column;gap:18px}
+  .drawer-foot{padding:14px 18px;border-top:1px solid var(--border);display:flex;justify-content:space-between;gap:8px}
+
+  .field{display:flex;flex-direction:column;gap:6px}
+  .field label{font-size:12px;font-weight:600;letter-spacing:.3px;text-transform:uppercase;color:var(--ink-2)}
+  .field .hint{font-size:12px;color:var(--muted);line-height:1.5}
+  .field input[type=text],.field input[type=password],.field input[type=number],.field select,.field textarea{
+    border:1px solid var(--border-strong);background:#fff;border-radius:10px;
+    padding:9px 12px;font:inherit;color:var(--ink);width:100%;
+    transition:border-color .15s, box-shadow .15s;
+  }
+  .field input:focus,.field select:focus,.field textarea:focus{
+    outline:none;border-color:var(--teal);box-shadow:0 0 0 3px rgba(42,91,110,.15);
+  }
+  .checks{display:flex;flex-wrap:wrap;gap:6px}
+  .chk{
+    display:inline-flex;align-items:center;gap:6px;
+    border:1px solid var(--border-strong);background:#fff;
+    padding:6px 10px;border-radius:999px;font-size:13px;cursor:pointer;
+    user-select:none;
+  }
+  .chk input{accent-color:var(--accent);margin:0}
+  .chk.on{background:#fde9e6;border-color:#f1c4be;color:var(--accent-ink)}
+  .row{display:flex;gap:10px;align-items:center}
+  .row > *{flex:1}
+  .switch{display:flex;align-items:center;gap:10px}
+  .switch input{appearance:none;width:38px;height:22px;background:#ddd;border-radius:999px;position:relative;cursor:pointer;transition:background .15s}
+  .switch input::after{content:"";position:absolute;top:2px;left:2px;width:18px;height:18px;background:#fff;border-radius:50%;transition:transform .15s;box-shadow:0 1px 3px rgba(0,0,0,.2)}
+  .switch input:checked{background:var(--accent)}
+  .switch input:checked::after{transform:translateX(16px)}
+  .switch label{font-size:13.5px;color:var(--ink)}
+
+  /* ───────── Skeleton ───────── */
+  .sk{background:linear-gradient(90deg,#eee 0%,#f6f3ec 50%,#eee 100%);background-size:200% 100%;animation:sk 1.2s infinite;border-radius:8px}
+  @keyframes sk{0%{background-position:200% 0}100%{background-position:-200% 0}}
+  .sk-card{height:130px;border-radius:var(--radius-sm)}
+
+  /* ───────── Status ───────── */
+  .status{
+    margin:6px auto 0;max-width:1180px;padding:0 22px;font-size:12.5px;color:var(--muted);
+    display:flex;align-items:center;gap:10px;min-height:18px;
+  }
+  .status.err{color:var(--accent-ink)}
+  .status .dot{width:8px;height:8px;border-radius:50%;background:var(--muted)}
+  .status.live .dot{background:var(--green);box-shadow:0 0 0 0 rgba(45,134,89,.5);animation:pulse 1.4s infinite}
+  @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(45,134,89,.5)}70%{box-shadow:0 0 0 8px rgba(45,134,89,0)}100%{box-shadow:0 0 0 0 rgba(45,134,89,0)}}
+
+  footer{max-width:1180px;margin:0 auto;padding:18px 22px 40px;color:var(--muted);font-size:12px;line-height:1.6}
+  footer code{background:var(--surface-2);border:1px solid var(--border);padding:1px 6px;border-radius:6px;color:var(--ink-2);font-size:11.5px}
+
+  @media (max-width:640px){
+    .topbar-inner{padding:12px 14px;gap:10px}
+    .brand-title{font-size:15px}
+    .pill-date{display:none}
+    main{padding:16px 14px;gap:20px}
+    .day-head{padding:14px 16px}
+    .cat-section{padding:14px 16px}
+    .hero{padding:16px}
+  }
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="topbar-inner">
+    <div class="brand">
+      <div class="brand-mark" aria-hidden="true"></div>
+      <div class="brand-text">
+        <div class="brand-title">Copenhagen — What's on</div>
+        <div class="brand-sub" id="brandSub">Live event agenda</div>
+      </div>
+    </div>
+    <div class="spacer"></div>
+    <div class="pill-date" id="todayPill"><b id="todayPillDate">—</b></div>
+    <button class="btn btn-ghost" id="settingsBtn" title="Settings" aria-label="Settings">
+      <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.6 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9c.36.66 1.05 1.07 1.81 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+      <span>Settings</span>
+    </button>
+    <button class="btn btn-primary" id="refreshBtn" title="Refresh events">
+      <svg class="icon" id="refreshIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-3.51-7.13"/><path d="M21 3v6h-6"/></svg>
+      <span id="refreshLabel">Refresh</span>
+    </button>
+  </div>
+  <div class="tabs" id="tabs"></div>
+</header>
+
+<div class="status" id="status"><span class="dot"></span><span id="statusText">Ready. Press Refresh to load events.</span></div>
+
+<main id="main"></main>
+
+<footer>
+  Data is fetched on demand via the Claude API (web-search enabled). Your API key never leaves this browser — it is stored only in <code>localStorage</code>. Each refresh consumes API + web-search credits on your Anthropic account. Event details are AI-generated from web search and should be verified at the source link before travelling.
+</footer>
+
+<!-- ───────── Settings drawer ───────── -->
+<div class="scrim" id="scrim"></div>
+<aside class="drawer" id="drawer" aria-hidden="true">
+  <div class="drawer-head">
+    <h2>Settings</h2>
+    <div class="spacer" style="flex:1"></div>
+    <button class="btn btn-ghost" id="closeDrawer" aria-label="Close">✕</button>
+  </div>
+  <div class="drawer-body">
+
+    <div class="field">
+      <label for="apiKey">Anthropic API key</label>
+      <input type="password" id="apiKey" autocomplete="off" placeholder="sk-ant-…" />
+      <div class="hint">Get a key at console.anthropic.com. Stored only in this browser.</div>
+    </div>
+
+    <div class="field">
+      <label for="model">Claude model</label>
+      <select id="model">
+        <option value="claude-sonnet-4-6">Sonnet 4.6 — fast, balanced (recommended)</option>
+        <option value="claude-opus-4-7">Opus 4.7 — best quality, slower</option>
+        <option value="claude-haiku-4-5">Haiku 4.5 — fastest, cheapest</option>
+      </select>
+    </div>
+
+    <div class="field">
+      <label>Categories to include</label>
+      <div class="checks" id="catChecks"></div>
+      <div class="hint">Claude will prioritise events in the selected categories.</div>
+    </div>
+
+    <div class="field">
+      <label for="neighborhoods">Neighbourhood focus (optional)</label>
+      <input type="text" id="neighborhoods" placeholder="e.g. Frederiksberg, Nørrebro, Vesterbro" />
+      <div class="hint">Comma-separated. Leave blank for all of Copenhagen.</div>
+    </div>
+
+    <div class="field">
+      <label for="interests">Personal interests (optional)</label>
+      <textarea id="interests" rows="3" placeholder="e.g. jazz, design, kids-friendly, outdoor, Danish cinema"></textarea>
+    </div>
+
+    <div class="row">
+      <div class="field">
+        <label for="maxPrice">Max price (DKK)</label>
+        <input type="number" id="maxPrice" min="0" step="50" placeholder="No limit" />
+      </div>
+      <div class="field">
+        <label for="maxEvents">Max events / day</label>
+        <input type="number" id="maxEvents" min="3" max="20" value="8" />
+      </div>
+    </div>
+
+    <div class="switch"><input type="checkbox" id="freeOnly"/><label for="freeOnly">Free events only</label></div>
+    <div class="switch"><input type="checkbox" id="weekendBoost" checked/><label for="weekendBoost">Highlight weekend picks</label></div>
+    <div class="switch"><input type="checkbox" id="useWebSearch" checked/><label for="useWebSearch">Use Claude web search (recommended)</label></div>
+
+  </div>
+  <div class="drawer-foot">
+    <button class="btn btn-ghost" id="clearCache">Clear cached events</button>
+    <button class="btn btn-primary" id="saveSettings">Save</button>
+  </div>
+</aside>
+
+<script>
+"use strict";
+
+/* ──────────────────────────────────────────────────────────────
+   State + persistence
+   ────────────────────────────────────────────────────────────── */
+const LS = {
+  prefs: "cphEvents.prefs.v1",
+  data:  "cphEvents.data.v1",
+};
+
+const CATEGORIES = [
+  "Festival","Concert","Frederiksberg","Notable",
+  "Free","Family","Art","Food","Sports","Nightlife","Other"
+];
+
+const DEFAULT_PREFS = {
+  apiKey: "",
+  model: "claude-sonnet-4-6",
+  categories: ["Festival","Concert","Frederiksberg","Notable","Free","Art"],
+  neighborhoods: "",
+  interests: "",
+  maxPrice: "",
+  maxEvents: 8,
+  freeOnly: false,
+  weekendBoost: true,
+  useWebSearch: true,
+};
+
+function loadPrefs(){
+  try{ return {...DEFAULT_PREFS, ...JSON.parse(localStorage.getItem(LS.prefs)||"{}")}; }
+  catch{ return {...DEFAULT_PREFS}; }
+}
+function savePrefs(p){ localStorage.setItem(LS.prefs, JSON.stringify(p)); }
+function loadData(){ try{ return JSON.parse(localStorage.getItem(LS.data)||"null"); } catch{ return null; } }
+function saveData(d){ localStorage.setItem(LS.data, JSON.stringify(d)); }
+
+let prefs = loadPrefs();
+let data  = loadData();
+let activeTab = "today";
+
+/* ──────────────────────────────────────────────────────────────
+   Date helpers
+   ────────────────────────────────────────────────────────────── */
+const DAYS = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
+const MONTHS = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+
+function isoDate(d){
+  const y=d.getFullYear(), m=String(d.getMonth()+1).padStart(2,"0"), day=String(d.getDate()).padStart(2,"0");
+  return `${y}-${m}-${day}`;
+}
+function addDays(d,n){ const x=new Date(d); x.setDate(x.getDate()+n); return x; }
+function weekday(d){ return DAYS[d.getDay()]; }
+function prettyDate(d){ return `${weekday(d)}, ${MONTHS[d.getMonth()]} ${d.getDate()}`; }
+function shortDate(d){ return `${weekday(d).slice(0,3)} · ${MONTHS[d.getMonth()].slice(0,3)} ${d.getDate()}`; }
+
+function dateWindow(){
+  const today = new Date();
+  today.setHours(0,0,0,0);
+  // Build through end of weekend (Sunday)
+  const dayIdx = today.getDay(); // 0=Sun .. 6=Sat
+  // Always cover today + 7 days to be safe
+  const days = [];
+  for(let i=0;i<8;i++) days.push(addDays(today,i));
+  // Determine "weekend" range: upcoming Fri/Sat/Sun
+  const offsetToFri = ((5 - dayIdx) + 7) % 7;
+  const weekendStart = addDays(today, offsetToFri);
+  const weekendEnd   = addDays(weekendStart, 2);
+  return {today, days, weekendStart, weekendEnd};
+}
+
+/* ──────────────────────────────────────────────────────────────
+   Top-bar today pill
+   ────────────────────────────────────────────────────────────── */
+function paintTodayPill(){
+  const {today} = dateWindow();
+  document.getElementById("todayPillDate").textContent = prettyDate(today);
+}
+
+/* ──────────────────────────────────────────────────────────────
+   Settings drawer
+   ────────────────────────────────────────────────────────────── */
+const drawer  = document.getElementById("drawer");
+const scrim   = document.getElementById("scrim");
+document.getElementById("settingsBtn").onclick = openDrawer;
+document.getElementById("closeDrawer").onclick = closeDrawer;
+scrim.onclick = closeDrawer;
+
+function openDrawer(){
+  paintSettings();
+  drawer.classList.add("open"); scrim.classList.add("open");
+  drawer.setAttribute("aria-hidden","false");
+}
+function closeDrawer(){
+  drawer.classList.remove("open"); scrim.classList.remove("open");
+  drawer.setAttribute("aria-hidden","true");
+}
+
+function paintSettings(){
+  document.getElementById("apiKey").value        = prefs.apiKey || "";
+  document.getElementById("model").value         = prefs.model;
+  document.getElementById("neighborhoods").value = prefs.neighborhoods || "";
+  document.getElementById("interests").value     = prefs.interests || "";
+  document.getElementById("maxPrice").value      = prefs.maxPrice || "";
+  document.getElementById("maxEvents").value     = prefs.maxEvents || 8;
+  document.getElementById("freeOnly").checked    = !!prefs.freeOnly;
+  document.getElementById("weekendBoost").checked= !!prefs.weekendBoost;
+  document.getElementById("useWebSearch").checked= !!prefs.useWebSearch;
+
+  const wrap = document.getElementById("catChecks");
+  wrap.innerHTML = "";
+  CATEGORIES.forEach(cat=>{
+    const id = `cat_${cat}`;
+    const on = prefs.categories.includes(cat);
+    const label = document.createElement("label");
+    label.className = "chk" + (on?" on":"");
+    label.innerHTML = `<input type="checkbox" id="${id}" ${on?"checked":""}/> ${cat}`;
+    label.querySelector("input").addEventListener("change", e=>{
+      label.classList.toggle("on", e.target.checked);
+    });
+    wrap.appendChild(label);
+  });
+}
+
+document.getElementById("saveSettings").onclick = ()=>{
+  prefs.apiKey        = document.getElementById("apiKey").value.trim();
+  prefs.model         = document.getElementById("model").value;
+  prefs.neighborhoods = document.getElementById("neighborhoods").value.trim();
+  prefs.interests     = document.getElementById("interests").value.trim();
+  prefs.maxPrice      = document.getElementById("maxPrice").value.trim();
+  prefs.maxEvents     = parseInt(document.getElementById("maxEvents").value,10) || 8;
+  prefs.freeOnly      = document.getElementById("freeOnly").checked;
+  prefs.weekendBoost  = document.getElementById("weekendBoost").checked;
+  prefs.useWebSearch  = document.getElementById("useWebSearch").checked;
+  prefs.categories    = CATEGORIES.filter(c => document.getElementById("cat_"+c).checked);
+  savePrefs(prefs);
+  closeDrawer();
+  setStatus("Settings saved.", "");
+};
+
+document.getElementById("clearCache").onclick = ()=>{
+  localStorage.removeItem(LS.data);
+  data = null;
+  render();
+  setStatus("Cached events cleared.", "");
+};
+
+/* ──────────────────────────────────────────────────────────────
+   Status bar
+   ────────────────────────────────────────────────────────────── */
+const statusEl  = document.getElementById("status");
+const statusTxt = document.getElementById("statusText");
+function setStatus(msg, mode){
+  statusEl.classList.remove("live","err");
+  if(mode) statusEl.classList.add(mode);
+  statusTxt.textContent = msg;
+}
+
+/* ──────────────────────────────────────────────────────────────
+   Tabs
+   ────────────────────────────────────────────────────────────── */
+function paintTabs(){
+  const tabsEl = document.getElementById("tabs");
+  const counts = countsForTabs();
+  const tabs = [
+    ["today",   "Today",        counts.today],
+    ["tomorrow","Tomorrow",     counts.tomorrow],
+    ["weekend", "This weekend", counts.weekend],
+    ["week",    "Full week",    counts.week],
+    ["agenda",  "Agenda view",  counts.week],
+  ];
+  tabsEl.innerHTML = tabs.map(([k,label,c])=>`
+    <button class="tab ${k===activeTab?'active':''}" data-tab="${k}">
+      ${label}${data?`<span class="count">${c}</span>`:""}
+    </button>
+  `).join("");
+  tabsEl.querySelectorAll(".tab").forEach(t=>{
+    t.onclick = ()=>{ activeTab = t.dataset.tab; paintTabs(); render(); };
+  });
+}
+
+function countsForTabs(){
+  if(!data || !data.events) return {today:0, tomorrow:0, weekend:0, week:0};
+  const {today, weekendStart, weekendEnd} = dateWindow();
+  const todayIso  = isoDate(today);
+  const tomorrowIso = isoDate(addDays(today,1));
+  const wsIso = isoDate(weekendStart);
+  const weIso = isoDate(weekendEnd);
+  let t=0,tm=0,we=0;
+  for(const e of data.events){
+    if(e.date===todayIso) t++;
+    if(e.date===tomorrowIso) tm++;
+    if(e.date>=wsIso && e.date<=weIso) we++;
+  }
+  return {today:t, tomorrow:tm, weekend:we, week:data.events.length};
+}
+
+/* ──────────────────────────────────────────────────────────────
+   Render
+   ────────────────────────────────────────────────────────────── */
+const main = document.getElementById("main");
+
+function render(){
+  paintTabs();
+
+  if(!data || !data.events){
+    main.innerHTML = `
+      <div class="empty">
+        <h3>No events loaded yet</h3>
+        <p>Add your Anthropic API key in <b>Settings</b>, then press <b>Refresh</b> to fetch this week's events in Copenhagen.</p>
+      </div>`;
+    return;
+  }
+
+  const {today, days, weekendStart, weekendEnd} = dateWindow();
+  const todayIso = isoDate(today);
+  const tomorrowIso = isoDate(addDays(today,1));
+  const wsIso = isoDate(weekendStart), weIso = isoDate(weekendEnd);
+
+  let sections = [];
+
+  if(activeTab === "today"){
+    sections.push(renderHero(data.summary, todayIso));
+    sections.push(renderDay(today, eventsOn(todayIso), {byCategory:true}));
+  }
+  else if(activeTab === "tomorrow"){
+    sections.push(renderDay(addDays(today,1), eventsOn(tomorrowIso), {byCategory:true}));
+  }
+  else if(activeTab === "weekend"){
+    sections.push(renderHero(`Weekend plan: ${shortDate(weekendStart)} → ${shortDate(weekendEnd)}`, null));
+    for(let d=new Date(weekendStart); isoDate(d)<=weIso; d=addDays(d,1)){
+      sections.push(renderDay(d, eventsOn(isoDate(d)), {byCategory:true, compact:false}));
+    }
+  }
+  else if(activeTab === "week"){
+    // Grouped by CATEGORY across the whole window
+    const grouped = {};
+    for(const c of CATEGORIES) grouped[c] = [];
+    for(const e of data.events) (grouped[e.category]||grouped.Other||[]).push(e);
+    const html = CATEGORIES.filter(c => (grouped[c]||[]).length).map(c => renderCategoryGroup(c, grouped[c])).join("");
+    sections.push(`
+      <section class="day">
+        <div class="day-head">
+          <h2>Full week, by category</h2>
+          <div class="sub">${shortDate(today)} → ${shortDate(addDays(today,7))}</div>
+        </div>
+        ${html}
+      </section>`);
+  }
+  else if(activeTab === "agenda"){
+    // Chronological list
+    for(const d of days){
+      const list = eventsOn(isoDate(d));
+      if(!list.length) continue;
+      sections.push(renderDay(d, list, {byCategory:false, compact:true}));
+    }
+  }
+
+  main.innerHTML = sections.join("");
+}
+
+function eventsOn(isoStr){
+  if(!data||!data.events) return [];
+  return data.events
+    .filter(e => e.date === isoStr)
+    .sort((a,b) => (a.time||"99:99").localeCompare(b.time||"99:99"));
+}
+
+function renderHero(text, isoStr){
+  if(!text) return "";
+  const {today} = dateWindow();
+  const sub = isoStr ? prettyDate(today) : "";
+  return `
+    <div class="hero">
+      <div class="hero-emoji">🇩🇰</div>
+      <div>
+        <h1>${escapeHtml(sub || "This week in Copenhagen")}</h1>
+        <p>${escapeHtml(text)}</p>
+      </div>
+    </div>`;
+}
+
+function renderDay(d, events, opts={}){
+  const {byCategory=true, compact=false} = opts;
+  const head = `
+    <div class="day-head">
+      <h2>${prettyDate(d)}</h2>
+      <div class="sub">${events.length} event${events.length===1?"":"s"}</div>
+    </div>`;
+  if(!events.length){
+    return `<section class="day">${head}
+      <div class="cat-section"><p style="color:var(--muted);margin:0">Nothing curated for this day.</p></div>
+    </section>`;
+  }
+  if(!byCategory){
+    return `<section class="day">${head}
+      <div class="cat-section"><div class="grid">${events.map(renderCard).join("")}</div></div>
+    </section>`;
+  }
+  // group by category
+  const groups = {};
+  for(const e of events){ (groups[e.category] = groups[e.category]||[]).push(e); }
+  const ordered = CATEGORIES.filter(c => groups[c]);
+  const body = ordered.map(c => renderCategoryGroup(c, groups[c])).join("");
+  return `<section class="day">${head}${body}</section>`;
+}
+
+function renderCategoryGroup(cat, list){
+  return `
+    <div class="cat-section">
+      <div class="cat-head">
+        <div class="cat-name">${escapeHtml(cat)}</div>
+        <div class="cat-rule"></div>
+        <div class="cat-name" style="color:var(--muted);font-weight:500">${list.length}</div>
+      </div>
+      <div class="grid">${list.map(renderCard).join("")}</div>
+    </div>`;
+}
+
+function renderCard(e){
+  const cat = CATEGORIES.includes(e.category) ? e.category : "Other";
+  const price = e.is_free
+    ? `<span class="price free">Free</span>`
+    : (e.price_label
+        ? `<span class="price">${escapeHtml(e.price_label)}</span>`
+        : (e.price_dkk!=null
+            ? `<span class="price">${e.price_dkk} DKK</span>`
+            : `<span class="price" style="color:var(--muted)">Price varies</span>`));
+  const free = e.is_free
+    ? `<span class="badge free">FREE</span>`
+    : `<span class="badge paid">PAID</span>`;
+  const must = e.must_see ? " must-see" : "";
+  const time = e.time ? `<span>🕒 ${escapeHtml(e.time)}${e.end_time?`–${escapeHtml(e.end_time)}`:""}</span>` : "";
+  const venue = e.venue ? `<span>📍 ${escapeHtml(e.venue)}${e.neighborhood?` · ${escapeHtml(e.neighborhood)}`:""}</span>` : "";
+  const link = e.url ? `<span>🔗 <a href="${escapeAttr(e.url)}" target="_blank" rel="noopener">source</a></span>` : "";
+  return `
+    <article class="card${must}">
+      <div class="badges">
+        <span class="badge cat ${cat}">${cat}</span>
+        ${free}
+        ${price}
+      </div>
+      <h3>${escapeHtml(e.title||"Untitled event")}</h3>
+      ${e.description ? `<p class="desc">${escapeHtml(e.description)}</p>` : ""}
+      <div class="meta-row">${time}${venue}${link}</div>
+    </article>`;
+}
+
+function escapeHtml(s){
+  return String(s??"").replace(/[&<>"']/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+}
+function escapeAttr(s){ return escapeHtml(s); }
+
+/* ──────────────────────────────────────────────────────────────
+   Refresh — call Claude API
+   ────────────────────────────────────────────────────────────── */
+const refreshBtn   = document.getElementById("refreshBtn");
+const refreshIcon  = document.getElementById("refreshIcon");
+const refreshLabel = document.getElementById("refreshLabel");
+
+refreshBtn.onclick = onRefresh;
+
+async function onRefresh(){
+  if(!prefs.apiKey){
+    openDrawer();
+    setStatus("Add your Anthropic API key to fetch events.", "err");
+    return;
+  }
+  refreshBtn.disabled = true;
+  refreshIcon.classList.add("spin");
+  refreshLabel.textContent = "Refreshing…";
+  setStatus("Asking Claude for the latest Copenhagen events…", "live");
+
+  try{
+    const res = await fetchEventsFromClaude();
+    data = res;
+    saveData(data);
+    setStatus(`Updated · ${data.events.length} events · ${new Date(data.generated_at).toLocaleTimeString()}`, "");
+    render();
+  } catch (err){
+    console.error(err);
+    setStatus("Couldn't load events: " + (err.message||err), "err");
+  } finally {
+    refreshBtn.disabled = false;
+    refreshIcon.classList.remove("spin");
+    refreshLabel.textContent = "Refresh";
+  }
+}
+
+function buildPrompt(){
+  const {today, days, weekendStart, weekendEnd} = dateWindow();
+  const start = isoDate(today);
+  const end   = isoDate(days[days.length-1]);
+  const cats  = prefs.categories.join(", ") || "all";
+  const hoods = prefs.neighborhoods ? `Prefer events in: ${prefs.neighborhoods}.` : "";
+  const interests = prefs.interests ? `Personal interests to weight: ${prefs.interests}.` : "";
+  const priceCap = prefs.maxPrice ? `Skip events priced over ${prefs.maxPrice} DKK.` : "";
+  const freeOnly = prefs.freeOnly ? `IMPORTANT: include FREE events ONLY (is_free must be true).` : "";
+  const weekend = prefs.weekendBoost
+    ? `Mark 2–3 standout events on the weekend (${isoDate(weekendStart)}…${isoDate(weekendEnd)}) with must_see:true.`
+    : "";
+  const maxPer = prefs.maxEvents || 8;
+
+  return `You are a Copenhagen local events curator.
+
+Today is ${prettyDate(today)} (${start}). Find real, dated events happening in Copenhagen between ${start} and ${end}, inclusive.
+
+REQUIREMENTS
+- Use web search to find current, verifiable events from sources like visitcopenhagen.com, aok.dk, kultunaut.dk, copenhagenpost.dk, official venue sites (Vega, DR Koncerthuset, Royal Library, Tivoli, CPH Jazz, Operaen, Det Kongelige Teater), Frederiksberg Kommune cultural calendar, and major festival sites.
+- Include BOTH paid and free events. List concrete prices in DKK whenever stated (e.g. 250, "From 150", "0").
+- Cover the categories: ${cats}.
+- Aim for ~${maxPer} events per day across categories. Don't pad with low-quality filler — quality over quantity.
+- ${hoods}
+- ${interests}
+- ${priceCap}
+- ${freeOnly}
+- ${weekend}
+- Highlight category "Frederiksberg" for events specifically in Frederiksberg (Frederiksberg Have, Frederiksberg Slot, Frederiksberg Kommune cultural events, Falkoner, etc.).
+- Highlight "Festival" for festivals/multi-day cultural events.
+- "Notable" = high-profile events I should not miss (premieres, royal events, headline concerts, sold-out nights with returns).
+- "Free" = no admission cost (still tag the most appropriate primary category in 'category' AND set is_free:true).
+- Skip past events. Skip events without a concrete date.
+
+OUTPUT FORMAT
+Return ONLY a single JSON object inside a fenced \`\`\`json block, with this exact schema:
+
+{
+  "generated_at": "<ISO timestamp>",
+  "city": "Copenhagen",
+  "summary": "<1-2 sentence overview of the week's vibe, weather mood, top picks>",
+  "events": [
+    {
+      "title": "string",
+      "category": "Festival|Concert|Frederiksberg|Notable|Free|Family|Art|Food|Sports|Nightlife|Other",
+      "date": "YYYY-MM-DD",
+      "time": "HH:MM",
+      "end_time": "HH:MM or null",
+      "venue": "string",
+      "neighborhood": "string",
+      "price_dkk": <number or null>,
+      "price_label": "string e.g. 'From 150 DKK' or 'Free' or null",
+      "is_free": <true|false>,
+      "description": "1-2 sentence punchy description",
+      "url": "https://… official source if possible",
+      "must_see": <true|false>
+    }
+  ]
+}
+
+No prose outside the JSON block. Do not invent events — if you don't find enough real events for a category, leave it sparse.`;
+}
+
+async function fetchEventsFromClaude(){
+  const body = {
+    model: prefs.model,
+    max_tokens: 8000,
+    messages: [{ role: "user", content: buildPrompt() }],
+  };
+  if(prefs.useWebSearch){
+    body.tools = [{ type: "web_search_20250305", name: "web_search", max_uses: 6 }];
+  }
+
+  const resp = await fetch("https://api.anthropic.com/v1/messages", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "x-api-key": prefs.apiKey,
+      "anthropic-version": "2023-06-01",
+      "anthropic-dangerous-direct-browser-access": "true",
+    },
+    body: JSON.stringify(body),
+  });
+
+  if(!resp.ok){
+    let detail = "";
+    try{ const j = await resp.json(); detail = j?.error?.message || JSON.stringify(j); } catch{}
+    throw new Error(`API ${resp.status}${detail?": "+detail:""}`);
+  }
+  const payload = await resp.json();
+
+  // Collect all text blocks (web_search tool yields multiple text blocks)
+  const textBlocks = (payload.content||[])
+    .filter(b => b.type === "text")
+    .map(b => b.text)
+    .join("\n");
+
+  const json = extractJson(textBlocks);
+  if(!json) throw new Error("Claude did not return JSON I could parse.");
+  if(!Array.isArray(json.events)) throw new Error("Response missing 'events' array.");
+
+  // Light normalisation
+  json.events = json.events.map(e => ({
+    title: e.title || "Untitled",
+    category: CATEGORIES.includes(e.category) ? e.category : "Other",
+    date: e.date || "",
+    time: e.time || "",
+    end_time: e.end_time || "",
+    venue: e.venue || "",
+    neighborhood: e.neighborhood || "",
+    price_dkk: e.price_dkk ?? null,
+    price_label: e.price_label || (e.is_free ? "Free" : (e.price_dkk!=null ? `${e.price_dkk} DKK` : "")),
+    is_free: !!e.is_free,
+    description: e.description || "",
+    url: e.url || "",
+    must_see: !!e.must_see,
+  })).filter(e => e.date); // require a date
+
+  // Client-side filters that mirror prefs (defence in depth)
+  if(prefs.freeOnly) json.events = json.events.filter(e => e.is_free);
+  if(prefs.maxPrice){
+    const cap = parseInt(prefs.maxPrice,10);
+    if(!isNaN(cap)) json.events = json.events.filter(e => e.is_free || (e.price_dkk==null) || e.price_dkk <= cap);
+  }
+  // Constrain to date window
+  const {today, days} = dateWindow();
+  const start = isoDate(today), end = isoDate(days[days.length-1]);
+  json.events = json.events.filter(e => e.date >= start && e.date <= end);
+
+  json.generated_at = json.generated_at || new Date().toISOString();
+  return json;
+}
+
+function extractJson(text){
+  if(!text) return null;
+  // Try fenced ```json … ``` first
+  const fence = text.match(/```json\s*([\s\S]*?)```/i) || text.match(/```\s*([\s\S]*?)```/);
+  const candidates = [];
+  if(fence) candidates.push(fence[1]);
+  // Fall back: substring between first { and last }
+  const first = text.indexOf("{");
+  const last  = text.lastIndexOf("}");
+  if(first!==-1 && last!==-1 && last>first) candidates.push(text.slice(first, last+1));
+  for(const c of candidates){
+    try{ return JSON.parse(c); } catch{}
+  }
+  return null;
+}
+
+/* ──────────────────────────────────────────────────────────────
+   Init
+   ────────────────────────────────────────────────────────────── */
+paintTodayPill();
+paintTabs();
+render();
+
+if(data){
+  setStatus(`Cached · ${data.events.length} events from ${new Date(data.generated_at).toLocaleString()}`, "");
+} else if(!prefs.apiKey){
+  setStatus("Add your Anthropic API key in Settings to begin.", "");
+}
+</script>
+</body>
+</html>
