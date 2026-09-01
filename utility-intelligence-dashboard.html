@@ -1,0 +1,918 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Executive Intelligence Dashboard - Energy Utilities & DSOs</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary-color: #1a5f7a;
+            --secondary-color: #57c5b6;
+            --accent-color: #159895;
+            --bg-color: #f8fafc;
+            --card-bg: #ffffff;
+            --text-primary: #1e293b;
+            --text-secondary: #64748b;
+            --border-color: #e2e8f0;
+            --green: #22c55e;
+            --orange: #f97316;
+            --red: #ef4444;
+            --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: var(--bg-color); color: var(--text-primary); line-height: 1.6; }
+        .header { background: linear-gradient(135deg, var(--primary-color), var(--accent-color)); color: white; padding: 20px 40px; position: sticky; top: 0; z-index: 1000; box-shadow: var(--shadow); }
+        .header-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; flex-wrap: wrap; gap: 15px; }
+        .logo-section { display: flex; align-items: center; gap: 15px; }
+        .logo-section i { font-size: 2rem; }
+        .logo-section h1 { font-size: 1.5rem; font-weight: 600; }
+        .datetime-display { background: rgba(255,255,255,0.15); padding: 10px 20px; border-radius: 8px; font-size: 0.95rem; }
+        .datetime-display strong { color: #fef08a; }
+        .search-section { background: rgba(255,255,255,0.1); padding: 20px; border-radius: 12px; margin-top: 15px; }
+        .search-container { display: flex; gap: 15px; align-items: center; flex-wrap: wrap; }
+        .search-input { flex: 1; min-width: 200px; padding: 15px 20px; border: none; border-radius: 8px; font-size: 1rem; background: white; box-shadow: var(--shadow); }
+        .search-input:focus { outline: 3px solid var(--secondary-color); }
+        .search-btn { padding: 15px 30px; background: var(--secondary-color); color: white; border: none; border-radius: 8px; font-size: 1rem; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 10px; transition: all 0.3s; }
+        .search-btn:hover { background: #3db9a9; transform: translateY(-2px); }
+        .search-btn:disabled { background: #94a3b8; cursor: not-allowed; transform: none; }
+        .export-btn { padding: 15px 25px; background: #059669; color: white; border: none; border-radius: 8px; font-size: 1rem; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 10px; transition: all 0.3s; }
+        .export-btn:hover { background: #047857; }
+        .nav-tabs { display: flex; background: var(--card-bg); border-bottom: 2px solid var(--border-color); overflow-x: auto; position: sticky; top: 180px; z-index: 999; }
+        .nav-tab { padding: 15px 20px; border: none; background: none; font-size: 0.85rem; font-weight: 500; color: var(--text-secondary); cursor: pointer; white-space: nowrap; border-bottom: 3px solid transparent; transition: all 0.3s; }
+        .nav-tab:hover { color: var(--primary-color); background: rgba(26, 95, 122, 0.05); }
+        .nav-tab.active { color: var(--primary-color); border-bottom-color: var(--primary-color); background: rgba(26, 95, 122, 0.08); }
+        .main-content { padding: 30px 40px; max-width: 1800px; margin: 0 auto; }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; animation: fadeIn 0.3s ease; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .card { background: var(--card-bg); border-radius: 12px; padding: 25px; margin-bottom: 25px; box-shadow: var(--shadow); border: 1px solid var(--border-color); }
+        .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; padding-bottom: 15px; border-bottom: 2px solid var(--border-color); }
+        .card-title { font-size: 1.25rem; font-weight: 600; color: var(--primary-color); display: flex; align-items: center; gap: 10px; }
+        .card-title i { color: var(--accent-color); }
+        .data-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+        .data-table th { background: linear-gradient(135deg, var(--primary-color), var(--accent-color)); color: white; padding: 12px 10px; text-align: left; font-weight: 600; }
+        .data-table td { padding: 10px; border-bottom: 1px solid var(--border-color); vertical-align: top; }
+        .data-table tr:hover { background: rgba(26, 95, 122, 0.03); }
+        .data-table tr:nth-child(even) { background: #f8fafc; }
+        .answer-cell { line-height: 1.5; font-size: 0.85rem; }
+        .answer-cell br { display: block; margin: 3px 0; }
+        .validity-green { display: inline-flex; align-items: center; gap: 5px; color: var(--green); font-weight: 600; }
+        .validity-orange { display: inline-flex; align-items: center; gap: 5px; color: var(--orange); font-weight: 600; }
+        .validity-red { display: inline-flex; align-items: center; gap: 5px; color: var(--red); font-weight: 600; }
+        .validity-dot { width: 12px; height: 12px; border-radius: 50%; display: inline-block; }
+        .validity-dot.green { background: var(--green); }
+        .validity-dot.orange { background: var(--orange); }
+        .validity-dot.red { background: var(--red); }
+        .source-link { color: #0369a1; text-decoration: none; display: inline-block; margin: 3px 0; font-size: 0.8rem; background: #e0f2fe; padding: 4px 8px; border-radius: 4px; transition: all 0.2s; }
+        .source-link:hover { background: #0369a1; color: white; text-decoration: none; }
+        .source-link i { margin-right: 4px; }
+        .year-badge { background: #e0f2fe; color: #0369a1; padding: 2px 8px; border-radius: 4px; font-size: 0.75rem; font-weight: 600; margin-left: 5px; }
+        .charts-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 25px; margin-bottom: 25px; }
+        .chart-container { background: var(--card-bg); border-radius: 12px; padding: 25px; box-shadow: var(--shadow); border: 1px solid var(--border-color); }
+        .chart-title { font-size: 1.1rem; font-weight: 600; color: var(--primary-color); margin-bottom: 15px; text-align: center; }
+        .loading-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.95); z-index: 9999; justify-content: center; align-items: center; flex-direction: column; }
+        .loading-overlay.active { display: flex; }
+        .spinner { width: 60px; height: 60px; border: 5px solid var(--border-color); border-top-color: var(--primary-color); border-radius: 50%; animation: spin 1s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .loading-text { margin-top: 20px; font-size: 1.1rem; color: var(--text-secondary); text-align: center; max-width: 400px; }
+        .welcome-screen { text-align: center; padding: 80px 40px; }
+        .welcome-icon { font-size: 5rem; color: var(--primary-color); margin-bottom: 30px; }
+        .welcome-title { font-size: 2rem; color: var(--primary-color); margin-bottom: 15px; }
+        .welcome-subtitle { font-size: 1.1rem; color: var(--text-secondary); max-width: 600px; margin: 0 auto 30px; }
+        .feature-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; max-width: 1000px; margin: 40px auto 0; }
+        .feature-item { background: var(--card-bg); padding: 25px; border-radius: 12px; box-shadow: var(--shadow); border: 1px solid var(--border-color); }
+        .feature-item i { font-size: 2rem; color: var(--accent-color); margin-bottom: 15px; }
+        .feature-item h3 { color: var(--primary-color); margin-bottom: 10px; }
+        .feature-item p { color: var(--text-secondary); font-size: 0.9rem; }
+        .form-group { margin-bottom: 20px; }
+        .form-label { display: block; font-weight: 600; margin-bottom: 8px; color: var(--text-primary); }
+        .form-input, .form-select, .form-textarea { width: 100%; padding: 12px 15px; border: 2px solid var(--border-color); border-radius: 8px; font-size: 1rem; transition: border-color 0.3s; }
+        .form-input:focus, .form-select:focus, .form-textarea:focus { outline: none; border-color: var(--primary-color); }
+        .btn-primary { padding: 12px 25px; background: var(--primary-color); color: white; border: none; border-radius: 8px; font-size: 1rem; font-weight: 600; cursor: pointer; }
+        .btn-primary:hover { background: #134b5f; }
+        .btn-danger { padding: 8px 15px; background: var(--red); color: white; border: none; border-radius: 6px; font-size: 0.85rem; cursor: pointer; }
+        .validity-summary { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-bottom: 30px; }
+        .validity-card { padding: 25px; border-radius: 12px; text-align: center; color: white; }
+        .validity-card.green { background: linear-gradient(135deg, #22c55e, #16a34a); }
+        .validity-card.orange { background: linear-gradient(135deg, #f97316, #ea580c); }
+        .validity-card.red { background: linear-gradient(135deg, #ef4444, #dc2626); }
+        .validity-card-count { font-size: 2.5rem; font-weight: 700; }
+        .validity-card-label { font-size: 0.95rem; opacity: 0.9; }
+        .news-item { padding: 20px; border: 1px solid var(--border-color); border-radius: 10px; margin-bottom: 15px; background: #fafbfc; }
+        .news-date { font-size: 0.85rem; color: var(--accent-color); font-weight: 600; margin-bottom: 8px; }
+        .news-summary { color: var(--text-primary); margin-bottom: 10px; }
+        .swot-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; }
+        .swot-card { padding: 20px; border-radius: 12px; }
+        .swot-strengths { background: #dcfce7; border: 2px solid #22c55e; }
+        .swot-weaknesses { background: #fef3c7; border: 2px solid #f59e0b; }
+        .swot-opportunities { background: #dbeafe; border: 2px solid #3b82f6; }
+        .swot-threats { background: #fee2e2; border: 2px solid #ef4444; }
+        .swot-title { font-weight: 700; margin-bottom: 10px; font-size: 1.1rem; }
+        .utility-name-display { background: rgba(255,255,255,0.2); padding: 8px 16px; border-radius: 6px; font-weight: 600; margin-left: 20px; }
+        .country-input { min-width: 150px; }
+        @media (max-width: 768px) {
+            .header { padding: 15px 20px; }
+            .search-container { flex-direction: column; }
+            .search-input { min-width: 100%; }
+            .main-content { padding: 20px; }
+            .validity-summary { grid-template-columns: 1fr; }
+            .swot-grid { grid-template-columns: 1fr; }
+        }
+        @media print {
+            .header, .nav-tabs { position: relative; }
+            .search-section { display: none; }
+            .tab-content { display: block !important; page-break-before: always; }
+            .card { break-inside: avoid; }
+        }
+        .pdf-export-all .tab-content { display: block !important; }
+    </style>
+</head>
+<body>
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="spinner"></div>
+        <div class="loading-text" id="loadingText">Fetching intelligence data from multiple sources...</div>
+        <div id="loadingProgress" style="margin-top:15px;font-size:0.9rem;color:#64748b;"></div>
+        <div id="loadingQuestion" style="margin-top:10px;font-size:0.8rem;color:#94a3b8;max-width:500px;text-align:center;"></div>
+    </div>
+
+    <header class="header" id="dashboardHeader">
+        <div class="header-top">
+            <div class="logo-section">
+                <i class="fas fa-bolt"></i>
+                <h1>Executive Intelligence Dashboard</h1>
+                <span class="utility-name-display" id="utilityNameDisplay" style="display:none;"></span>
+            </div>
+            <div class="datetime-display">
+                <strong>Dashboard Generated:</strong> <span id="currentDateTime"></span>
+            </div>
+        </div>
+        <div class="search-section">
+            <div class="search-container">
+                <input type="text" class="search-input" id="utilitySearch" placeholder="Enter utility company name..." onkeypress="if(event.key === 'Enter') searchUtility()">
+                <input type="text" class="search-input country-input" id="countrySearch" placeholder="Country (e.g., USA, Germany)" value="USA">
+                <button class="search-btn" onclick="searchUtility()" id="searchBtn"><i class="fas fa-search"></i> Search</button>
+                <button class="export-btn" onclick="exportFullPDF()" id="exportBtn" style="display:none;"><i class="fas fa-file-pdf"></i> Export Full PDF</button>
+                <button class="search-btn" onclick="setApiKey()" style="background:#64748b;"><i class="fas fa-key"></i> API Key</button>
+                <button class="search-btn" onclick="testConnection()" style="background:#059669;"><i class="fas fa-plug"></i> Test</button>
+            </div>
+        </div>
+    </header>
+
+    <nav class="nav-tabs" id="navTabs" style="display:none;">
+        <button class="nav-tab active" data-tab="identification"><i class="fas fa-id-card"></i> Identification</button>
+        <button class="nav-tab" data-tab="grid"><i class="fas fa-network-wired"></i> Grid Infrastructure</button>
+        <button class="nav-tab" data-tab="systems"><i class="fas fa-server"></i> Systems</button>
+        <button class="nav-tab" data-tab="performance"><i class="fas fa-chart-line"></i> Performance</button>
+        <button class="nav-tab" data-tab="investment"><i class="fas fa-coins"></i> Investment</button>
+        <button class="nav-tab" data-tab="innovation"><i class="fas fa-lightbulb"></i> Innovation</button>
+        <button class="nav-tab" data-tab="analysis"><i class="fas fa-microscope"></i> Analysis</button>
+        <button class="nav-tab" data-tab="swot"><i class="fas fa-balance-scale"></i> SWOT</button>
+        <button class="nav-tab" data-tab="challenges"><i class="fas fa-exclamation-triangle"></i> Challenges</button>
+        <button class="nav-tab" data-tab="tenders"><i class="fas fa-file-contract"></i> Tenders</button>
+        <button class="nav-tab" data-tab="news"><i class="fas fa-newspaper"></i> News</button>
+        <button class="nav-tab" data-tab="manual"><i class="fas fa-edit"></i> Manual Entry</button>
+        <button class="nav-tab" data-tab="validity"><i class="fas fa-check-circle"></i> Validity Index</button>
+    </nav>
+
+    <main class="main-content" id="mainContent">
+        <div id="welcomeScreen" class="welcome-screen">
+            <div class="welcome-icon"><i class="fas fa-bolt"></i></div>
+            <h2 class="welcome-title">Executive Intelligence Dashboard</h2>
+            <p class="welcome-subtitle">Search for any energy utility or DSO to generate a comprehensive intelligence report with validated data from 2024-2025.</p>
+            <div class="feature-grid">
+                <div class="feature-item"><i class="fas fa-check-double"></i><h3>Precise Questions</h3><p>Each data point retrieved using specific validated questions</p></div>
+                <div class="feature-item"><i class="fas fa-calendar"></i><h3>Year Validation</h3><p>Every data point includes the year of the information</p></div>
+                <div class="feature-item"><i class="fas fa-link"></i><h3>Source Links</h3><p>Direct clickable links to all sources</p></div>
+                <div class="feature-item"><i class="fas fa-file-pdf"></i><h3>Full PDF Export</h3><p>Export all sections in one comprehensive PDF</p></div>
+            </div>
+        </div>
+
+        <div id="dashboardContent" style="display:none;">
+            <!-- Identification Tab -->
+            <div class="tab-content active" id="tab-identification">
+                <div class="card">
+                    <div class="card-header"><h2 class="card-title"><i class="fas fa-id-card"></i> Company Identification</h2></div>
+                    <table class="data-table"><thead><tr><th>Question</th><th>Answer</th><th>Year</th><th>Validity</th><th># Sources</th><th>Source Links</th></tr></thead><tbody id="identificationBody"></tbody></table>
+                </div>
+            </div>
+
+            <!-- Grid Infrastructure Tab -->
+            <div class="tab-content" id="tab-grid">
+                <div class="card">
+                    <div class="card-header"><h2 class="card-title"><i class="fas fa-network-wired"></i> Grid Infrastructure</h2></div>
+                    <table class="data-table"><thead><tr><th>Question</th><th>Answer</th><th>Year</th><th>Validity</th><th># Sources</th><th>Source Links</th></tr></thead><tbody id="gridBody"></tbody></table>
+                </div>
+            </div>
+
+            <!-- Systems Tab -->
+            <div class="tab-content" id="tab-systems">
+                <div class="card">
+                    <div class="card-header"><h2 class="card-title"><i class="fas fa-server"></i> Operational Systems</h2></div>
+                    <table class="data-table"><thead><tr><th>System</th><th>Details</th><th>Year</th><th>Validity</th><th># Sources</th><th>Source Links</th></tr></thead><tbody id="systemsBody"></tbody></table>
+                </div>
+            </div>
+
+            <!-- Performance Tab -->
+            <div class="tab-content" id="tab-performance">
+                <div class="card">
+                    <div class="card-header"><h2 class="card-title"><i class="fas fa-chart-line"></i> Operational Performance</h2></div>
+                    <table class="data-table"><thead><tr><th>Metric</th><th>Value</th><th>Year</th><th>Validity</th><th># Sources</th><th>Source Links</th></tr></thead><tbody id="performanceBody"></tbody></table>
+                </div>
+            </div>
+
+            <!-- Investment Tab -->
+            <div class="tab-content" id="tab-investment">
+                <div class="card">
+                    <div class="card-header"><h2 class="card-title"><i class="fas fa-coins"></i> Strategic Investment</h2></div>
+                    <table class="data-table"><thead><tr><th>Investment Area</th><th>Details</th><th>Year</th><th>Validity</th><th># Sources</th><th>Source Links</th></tr></thead><tbody id="investmentBody"></tbody></table>
+                </div>
+            </div>
+
+            <!-- Innovation Tab -->
+            <div class="tab-content" id="tab-innovation">
+                <div class="card">
+                    <div class="card-header"><h2 class="card-title"><i class="fas fa-lightbulb"></i> Innovation & Research</h2></div>
+                    <table class="data-table"><thead><tr><th>Area</th><th>Details</th><th>Year</th><th>Validity</th><th># Sources</th><th>Source Links</th></tr></thead><tbody id="innovationBody"></tbody></table>
+                </div>
+            </div>
+
+            <!-- Analysis Tab -->
+            <div class="tab-content" id="tab-analysis">
+                <div class="card">
+                    <div class="card-header"><h2 class="card-title"><i class="fas fa-microscope"></i> Critical Analysis</h2></div>
+                    <table class="data-table"><thead><tr><th>Analysis Area</th><th>Assessment</th><th>Year</th><th>Validity</th><th># Sources</th><th>Source Links</th></tr></thead><tbody id="analysisBody"></tbody></table>
+                </div>
+            </div>
+
+            <!-- SWOT Tab -->
+            <div class="tab-content" id="tab-swot">
+                <div class="card">
+                    <div class="card-header"><h2 class="card-title"><i class="fas fa-balance-scale"></i> SWOT Analysis</h2></div>
+                    <div class="swot-grid">
+                        <div class="swot-card swot-strengths"><div class="swot-title">💪 Strengths</div><div id="swotStrengths"></div></div>
+                        <div class="swot-card swot-weaknesses"><div class="swot-title">⚠️ Weaknesses</div><div id="swotWeaknesses"></div></div>
+                        <div class="swot-card swot-opportunities"><div class="swot-title">🚀 Opportunities</div><div id="swotOpportunities"></div></div>
+                        <div class="swot-card swot-threats"><div class="swot-title">🔴 Threats</div><div id="swotThreats"></div></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Challenges Tab -->
+            <div class="tab-content" id="tab-challenges">
+                <div class="card">
+                    <div class="card-header"><h2 class="card-title"><i class="fas fa-exclamation-triangle"></i> Strategic Challenges</h2></div>
+                    <div id="challengesContent"></div>
+                </div>
+            </div>
+
+            <!-- Tenders Tab -->
+            <div class="tab-content" id="tab-tenders">
+                <div class="card">
+                    <div class="card-header"><h2 class="card-title"><i class="fas fa-file-contract"></i> Tenders & Procurement</h2></div>
+                    <div id="tendersContent"></div>
+                </div>
+            </div>
+
+            <!-- News Tab -->
+            <div class="tab-content" id="tab-news">
+                <div class="card">
+                    <div class="card-header"><h2 class="card-title"><i class="fas fa-newspaper"></i> Latest News (2020-2026)</h2></div>
+                    <div id="newsContent"></div>
+                </div>
+            </div>
+
+            <!-- Manual Entry Tab -->
+            <div class="tab-content" id="tab-manual">
+                <div class="card">
+                    <div class="card-header"><h2 class="card-title"><i class="fas fa-edit"></i> Manual System Entry</h2></div>
+                    <form id="manualEntryForm">
+                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px;">
+                            <div class="form-group"><label class="form-label">System Type</label><select class="form-select" id="manualSystemType"><option value="ADMS">ADMS</option><option value="GIS">GIS</option><option value="SCADA">SCADA</option><option value="MDMS">MDMS</option><option value="HES">HES</option><option value="AMI">AMI</option><option value="OMS">OMS</option><option value="DERMS">DERMS</option><option value="DMS">DMS</option><option value="ERP">ERP</option><option value="CIS">CIS</option><option value="WMS">WMS</option></select></div>
+                            <div class="form-group"><label class="form-label">Vendor</label><input type="text" class="form-input" id="manualVendor" placeholder="Vendor name"></div>
+                            <div class="form-group"><label class="form-label">Installation Date</label><input type="date" class="form-input" id="manualDate"></div>
+                        </div>
+                        <button type="button" class="btn-primary" onclick="addManualEntry()"><i class="fas fa-plus"></i> Add Entry</button>
+                    </form>
+                    <table class="data-table" style="margin-top: 25px;"><thead><tr><th>System</th><th>Vendor</th><th>Date</th><th>Actions</th></tr></thead><tbody id="manualEntriesBody"></tbody></table>
+                </div>
+            </div>
+
+            <!-- Validity Index Tab -->
+            <div class="tab-content" id="tab-validity">
+                <div class="validity-summary">
+                    <div class="validity-card green"><div class="validity-card-count" id="greenCount">0</div><div class="validity-card-label">🟢 Highly Reliable (3+ sources)</div></div>
+                    <div class="validity-card orange"><div class="validity-card-count" id="orangeCount">0</div><div class="validity-card-label">🟠 Moderate (2 sources)</div></div>
+                    <div class="validity-card red"><div class="validity-card-count" id="redCount">0</div><div class="validity-card-label">🔴 Low (1 source)</div></div>
+                </div>
+                <div class="charts-grid">
+                    <div class="chart-container"><h3 class="chart-title">Data Validity Distribution</h3><canvas id="validityChart"></canvas></div>
+                    <div class="chart-container"><h3 class="chart-title">Validity by Section</h3><canvas id="sectionValidityChart"></canvas></div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // Predefined questions from user specification - ALL questions include {utility} AND {country} for specificity
+        const IDENTIFICATION_QUESTIONS = [
+            "What is the full legal name and any alternative names of {utility} utility company in {country}?",
+            "What is the primary operational area and service territory of {utility} utility company in {country}?",
+            "In which city is the headquarters of {utility} utility company in {country} located? Provide full address if available.",
+            "What is the total number of connection points for {utility} utility company in {country}?",
+            "What is the total number of meters in use by {utility} utility company in {country}?",
+            "How many LV (low voltage) customers does {utility} utility company in {country} serve?",
+            "What is the total service area (km²) for {utility} utility company in {country}?",
+            "What is the population density in the service area of {utility} utility company in {country}?",
+            "What are the annual sales or revenue figures for {utility} utility company in {country}?",
+            "What percentage of {utility} utility company in {country} customers are residential?",
+            "What percentage of {utility} utility company in {country} customers are commercial?",
+            "What percentage of {utility} utility company in {country} customers are industrial?"
+        ];
+
+        const GRID_QUESTIONS = [
+            "What is the total number of HV/MV substations operated by {utility} utility company in {country}?",
+            "What is the total number of MV/LV substations in {utility} utility company's network in {country}?",
+            "What is the total length of grid lines (in km) managed by {utility} utility company in {country}?",
+            "How many kilometers of {utility} utility company's grid lines in {country} are underground?",
+            "How many kilometers of {utility} utility company's grid lines in {country} are overhead?",
+            "What are the main voltage levels in {utility} utility company's distribution grid in {country}?",
+            "Are there any special features, technologies, or specificities in {utility} utility company's grid infrastructure in {country}?",
+            "How many renewable energy (DER/DG) connections does {utility} utility company in {country} have?",
+            "What is the total number of customer connections served by {utility} utility company in {country}?"
+        ];
+
+        const SYSTEMS_QUESTIONS = [
+            "What GIS (Geographic Information System) is used by {utility} utility company in {country}? Include vendor, version, installation/upgrade date, and key features.",
+            "What ADMS (Advanced Distribution Management System) is deployed at {utility} utility company in {country}? Include vendor, version, installation/upgrade date, and capabilities.",
+            "What SCADA system does {utility} utility company in {country} operate? Include vendor, version, installation/upgrade date, and coverage.",
+            "What MDMS (Meter Data Management System) is implemented at {utility} utility company in {country}? Include vendor, version, installation/upgrade date.",
+            "What HES (Head-End System) does {utility} utility company in {country} use for smart meter communications? Include vendor and version.",
+            "What AMI (Advanced Metering Infrastructure) has {utility} utility company in {country} deployed? Include vendor, rollout status, and meter count.",
+            "What OMS (Outage Management System) is operational at {utility} utility company in {country}? Include vendor, version, and integration details.",
+            "What DERMS (Distributed Energy Resource Management System) does {utility} utility company in {country} utilize? Include vendor, version, and managed capacity.",
+            "What asset management system is in use at {utility} utility company in {country}? Include vendor, version, installation/upgrade date.",
+            "What DMS (Distribution Management System) does {utility} utility company in {country} operate? Include vendor and version.",
+            "What ERP system does {utility} utility company in {country} use for enterprise operations? Include vendor and modules deployed.",
+            "What CIS (Customer Information System) is implemented at {utility} utility company in {country}? Include vendor and version.",
+            "What WMS (Workforce Management System) does {utility} utility company in {country} use? Include vendor and deployment status."
+        ];
+
+        const PERFORMANCE_QUESTIONS = [
+            "What is the latest peak load growth rate (%) for {utility} utility company in {country}?",
+            "What is the capacity expansion rate (%) for {utility} utility company in {country}?",
+            "What are the top three most critical bottleneck nodes or constraint points in {utility} utility company's grid in {country}?",
+            "What are the current technical losses (%) for {utility} utility company's network in {country}?",
+            "What are the current commercial losses (%) for {utility} utility company in {country}?",
+            "What is the current smart meter penetration/coverage (%) at {utility} utility company in {country}?",
+            "How many DER/renewable integration requests are pending at {utility} utility company in {country}?",
+            "What is the current hosting capacity utilization (%) in {utility} utility company's distribution network in {country}?",
+            "What is the upgrade schedule and investment plan for major grid components at {utility} utility company in {country}?"
+        ];
+
+        const INVESTMENT_QUESTIONS = [
+            "What is the grid modernization budget allocated for {utility} utility company in {country} over the next 3-5 years?",
+            "What budget has {utility} utility company in {country} allocated for DER integration and renewable energy infrastructure?",
+            "What is {utility} utility company in {country}'s cybersecurity investment budget?",
+            "What is the latest SAIDI (System Average Interruption Duration Index) value for {utility} utility company in {country}?",
+            "What is the latest SAIFI (System Average Interruption Frequency Index) value for {utility} utility company in {country}?",
+            "What percentage of {utility} utility company in {country}'s revenue is at regulatory risk or subject to performance incentives?",
+            "What regulatory incentive programs or performance-based mechanisms apply to {utility} utility company in {country}?"
+        ];
+
+        const INNOVATION_QUESTIONS = [
+            "What major innovation or R&D projects are currently ongoing at {utility} utility company in {country}?",
+            "How many pilot projects for emerging technologies (EV, storage, AI, etc.) are active at {utility} utility company in {country}?",
+            "What is the commercialization timeline and roadmap for {utility} utility company in {country}'s innovation projects?",
+            "What academic or research collaborations does {utility} utility company in {country} maintain? List institutions and focus areas.",
+            "What are the main research and innovation focus areas for {utility} utility company in {country}?",
+            "Who are {utility} utility company in {country}'s key technology providers, system integrators, and innovation partners?",
+            "What community engagement, social impact, or energy equity programs does {utility} utility company in {country} operate?",
+            "What percentage of {utility} utility company in {country}'s customers use digital platforms, mobile apps, or online portals?"
+        ];
+
+        const ANALYSIS_QUESTIONS = [
+            "What is {utility} utility company in {country}'s SCADA system refresh cycle and modernization roadmap?",
+            "What data analytics and AI/ML capabilities are deployed at {utility} utility company in {country}?",
+            "What is the climate resilience assessment or vulnerability index for {utility} utility company's grid infrastructure in {country}?",
+            "What is the current cybersecurity posture and threat surface for {utility} utility company in {country}?",
+            "What is {utility} utility company's market position or ranking compared to peer utilities in {country}?",
+            "How prepared is {utility} utility company for upcoming regulatory changes and energy transition requirements in {country}?"
+        ];
+
+        const SWOT_QUESTIONS = {
+            strengths: "What are the key strengths and competitive advantages of {utility} utility company in {country}? List specific strengths with supporting evidence and sources.",
+            weaknesses: "What are the main weaknesses, operational vulnerabilities, or areas for improvement at {utility} utility company in {country}? List specific weaknesses with evidence.",
+            opportunities: "What growth opportunities, market trends, or strategic initiatives could benefit {utility} utility company in {country}? List specific opportunities with context.",
+            threats: "What external threats, competitive pressures, or regulatory risks does {utility} utility company in {country} face? List specific threats with evidence."
+        };
+
+        const CHALLENGES_QUESTION = "What are the main strategic and operational challenges currently facing {utility} utility company in {country}? For each challenge, describe what actions are being taken, current implementation status, budget allocated, and anticipated outcomes with timeline.";
+        const NEWS_QUESTION = "What are the most significant news items, announcements, and developments about {utility} utility company in {country} from 2020-2026? Include specific dates, headlines, detailed summaries, and verified source links for each news item.";
+        const TENDERS_QUESTION = "What tenders, RFPs, RFIs, or major procurement processes are ongoing, recently awarded, or planned at {utility} utility company in {country}? Include detailed system/project descriptions, contract values, key dates, vendor shortlists, and current status.";
+
+        // API Configuration
+        let PERPLEXITY_API_KEY = sessionStorage.getItem('perplexity_api_key') || '';
+        const PERPLEXITY_API_URL = 'https://api.perplexity.ai/chat/completions';
+
+        let dashboardData = { utilityName: '', country: '', identification: [], grid: [], systems: [], performance: [], investment: [], innovation: [], analysis: [], swot: {}, challenges: '', tenders: '', news: '', manualEntries: [] };
+        let validityCounts = { green: 0, orange: 0, red: 0 };
+
+        function setApiKey() {
+            const key = prompt('Please enter your Perplexity API key:\n(Note: Key is stored only for this session)');
+            if (key && key.trim()) {
+                PERPLEXITY_API_KEY = key.trim();
+                sessionStorage.setItem('perplexity_api_key', PERPLEXITY_API_KEY);
+                alert('API key saved for this session.');
+                return true;
+            }
+            return false;
+        }
+
+        function checkApiKey() {
+            if (!PERPLEXITY_API_KEY) return setApiKey();
+            return true;
+        }
+
+        async function testConnection() {
+            if (!PERPLEXITY_API_KEY) { alert('Please set your API key first.'); return; }
+            document.getElementById('loadingOverlay').classList.add('active');
+            document.getElementById('loadingText').textContent = 'Testing API connection...';
+            try {
+                const response = await fetch(PERPLEXITY_API_URL, {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${PERPLEXITY_API_KEY}`, 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ model: 'sonar', messages: [{ role: 'user', content: 'Say "Connection successful"' }], max_tokens: 50 })
+                });
+                if (response.ok) { alert('✅ Connection successful! API is working.'); }
+                else { const err = await response.text(); alert(`❌ Connection failed: ${response.status}\n${err}`); }
+            } catch (error) { alert(`❌ Connection failed: ${error.message}`); }
+            finally { document.getElementById('loadingOverlay').classList.remove('active'); }
+        }
+
+        function updateDateTime() {
+            const now = new Date();
+            document.getElementById('currentDateTime').textContent = now.toLocaleString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit', timeZoneName: 'short' });
+        }
+        setInterval(updateDateTime, 1000);
+        updateDateTime();
+
+        document.querySelectorAll('.nav-tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+                document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+                tab.classList.add('active');
+                document.getElementById('tab-' + tab.dataset.tab).classList.add('active');
+            });
+        });
+
+        async function searchUtility() {
+            if (!checkApiKey()) { alert('API key is required.'); return; }
+            const utilityName = document.getElementById('utilitySearch').value.trim();
+            const country = document.getElementById('countrySearch').value.trim() || 'USA';
+            if (!utilityName) { alert('Please enter a utility company name'); return; }
+
+            dashboardData.utilityName = utilityName;
+            dashboardData.country = country;
+            validityCounts = { green: 0, orange: 0, red: 0 };
+
+            document.getElementById('loadingOverlay').classList.add('active');
+            document.getElementById('searchBtn').disabled = true;
+
+            try {
+                await fetchAllSections(utilityName, country);
+                document.getElementById('welcomeScreen').style.display = 'none';
+                document.getElementById('dashboardContent').style.display = 'block';
+                document.getElementById('navTabs').style.display = 'flex';
+                document.getElementById('exportBtn').style.display = 'flex';
+                document.getElementById('utilityNameDisplay').textContent = `${utilityName} (${country})`;
+                document.getElementById('utilityNameDisplay').style.display = 'inline';
+                renderAllSections();
+                updateValidityCharts();
+            } catch (error) {
+                console.error('Error:', error);
+                alert(`Error fetching data: ${error.message}`);
+            } finally {
+                document.getElementById('loadingOverlay').classList.remove('active');
+                document.getElementById('searchBtn').disabled = false;
+            }
+        }
+
+        async function fetchAllSections(utility, country) {
+            const sections = [
+                { key: 'identification', questions: IDENTIFICATION_QUESTIONS, label: 'Identification' },
+                { key: 'grid', questions: GRID_QUESTIONS, label: 'Grid Infrastructure' },
+                { key: 'systems', questions: SYSTEMS_QUESTIONS, label: 'Systems' },
+                { key: 'performance', questions: PERFORMANCE_QUESTIONS, label: 'Performance' },
+                { key: 'investment', questions: INVESTMENT_QUESTIONS, label: 'Investment' },
+                { key: 'innovation', questions: INNOVATION_QUESTIONS, label: 'Innovation' },
+                { key: 'analysis', questions: ANALYSIS_QUESTIONS, label: 'Analysis' }
+            ];
+
+            let totalQuestions = sections.reduce((sum, s) => sum + s.questions.length, 0) + 7; // +7 for SWOT(4), challenges, news, tenders
+            let completed = 0;
+
+            for (const section of sections) {
+                dashboardData[section.key] = [];
+                for (const question of section.questions) {
+                    const formattedQ = question.replace(/{utility}/g, utility).replace(/{country}/g, country);
+                    document.getElementById('loadingText').textContent = `Fetching ${section.label}...`;
+                    document.getElementById('loadingProgress').textContent = `Progress: ${++completed}/${totalQuestions}`;
+                    document.getElementById('loadingQuestion').textContent = formattedQ.substring(0, 80) + '...';
+
+                    try {
+                        const result = await askQuestion(formattedQ, utility, country);
+                        dashboardData[section.key].push(result);
+                    } catch (e) {
+                        dashboardData[section.key].push({ question: formattedQ, answer: 'N/A', year: 'N/A', validity: 'red', numSources: 0, sources: [] });
+                        validityCounts.red++;
+                    }
+                    await new Promise(r => setTimeout(r, 500));
+                }
+            }
+
+            // SWOT Analysis
+            for (const [type, question] of Object.entries(SWOT_QUESTIONS)) {
+                document.getElementById('loadingText').textContent = `Fetching SWOT - ${type}...`;
+                document.getElementById('loadingProgress').textContent = `Progress: ${++completed}/${totalQuestions}`;
+                const formattedQ = question.replace(/{utility}/g, utility).replace(/{country}/g, country);
+                try {
+                    const result = await askQuestion(formattedQ, utility, country);
+                    dashboardData.swot[type] = result;
+                } catch (e) {
+                    dashboardData.swot[type] = { answer: 'N/A', sources: [] };
+                }
+                await new Promise(r => setTimeout(r, 500));
+            }
+
+            // Challenges
+            document.getElementById('loadingText').textContent = 'Fetching Challenges...';
+            document.getElementById('loadingProgress').textContent = `Progress: ${++completed}/${totalQuestions}`;
+            try {
+                dashboardData.challenges = await askQuestion(CHALLENGES_QUESTION.replace(/{utility}/g, utility).replace(/{country}/g, country), utility, country);
+            } catch (e) { dashboardData.challenges = { answer: 'N/A', sources: [] }; }
+
+            // News
+            document.getElementById('loadingText').textContent = 'Fetching News...';
+            document.getElementById('loadingProgress').textContent = `Progress: ${++completed}/${totalQuestions}`;
+            try {
+                dashboardData.news = await askQuestion(NEWS_QUESTION.replace(/{utility}/g, utility), utility, country);
+            } catch (e) { dashboardData.news = { answer: 'N/A', sources: [] }; }
+
+            // Tenders
+            document.getElementById('loadingText').textContent = 'Fetching Tenders...';
+            document.getElementById('loadingProgress').textContent = `Progress: ${++completed}/${totalQuestions}`;
+            try {
+                dashboardData.tenders = await askQuestion(TENDERS_QUESTION.replace(/{utility}/g, utility), utility, country);
+            } catch (e) { dashboardData.tenders = { answer: 'N/A', sources: [] }; }
+        }
+
+        async function askQuestion(question, utility, country) {
+            const systemPrompt = `You are a business intelligence analyst specializing in energy utilities.
+            You are researching SPECIFICALLY about "${utility}" utility company operating in "${country}".
+            
+            CRITICAL REQUIREMENTS:
+            1. ONLY provide information SPECIFICALLY about "${utility}" in "${country}" - NO generic industry data
+            2. Keep your answer UNDER 120 WORDS maximum
+            3. Use STRUCTURED FORMAT with bullet points (•) or numbered lists (1., 2., 3.)
+            4. Include the YEAR (2024/2025) for each data point
+            5. If no specific data found, state: "No data available for ${utility}"
+            6. Be CONCISE and CLEAR - no partial sentences or incomplete thoughts
+            7. Format example:
+               • Revenue: $X billion (2024)
+               • Customers: X million
+               • Service Area: X km²
+            8. Do NOT use asterisks (*) or markdown formatting - use plain text with bullets (•)
+            9. Each fact must be complete and understandable`;
+
+            const response = await fetch(PERPLEXITY_API_URL, {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${PERPLEXITY_API_KEY}`, 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    model: 'sonar',
+                    messages: [
+                        { role: 'system', content: systemPrompt },
+                        { role: 'user', content: question }
+                    ],
+                    max_tokens: 500,
+                    temperature: 0.1,
+                    return_citations: true
+                })
+            });
+
+            if (!response.ok) throw new Error(`API error: ${response.status}`);
+            const data = await response.json();
+            let content = data.choices?.[0]?.message?.content || 'N/A';
+            const citations = data.citations || [];
+            
+            // Clean up the content - remove incomplete sentences and formatting issues
+            content = cleanupAnswer(content);
+            
+            // Extract year from content
+            const yearMatch = content.match(/\b(202[0-9]|2019)\b/);
+            const year = yearMatch ? yearMatch[0] : 'N/A';
+
+            const numSources = citations.length;
+            const validity = numSources >= 3 ? 'green' : (numSources >= 2 ? 'orange' : 'red');
+            validityCounts[validity]++;
+
+            // Process sources - extract domain name for better titles and keep only most relevant
+            const sources = citations.slice(0, 3).map((c) => {
+                const url = typeof c === 'string' ? c : (c.url || null);
+                if (!url) return null;
+                try {
+                    const domain = new URL(url).hostname.replace('www.', '');
+                    // Create descriptive title from domain
+                    let title = domain;
+                    if (domain.includes(utility.toLowerCase().replace(/\s+/g, ''))) {
+                        title = `${utility} Official`;
+                    } else if (domain.includes('sec.gov')) {
+                        title = 'SEC Filing';
+                    } else if (domain.includes('reuters') || domain.includes('bloomberg')) {
+                        title = 'News Report';
+                    } else if (domain.includes('gov')) {
+                        title = 'Government Source';
+                    } else {
+                        title = domain.split('.')[0].charAt(0).toUpperCase() + domain.split('.')[0].slice(1);
+                    }
+                    return { title, url };
+                } catch (e) {
+                    return { title: 'Source', url };
+                }
+            }).filter(s => s !== null);
+
+            return { question, answer: content, year, validity, numSources, sources };
+        }
+
+        // Clean up answer to remove partial content and formatting issues
+        function cleanupAnswer(text) {
+            if (!text || text === 'N/A') return 'N/A';
+            
+            // Replace markdown asterisks with bullets
+            text = text.replace(/^\*\s+/gm, '• ');
+            text = text.replace(/\*\*/g, '');
+            text = text.replace(/\*/g, '');
+            
+            // Replace markdown headers
+            text = text.replace(/^#+\s*/gm, '');
+            
+            // Ensure bullet points are on new lines for readability
+            text = text.replace(/([.!?:])\s*•\s*/g, '$1\n• ');
+            
+            // Clean up excessive whitespace
+            text = text.replace(/\n{3,}/g, '\n\n');
+            text = text.trim();
+            
+            // If result is empty after cleanup, return N/A
+            return text.length > 0 ? text : 'N/A';
+        }
+
+        function renderAllSections() {
+            renderTableSection('identificationBody', dashboardData.identification);
+            renderTableSection('gridBody', dashboardData.grid);
+            renderTableSection('systemsBody', dashboardData.systems);
+            renderTableSection('performanceBody', dashboardData.performance);
+            renderTableSection('investmentBody', dashboardData.investment);
+            renderTableSection('innovationBody', dashboardData.innovation);
+            renderTableSection('analysisBody', dashboardData.analysis);
+            renderSWOT();
+            renderChallenges();
+            renderTenders();
+            renderNews();
+        }
+
+        function renderTableSection(tbodyId, data) {
+            const tbody = document.getElementById(tbodyId);
+            if (!tbody || !data) return;
+            tbody.innerHTML = data.map(item => {
+                const shortQ = item.question.replace(/{utility}/g, dashboardData.utilityName).replace(/{country}/g, dashboardData.country);
+                const validity = getValidityHTML(item.validity);
+                const sources = getSourceLinksHTML(item.sources);
+                const yearBadge = item.year !== 'N/A' ? `<span class="year-badge">${item.year}</span>` : '<span class="year-badge" style="background:#fee2e2;color:#991b1b;">N/A</span>';
+                // Format answer with proper line breaks for bullets
+                const formattedAnswer = formatAnswerHTML(item.answer);
+                return `<tr>
+                    <td style="max-width:250px;"><strong>${shortQ.substring(0, 100)}${shortQ.length > 100 ? '...' : ''}</strong></td>
+                    <td style="max-width:450px;" class="answer-cell">${formattedAnswer}</td>
+                    <td>${yearBadge}</td>
+                    <td>${validity}</td>
+                    <td>${item.numSources}</td>
+                    <td>${sources}</td>
+                </tr>`;
+            }).join('');
+        }
+
+        function formatAnswerHTML(text) {
+            if (!text || text === 'N/A') return '<span style="color:#94a3b8;">N/A</span>';
+            // Escape HTML first
+            let html = escapeHtml(text);
+            // Convert newlines to <br>
+            html = html.replace(/\n/g, '<br>');
+            // Style bullet points
+            html = html.replace(/•/g, '<span style="color:#0d9488;font-weight:bold;">•</span>');
+            return html;
+        }
+
+        function getValidityHTML(validity) {
+            const colors = { green: '🟢', orange: '🟠', red: '🔴' };
+            return `<span class="validity-${validity}"><span class="validity-dot ${validity}"></span> ${colors[validity] || '🔴'}</span>`;
+        }
+
+        function getSourceLinksHTML(sources) {
+            if (!sources || sources.length === 0) return '<span style="color:#94a3b8;">No sources</span>';
+            return sources.map(s => s.url ? `<a href="${s.url}" target="_blank" class="source-link"><i class="fas fa-external-link-alt"></i> ${s.title}</a>` : s.title).join('<br>');
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function renderSWOT() {
+            ['strengths', 'weaknesses', 'opportunities', 'threats'].forEach(type => {
+                const el = document.getElementById('swot' + type.charAt(0).toUpperCase() + type.slice(1));
+                const data = dashboardData.swot[type];
+                if (el && data) {
+                    el.innerHTML = `<p>${escapeHtml(data.answer || 'N/A')}</p>
+                    ${data.sources?.length ? '<div style="margin-top:10px;">' + getSourceLinksHTML(data.sources) + '</div>' : ''}`;
+                }
+            });
+        }
+
+        function renderChallenges() {
+            const el = document.getElementById('challengesContent');
+            const data = dashboardData.challenges;
+            if (el && data) {
+                el.innerHTML = `<div class="news-item"><div class="news-summary">${escapeHtml(data.answer || 'N/A')}</div>
+                ${data.sources?.length ? '<div style="margin-top:10px;">' + getSourceLinksHTML(data.sources) + '</div>' : ''}</div>`;
+            }
+        }
+
+        function renderTenders() {
+            const el = document.getElementById('tendersContent');
+            const data = dashboardData.tenders;
+            if (el && data) {
+                el.innerHTML = `<div class="news-item"><div class="news-summary">${escapeHtml(data.answer || 'N/A')}</div>
+                ${data.sources?.length ? '<div style="margin-top:10px;">' + getSourceLinksHTML(data.sources) + '</div>' : ''}</div>`;
+            }
+        }
+
+        function renderNews() {
+            const el = document.getElementById('newsContent');
+            const data = dashboardData.news;
+            if (el && data) {
+                el.innerHTML = `<div class="news-item"><div class="news-summary">${escapeHtml(data.answer || 'N/A')}</div>
+                ${data.sources?.length ? '<div style="margin-top:10px;">' + getSourceLinksHTML(data.sources) + '</div>' : ''}</div>`;
+            }
+        }
+
+        function updateValidityCharts() {
+            document.getElementById('greenCount').textContent = validityCounts.green;
+            document.getElementById('orangeCount').textContent = validityCounts.orange;
+            document.getElementById('redCount').textContent = validityCounts.red;
+
+            const ctx1 = document.getElementById('validityChart');
+            if (ctx1) {
+                new Chart(ctx1.getContext('2d'), {
+                    type: 'doughnut',
+                    data: {
+                        labels: ['Highly Reliable', 'Moderate', 'Low'],
+                        datasets: [{ data: [validityCounts.green, validityCounts.orange, validityCounts.red], backgroundColor: ['#22c55e', '#f97316', '#ef4444'] }]
+                    },
+                    options: { responsive: true, plugins: { legend: { position: 'bottom' } } }
+                });
+            }
+
+            const ctx2 = document.getElementById('sectionValidityChart');
+            if (ctx2) {
+                const sections = ['Identification', 'Grid', 'Systems', 'Performance', 'Investment', 'Innovation', 'Analysis'];
+                const sectionData = sections.map(s => dashboardData[s.toLowerCase()]?.length || 0);
+                new Chart(ctx2.getContext('2d'), {
+                    type: 'bar',
+                    data: { labels: sections, datasets: [{ label: 'Data Points', data: sectionData, backgroundColor: '#1a5f7a' }] },
+                    options: { responsive: true, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } }
+                });
+            }
+        }
+
+        function addManualEntry() {
+            const systemType = document.getElementById('manualSystemType').value;
+            const vendor = document.getElementById('manualVendor').value;
+            const date = document.getElementById('manualDate').value;
+            if (!vendor || !date) { alert('Please fill all fields'); return; }
+            dashboardData.manualEntries.push({ systemType, vendor, date });
+            renderManualEntries();
+            localStorage.setItem('utilityDashboard_manualEntries', JSON.stringify(dashboardData.manualEntries));
+            document.getElementById('manualVendor').value = '';
+            document.getElementById('manualDate').value = '';
+        }
+
+        function renderManualEntries() {
+            const tbody = document.getElementById('manualEntriesBody');
+            tbody.innerHTML = dashboardData.manualEntries.map((item, i) => 
+                `<tr><td>${item.systemType}</td><td>${item.vendor}</td><td>${item.date}</td><td><button class="btn-danger" onclick="deleteManualEntry(${i})"><i class="fas fa-trash"></i></button></td></tr>`
+            ).join('');
+        }
+
+        function deleteManualEntry(index) {
+            dashboardData.manualEntries.splice(index, 1);
+            renderManualEntries();
+            localStorage.setItem('utilityDashboard_manualEntries', JSON.stringify(dashboardData.manualEntries));
+        }
+
+        // Full PDF Export - All sections in one PDF
+        async function exportFullPDF() {
+            const exportBtn = document.getElementById('exportBtn');
+            if (!dashboardData.utilityName) {
+                alert('Please search for a utility first before exporting.');
+                return;
+            }
+            
+            const originalBtnText = exportBtn.innerHTML;
+            exportBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Generating PDF...';
+            exportBtn.disabled = true;
+
+            try {
+                // Build HTML content for PDF
+                let pdfHTML = `
+                    <div style="font-family: Arial, sans-serif; padding: 20px; max-width: 800px; margin: 0 auto;">
+                        <div style="text-align: center; margin-bottom: 30px; padding: 25px; background: linear-gradient(135deg, #1a5f7a, #159895); color: white; border-radius: 12px;">
+                            <h1 style="margin: 0 0 10px 0; font-size: 26px; font-weight: bold;">Executive Intelligence Dashboard</h1>
+                            <h2 style="margin: 0 0 10px 0; font-size: 20px; font-weight: normal;">${dashboardData.utilityName} - ${dashboardData.country}</h2>
+                            <p style="margin: 0; font-size: 13px; opacity: 0.9;">Generated: ${new Date().toLocaleString()}</p>
+                        </div>
+                `;
+
+                // Section names mapping
+                const sections = [
+                    { id: 'identificationTab', name: 'Identification' },
+                    { id: 'gridTab', name: 'Grid Infrastructure' },
+                    { id: 'systemsTab', name: 'Systems' },
+                    { id: 'performanceTab', name: 'Operational Performance' },
+                    { id: 'investmentTab', name: 'Strategic Investment' },
+                    { id: 'innovationTab', name: 'Innovation & Research' },
+                    { id: 'analysisTab', name: 'Critical Analysis' },
+                    { id: 'swotTab', name: 'SWOT Analysis' },
+                    { id: 'challengesTab', name: 'Strategic Challenges' },
+                    { id: 'tendersTab', name: 'Tenders & Procurement' },
+                    { id: 'newsTab', name: 'Latest News' }
+                ];
+
+                sections.forEach((section, idx) => {
+                    const tab = document.getElementById(section.id);
+                    if (tab) {
+                        const pageBreak = idx > 0 ? 'page-break-before: always;' : '';
+                        pdfHTML += `
+                            <div style="${pageBreak} margin-top: 25px;">
+                                <h3 style="color: #1a5f7a; font-size: 18px; border-bottom: 3px solid #1a5f7a; padding-bottom: 10px; margin-bottom: 20px;">${section.name}</h3>
+                                ${tab.innerHTML}
+                            </div>
+                        `;
+                    }
+                });
+
+                pdfHTML += '</div>';
+
+                // Create temporary container
+                const container = document.createElement('div');
+                container.innerHTML = pdfHTML;
+                container.style.cssText = 'position: fixed; left: 0; top: 0; width: 210mm; background: white; z-index: -1; visibility: hidden;';
+                document.body.appendChild(container);
+
+                // Wait for rendering
+                await new Promise(r => setTimeout(r, 300));
+
+                // Generate PDF
+                const filename = `${dashboardData.utilityName.replace(/[^a-zA-Z0-9\s]/g, '').replace(/\s+/g, '_')}_Report_${new Date().toISOString().split('T')[0]}.pdf`;
+                
+                await html2pdf()
+                    .set({
+                        margin: 10,
+                        filename: filename,
+                        image: { type: 'jpeg', quality: 0.95 },
+                        html2canvas: { scale: 2, useCORS: true, logging: false },
+                        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+                    })
+                    .from(container)
+                    .save();
+
+                document.body.removeChild(container);
+                alert('✅ PDF exported successfully!\n\nFile: ' + filename + '\n\nCheck your Downloads folder.');
+            } catch (error) {
+                console.error('PDF Export Error:', error);
+                alert('❌ PDF export failed: ' + error.message + '\n\nPlease try:\n1. Use Chrome or Edge browser\n2. Disable ad blockers\n3. Refresh the page and try again');
+            } finally {
+                exportBtn.innerHTML = originalBtnText;
+                exportBtn.disabled = false;
+            }
+        }
+
+        // Load saved manual entries
+        const saved = localStorage.getItem('utilityDashboard_manualEntries');
+        if (saved) { dashboardData.manualEntries = JSON.parse(saved); renderManualEntries(); }
+    </script>
+</body>
+</html>
